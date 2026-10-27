@@ -1,0 +1,32 @@
+# St. Charles rosters for Overtime Arcade
+#
+# Each line is:  Position: number name
+# To change a player, change the number or name after the colon.
+# To take a player out, delete everything after the colon. The game puts a made-up name there.
+# Lines that start with # are notes and are ignored.
+# When you are done, tap "Commit changes". The site updates in a few minutes.
+
+[Hockey]
+Goalie: 78 Somma
+Center 1: 43 Dawso
+Left wing 1: 88 Pacifico
+Right wing 1: 44 Clay
+Left D 1: 66 Hadden
+Right D 1: 71 Cesarz
+Center 2: 47 Frencho
+Left wing 2: 13 Hadden
+Right wing 2: 21 Paul
+Left D 2: 77 Schmitz
+Right D 2: 18 Schmitz
+
+[Lacrosse]
+Goalie: 77 Max Shearer
+Defense 1: 45 Sam Parker
+Defense 2: 10 Miles Blake
+Defense 3: 86 Sam Pacifico
+Midfield 1: 61 Bob White
+Midfield 2: 72 Charlie Hilbert
+Midfield 3: 2 Ellis Obravac
+Attack 1: 9 Grant Bender
+Attack 2: 84 Sam Grilli
+Attack 3: 27 Madden Bobo
