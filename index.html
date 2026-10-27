@@ -1,6 +1,14 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="theme-color" content="#0e1214">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Overtime">
 <title>Overtime Arcade</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -94,6 +102,7 @@ footer{color:var(--muted);font-size:14px;max-width:72ch;display:grid;gap:8px}
 footer .by{font:800 20px/1.2 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--fg)}
 footer .by b{color:var(--cardinal)}
 @media (prefers-reduced-motion:no-preference){.play{transition:filter .15s}}
+.apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}.apps div{display:grid;gap:6px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}.apps strong{font:700 16px/1.3 var(--body)}.apps span{color:var(--muted);font-size:14px}
 </style>
 
 <div class="wrap">
@@ -220,6 +229,15 @@ footer .by b{color:var(--cardinal)}
     </div>
   </section>
 
+  <section id="getapp" aria-labelledby="app-h">
+    <h2 class="section" id="app-h">Get the app</h2>
+    <div class="apps">
+      <div><strong>iPhone or iPad</strong><span>Open this page in Safari, tap the Share button (the square with the arrow), then tap Add to Home Screen.</span></div>
+      <div><strong>Android</strong><span>Open this page in Chrome, tap the ⋮ menu, then tap Install app or Add to Home screen.</span></div>
+      <div><strong>Computer</strong><span>In Chrome or Edge, click the install icon at the right end of the address bar.</span></div>
+    </div>
+  </section>
+
   <footer><span class="by">Made by <b>Sam Pacifico</b></span><span>Best on a computer with a keyboard. On a phone, each game shows an on-screen joystick and buttons. Turn the sound on in a game to hear the commentary and the crowd.</span><span><b>Version 14</b> · an even stronger St. Charles hockey team and a clearer home page, plus the 4-chime goal horn and goal song, Save &amp; quit, your stats, Bill Bender on the call, fans in the stands and The Cockpit.</span></footer>
 </div>
 <script>
@@ -240,5 +258,10 @@ footer .by b{color:var(--cardinal)}
   wire({hockey:{},lacrosse:{}});
   fetch('rosters.txt',{cache:'no-store'}).then(r=>r.ok?r.text():Promise.reject()).then(t=>wire(parse(t))).catch(()=>{});
 })();
+</script>
+<script>
+// the offline copy, and no "Get the app" section once it is already installed
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+if(navigator.standalone||matchMedia('(display-mode: standalone)').matches)document.getElementById('getapp').hidden=true;
 </script>
 </html>
