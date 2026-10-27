@@ -917,7 +917,7 @@ function speak(s,prio,who){
     if(speechSynthesis.speaking||speechSynthesis.pending){
       // the analyst waits for the play-by-play call to finish instead of cutting it off
       if(who===2){if(speechSynthesis.pending)return}
-      else{if(prio<2&&now-lastSpeak<2600)return;speechSynthesis.cancel()}
+      else{if(prio<2&&now-lastSpeak<2600)return;if(TOUCH)return;speechSynthesis.cancel()}
     }
     const u=new SpeechSynthesisUtterance(s);if(VOICES.length)u.voice=who===2?(VOICES[1]||VOICES[0]):VOICES[0];
     if(who===2){u.rate=.97+Math.random()*.06;u.pitch=.84;u.volume=.95}
@@ -1553,7 +1553,7 @@ function goalHorn(){if(!AC)return;
   const n=AC.createBufferSource(),nf=AC.createBiquadFilter(),ng=AC.createGain();n.buffer=noiseBuf();n.loop=true;nf.type='bandpass';nf.frequency.value=2400;nf.Q.value=.8;
   ng.gain.setValueAtTime(.0001,t);ng.gain.exponentialRampToValueAtTime(.05,t+.06);ng.gain.setValueAtTime(.05,t+dur);ng.gain.exponentialRampToValueAtTime(.0001,t+dur+.3);n.connect(nf).connect(ng).connect(out);n.start(t);n.stop(t+dur+.4)}
 /* the goal song: an original stadium rock anthem (drums, bass, power chords, an organ hook and the whole building yelling HEY) */
-let SONG=null;
+let SONG=null;const TOUCH=matchMedia('(pointer: coarse)').matches;
 function stopSong(){SNDS.stop('song');if(!SONG||!AC)return;const s=SONG;SONG=null;try{s.bus.gain.cancelScheduledValues(AC.currentTime);s.bus.gain.setTargetAtTime(0,AC.currentTime,.12);setTimeout(()=>{try{s.bus.disconnect()}catch(e){}},900)}catch(e){}}
 function goalSong(at,force){if(!AC||(!force&&!SNDS.songOn()))return;stopSong();
   if(SNDS.has('song')){if(!SNDS.play('song',at))SNDS.decode('song').then(b=>{if(b)SNDS.play('song',at)});return}
@@ -1579,7 +1579,7 @@ function goalSong(at,force){if(!AC||(!force&&!SNDS.songOn()))return;stopSong();
   on(28,()=>{osc('sawtooth',mf(28),bt(28),B*4,.25,blp);osc('sine',mf(28),bt(28),B*4,.3,bus)});
   const gIn=AC.createGain(),gws=AC.createWaveShaper(),glp=AC.createBiquadFilter(),gOut=AC.createGain(),gc=new Float32Array(2048);
   for(let i=0;i<2048;i++){const x=i/1024-1;gc[i]=Math.tanh(x*6)}gws.curve=gc;glp.type='lowpass';glp.frequency.value=2600;gIn.gain.value=.6;gOut.gain.value=.15;gIn.connect(gws).connect(glp).connect(gOut).connect(bus);
-  const chord=(r,s,d)=>{for(const iv of[12,19,24])for(const det of[-7,7])osc('sawtooth',mf(r+iv),s,d,.18,gIn,det)};
+  const chord=(r,s,d)=>{for(const iv of[12,19,24])for(const det of(TOUCH?[0]:[-7,7]))osc('sawtooth',mf(r+iv),s,d,TOUCH?.26:.18,gIn,det)};
   for(let k=0;k<28;k++)on(k,()=>chord(R[k>>1],bt(k),B*.92));
   on(28,()=>chord(40,bt(28),B*4.5));
   // the organ hook
@@ -1591,7 +1591,7 @@ function goalSong(at,force){if(!AC||(!force&&!SNDS.songOn()))return;stopSong();
   // the crowd: HEY!
   const hey=s=>{const m=AC.createGain(),f1=AC.createBiquadFilter(),f2=AC.createBiquadFilter(),g=AC.createGain();f1.type='bandpass';f1.frequency.value=620;f1.Q.value=2.5;f2.type='bandpass';f2.frequency.value=1850;f2.Q.value=3;
     m.connect(f1).connect(g);m.connect(f2).connect(g);g.connect(bus);env(g,s,.03,2.6,.34);
-    for(let i=0;i<14;i++){const o=AC.createOscillator(),og=AC.createGain(),f=130+Math.random()*190,st=s+Math.random()*.035;o.type='sawtooth';o.frequency.setValueAtTime(f*1.08,st);o.frequency.exponentialRampToValueAtTime(f*.86,st+.3);og.gain.value=.06;o.connect(og).connect(m);o.start(st);o.stop(s+.4)}
+    for(let i=0;i<(TOUCH?6:14);i++){const o=AC.createOscillator(),og=AC.createGain(),f=130+Math.random()*190,st=s+Math.random()*.035;o.type='sawtooth';o.frequency.setValueAtTime(f*1.08,st);o.frequency.exponentialRampToValueAtTime(f*.86,st+.3);og.gain.value=.06;o.connect(og).connect(m);o.start(st);o.stop(s+.4)}
     nz(s,.22,.12,'bandpass',1300,1)};
   for(const k of[7,15,23,28])on(k,()=>hey(bt(k)));
   const bars=[[],[],[],[],[],[],[],[]],offline=typeof OfflineAudioContext!=='undefined'&&AC instanceof OfflineAudioContext;for(const[b,fn]of ev)bars[Math.min(7,Math.floor(b/4))].push(fn);
@@ -1783,6 +1783,31 @@ html.phone.callup #call{position:fixed;z-index:80;left:calc(10px + env(safe-area
   setInterval(check,250);addEventListener('resize',()=>setTimeout(check,60));
   return{wide:()=>root.classList.contains('phone')&&innerWidth>innerHeight,
     box(){const cs=getComputedStyle(stage);return{w:Math.max(200,Math.floor(stage.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight))),h:Math.max(150,Math.floor(stage.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom)))}}}})();
+/* ---------- crash safety: autosave every 10 seconds (reopen and tap Resume after a crash), and a plain notice if something goes wrong ---------- */
+const SAFE=(()=>{
+  const KEY='save-'+CELESPORT;
+  const live=()=>!G.demo&&G.phase!=='warm'&&G.phase!=='final'&&$('menu').hidden;
+  function snap(){const per=G[SAVECFG.per],s=Math.max(0,Math.ceil(G.clock));
+    const d={v:1,auto:true,clubs:G.clubs.slice(),diff:G.diff,speed:G.speed,fr:!!G.fr,frHome:G.frHome,vals:{},label:`${SAVECFG.perName(per)} · ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} (autosaved)`,at:Date.now()};
+    for(const k of SAVECFG.keys)d.vals[k]=JSON.parse(JSON.stringify(G[k]===undefined?null:G[k]));
+    try{localStorage.setItem(KEY,JSON.stringify(d))}catch(e){}}
+  const dropAuto=()=>{try{const d=JSON.parse(localStorage.getItem(KEY)||'null');if(d&&d.auto)localStorage.removeItem(KEY)}catch(e){}};
+  setInterval(()=>{try{if(live())snap();else if(G.phase==='final'&&!G.demo)dropAuto()}catch(e){}},10000);
+  // quitting on purpose is not a crash, so the autosave goes away
+  $('quit').addEventListener('click',dropAuto,true);
+  // a notice instead of a silent freeze; the game keeps running
+  const note=document.createElement('div');note.id='errnote';note.hidden=true;note.setAttribute('role','status');
+  note.style.cssText='position:fixed;z-index:200;left:50%;top:calc(50px + env(safe-area-inset-top,0px));transform:translateX(-50%);max-width:min(92vw,520px);padding:10px 14px;border-radius:10px;background:#2a1414;border:1px solid #d0293a;color:#fff;font:600 13px/1.35 system-ui,sans-serif;text-align:left';
+  document.body.appendChild(note);note.addEventListener('click',()=>{note.hidden=true});
+  let lastMsg='',lastAt=0,hideT=0;
+  function report(err){const msg=String(err&&err.message||err||'Unknown problem').slice(0,160),now=Date.now();
+    if(msg===lastMsg&&now-lastAt<30000)return;lastMsg=msg;lastAt=now;
+    note.textContent=`The game hit a problem and kept going. If it keeps happening, take a screenshot of this and send it to Claude. (${CELESPORT}: ${msg})`;
+    note.hidden=false;clearTimeout(hideT);hideT=setTimeout(()=>{note.hidden=true},9000)}
+  addEventListener('error',e=>report(e.error||e.message));
+  addEventListener('unhandledrejection',e=>report(e.reason));
+  const ce=console.error.bind(console);console.error=(...a)=>{ce(...a);if(a[0] instanceof Error)report(a[0])};
+  return{snap,report}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'hockey',otPts:1,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b;return[frPois(2.9+d*4),frPois(2.9-d*4)]}};
