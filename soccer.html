@@ -1091,7 +1091,7 @@ function setupCam(){
 function proj(x,y,z){if(VCAM){const d=dirOf(0),X=(y-MY)*d;y=-x*d;x=X}const dy=CAM.yc-y,dz=CAM.zc-(z||0),f=dy*CT+dz*ST,u=dy*ST-dz*CT,k=CAM.focal/f;return{x:CAM.cx+(x-CAM.x)*k,y:CAM.cy-u*k,s:k}}
 function resize(){
   const par=$('fieldbox').parentElement,cs=getComputedStyle(par),ww=par.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight),narrow=innerWidth<=900&&!PHONE.wide(),asp=narrow?1.15:1.7;
-  cw=Math.floor(narrow?ww:Math.min(ww,(innerHeight-(PHONE.wide()?0:120))*asp));ch=Math.floor(cw/asp);
+  cw=Math.floor(narrow?ww:Math.min(ww,(innerHeight-(PHONE.wide()?0:120))*asp));ch=Math.floor(cw/asp);if(PHONE.wide()){const B=PHONE.box();cw=B.w;ch=B.h}
   dpr=Math.min(devicePixelRatio||1,2);cv.width=cw*dpr;cv.height=ch*dpr;cv.style.width=cw+'px';cv.style.height=ch+'px';
   setupCam();
 }
@@ -1752,34 +1752,48 @@ const SNDS=(()=>{const files={},bufs={},srcs={},busy={},touched={},OFF='goal-son
     if((m&&!wasMenu)||!soundOn)stopSong();wasMenu=m;
     if(AC){if(m&&sfxBus.ac!==AC)sfxBus();for(const k of['horn','song'])if(files[k]&&!bufs[k])decode(k)}},500);
   render();return{play,stop,decode,has:k=>!!files[k],songOn}})();
-/* ---------- phone game mode: on a touch screen the game fills the screen and the joystick and buttons sit see-through on top of the play ---------- */
+/* ---------- drawing guard: a shape with a negative size (a player right at or behind the camera) is drawn at zero size instead of stopping the game ---------- */
+(()=>{const P=CanvasRenderingContext2D.prototype;
+  if(!P.ellipse.__safe){const o=P.ellipse;P.ellipse=function(x,y,rx,ry,...a){return o.call(this,x,y,rx>0?rx:0,ry>0?ry:0,...a)};P.ellipse.__safe=1}
+  if(!P.arc.__safe){const o=P.arc;P.arc=function(x,y,r,...a){return o.call(this,x,y,r>0?r:0,...a)};P.arc.__safe=1}})();
+/* ---------- phone game mode: on a touch screen the game fills the screen; held sideways, the joystick and buttons get their own columns at the left and right edges so they never cover the play ---------- */
 const PHONE=(()=>{
-  const stage=$('stage')||$('pitch')||$('fieldbox'),coarse=matchMedia('(pointer: coarse)'),root=document.documentElement;
+  const stage=$('stage')||$('pitch')||$('fieldbox'),coarse=matchMedia('(pointer: coarse)'),root=document.documentElement,S='#'+stage.id;
   const css=document.createElement('style');css.textContent=`
 html.phone,html.phone body{overflow:hidden;height:100%;overscroll-behavior:none}
 html.phone body{touch-action:manipulation}
-html.phone #${stage.id}{position:fixed;inset:0;z-index:40;margin:0;align-self:stretch;justify-self:stretch;width:auto;height:auto;max-width:none;border-radius:0;box-shadow:none;background:#05080e;display:flex;flex-direction:row;align-items:center;justify-content:center;padding:0}
-html.phone #${stage.id} canvas{border-radius:0}
-html.phone.port #${stage.id}{align-items:flex-start;padding-top:calc(44px + env(safe-area-inset-top,0px))}
+html.phone ${S}{position:fixed;inset:0;z-index:40;margin:0;align-self:stretch;justify-self:stretch;width:auto;height:auto;max-width:none;border-radius:0;box-shadow:none;background:#05080e;display:flex;flex-direction:row;align-items:center;justify-content:center;padding:0}
+html.phone ${S} canvas{border-radius:0}
+html.phone:not(.port) ${S}{padding-left:calc(var(--pl,170px) + env(safe-area-inset-left,0px));padding-right:calc(var(--pr,210px) + env(safe-area-inset-right,0px))}
+html.phone.port ${S}{align-items:flex-start;padding-top:calc(44px + env(safe-area-inset-top,0px))}
 html.phone #pad{position:fixed;inset:auto 0 0 0;z-index:60;display:block;pointer-events:none;background:none;border:0;padding:0;margin:0}
 html.phone #pad .joy,html.phone #pad .pbtns,html.phone #pad .nums{pointer-events:auto}
-html.phone #pad .joy{position:fixed;left:calc(16px + env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:132px;height:132px;background:rgba(18,26,38,.38);border-color:rgba(255,255,255,.22)}
-html.phone #pad .knob{background:rgba(255,255,255,.28);border-color:rgba(255,255,255,.55)}
-html.phone #pad .pbtns{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px))}
-html.phone #pad .pbtns button{background:rgba(18,26,38,.45);border-color:rgba(255,255,255,.28);color:#fff}
-html.phone #pad .pbtns #bAct,html.phone #pad .pbtns .act{background:rgba(255,194,61,.72);border-color:rgba(255,194,61,.9);color:#1a1405}
-html.phone #pad .nums{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(10px + env(safe-area-inset-bottom,0px));width:auto;max-width:calc(100% - 360px);display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
-html.phone #pad .nums button{height:32px;min-width:42px;padding:0 8px;font-size:13px;background:rgba(18,26,38,.5);border-color:rgba(255,255,255,.25)}
-html.phone.port #pad .nums{max-width:calc(100% - 24px);bottom:calc(178px + env(safe-area-inset-bottom,0px))}
+html.phone #pad .joy{position:fixed;width:132px;height:132px;background:rgba(18,26,38,.55);border-color:rgba(255,255,255,.25)}
+html.phone #pad .knob{background:rgba(255,255,255,.3);border-color:rgba(255,255,255,.6)}
+html.phone #pad .pbtns{position:fixed}
+html.phone #pad .pbtns button{background:rgba(28,38,54,.9);border-color:rgba(255,255,255,.3);color:#fff}
+html.phone #pad .pbtns #bAct,html.phone #pad .pbtns .act{background:#ffc23d;border-color:#ffc23d;color:#1a1405}
+html.phone #pad .nums{position:fixed;width:auto;display:flex;flex-wrap:wrap;gap:5px;transform:none}
+html.phone #pad .nums button{height:32px;min-width:38px;padding:0 6px;font-size:12px;background:rgba(28,38,54,.9);border-color:rgba(255,255,255,.25)}
+html.phone:not(.port) #pad .joy{left:calc((var(--pl,170px) - 132px)/2 + env(safe-area-inset-left,0px));bottom:calc(34px + env(safe-area-inset-bottom,0px))}
+html.phone:not(.port) #pad .pbtns{right:calc(10px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));max-width:200px}
+html.phone:not(.port) #pad .pbtns button{width:60px;height:60px;font-size:12px}
+html.phone:not(.port) #pad .pbtns #bAct,html.phone:not(.port) #pad .pbtns .act{width:80px;height:80px;font-size:15px}
+html.phone:not(.port) #pad .pbtns .prow{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:200px}
+html.phone:not(.port) #pad .pbtns .rcv{width:34px;height:34px;font-size:13px}
+html.phone:not(.port) #pad .nums{left:auto;right:calc(10px + env(safe-area-inset-right,0px));bottom:calc(var(--pbh,140px) + 28px + env(safe-area-inset-bottom,0px));max-width:calc(var(--pr,210px) - 20px);justify-content:flex-end}
+html.phone.port #pad .joy{left:calc(16px + env(safe-area-inset-left,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+html.phone.port #pad .pbtns{right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+html.phone.port #pad .nums{left:12px;right:12px;justify-content:center;bottom:calc(186px + env(safe-area-inset-bottom,0px))}
 #phonebar{display:none}
-html.phone #phonebar{display:flex;position:fixed;z-index:70;top:calc(6px + env(safe-area-inset-top,0px));left:calc(6px + env(safe-area-inset-left,0px));right:calc(6px + env(safe-area-inset-right,0px));align-items:flex-start;justify-content:space-between;gap:8px;pointer-events:none}
+html.phone #phonebar{display:flex;position:fixed;z-index:70;top:calc(8px + env(safe-area-inset-top,0px));left:calc(8px + env(safe-area-inset-left,0px));right:calc(8px + env(safe-area-inset-right,0px));align-items:flex-start;justify-content:space-between;gap:8px;pointer-events:none}
 #phonebar>*{pointer-events:auto}
-#phonebar button{min-height:34px;min-width:64px;padding:0 8px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(10,14,20,.6);color:#fff;font:700 13px/1 system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase}
+#phonebar button{min-height:34px;min-width:64px;padding:0 8px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(28,38,54,.9);color:#fff;font:700 13px/1 system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase}
 #phonebar .btns{display:flex;flex-direction:column;gap:6px}
 html.phone.port #phonebar .btns{flex-direction:row}
 #phonehint{display:none}
-html.phone.port #phonehint{display:block;position:fixed;z-index:65;left:12px;right:12px;bottom:calc(262px + env(safe-area-inset-bottom,0px));text-align:center;color:#c9d2dc;font:600 14px/1.3 system-ui,sans-serif}
-html.phone.callup #call{position:fixed;z-index:80;left:calc(10px + env(safe-area-inset-left,0px));right:calc(10px + env(safe-area-inset-right,0px));top:calc(48px + env(safe-area-inset-top,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));overflow:auto;margin:0;padding:14px;border-radius:12px;background:rgba(12,16,22,.94);border:1px solid rgba(255,255,255,.2)}
+html.phone.port #phonehint{display:block;position:fixed;z-index:65;left:12px;right:12px;bottom:calc(266px + env(safe-area-inset-bottom,0px));text-align:center;color:#c9d2dc;font:600 14px/1.3 system-ui,sans-serif}
+html.phone.callup #call{position:fixed;z-index:80;left:calc(10px + env(safe-area-inset-left,0px));right:calc(10px + env(safe-area-inset-right,0px));top:calc(48px + env(safe-area-inset-top,0px));bottom:calc(10px + env(safe-area-inset-bottom,0px));overflow:auto;margin:0;padding:14px;border-radius:12px;background:rgba(12,16,22,.96);border:1px solid rgba(255,255,255,.2)}
 `;document.head.appendChild(css);
   const bar=document.createElement('div');bar.id='phonebar';
   bar.innerHTML='<div class="btns"><button type="button" data-p="pause">Pause</button><button type="button" data-p="quit">Quit</button></div><div class="btns"><button type="button" data-p="snd">Sound</button></div>';
@@ -1788,13 +1802,18 @@ html.phone.callup #call{position:fixed;z-index:80;left:calc(10px + env(safe-area
   bar.addEventListener('click',e=>{const b=e.target.closest('button[data-p]');if(!b)return;const t=$(b.dataset.p==='pause'?'pause':b.dataset.p==='quit'?'quit':'sound');if(t)t.click();sync()});
   function sync(){const p=$('pause');if(p)bar.querySelector('[data-p=pause]').textContent=p.textContent||'Pause';
     const s=$('sound');if(s)bar.querySelector('[data-p=snd]').textContent=/off/i.test(s.textContent)?'Sound off':'Sound on'}
-  let was=null,wasPort=null;
+  // the side columns are as wide as the controls in them; the field gets everything in between
+  function columns(){const joy=document.querySelector('#pad .joy'),pb=document.querySelector('#pad .pbtns');if(!joy||!pb)return;
+    root.style.setProperty('--pl',(Math.max(joy.offsetWidth,72)+36)+'px');root.style.setProperty('--pr',(Math.max(pb.offsetWidth,180)+24)+'px');root.style.setProperty('--pbh',pb.offsetHeight+'px')}
+  let was=null,wasPort=null,wasW=0,wasH=0;
   function check(){const on=coarse.matches&&$('menu').hidden&&!$('pad').hidden,port=innerHeight>innerWidth;
-    if(on!==was||port!==wasPort){root.classList.toggle('phone',on);root.classList.toggle('port',on&&port);was=on;wasPort=port;try{resize()}catch(e){}}
+    if(on!==was||port!==wasPort||(on&&(innerWidth!==wasW||innerHeight!==wasH))){root.classList.toggle('phone',on);root.classList.toggle('port',on&&port);
+      was=on;wasPort=port;wasW=innerWidth;wasH=innerHeight;if(on&&!port)columns();try{resize()}catch(e){}}
     root.classList.toggle('callup',on&&typeof G!=='undefined'&&G.phase==='call'&&!!$('call')&&$('call').querySelector('button')!==null&&CELESPORT==='football');
     if(on)sync()}
   setInterval(check,250);addEventListener('resize',()=>setTimeout(check,60));
-  return{wide:()=>root.classList.contains('phone')&&innerWidth>innerHeight}})();
+  return{wide:()=>root.classList.contains('phone')&&innerWidth>innerHeight,
+    box(){const cs=getComputedStyle(stage);return{w:Math.max(200,Math.floor(stage.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight))),h:Math.max(150,Math.floor(stage.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom)))}}}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'soccer',otPts:1,ties:true,pts:true,pk:true,sim:(a,b)=>{const d=a-b;return[frPois(1.5+d*3),frPois(1.5-d*3)]}};
