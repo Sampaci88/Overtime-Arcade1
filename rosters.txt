@@ -13,26 +13,25 @@
 # When you are done, tap "Commit changes". The site updates in a few minutes.
 
 [Hockey]
-Goalie: 78 Somma (80)
-Center 1: 43 Dawso (80)
-Left wing 1: 88 Pacifico (80)
-Right wing 1: 44 Clay (80)
-Left D 1: 11 Luffler (80)
-Right D 1: 61 Cesarz (80)
-Center 2: 47 Frencho (80)
-Left wing 2: 13 Hadden (80)
-Right wing 2: 21 Paul (80)
-Left D 2: 20 Saad (80)
-Right D 2: 50 Davis (80)
-
+Goalie: 78 Somma (88)
+Center 1: 43 Dawso (88)
+Left wing 1: 88 Pacifico (94)
+Right wing 1: 44 Clay (94)
+Left D 1: 11 Luffler (97)
+Right D 1: 61 Cesarz (94
+Center 2: 47 Frencho (86
+Left wing 2: 13 Hadden (89)
+Right wing 2: 21 Paul (95)
+Left D 2: 20 Saad (92)
+Right D 2: 50 Davis (85)
 [Lacrosse]
-Goalie: 77 Max Shearer (80)
-Defense 1: 45 Sam Parker (80)
-Defense 2: 10 Miles Blake (80)
-Defense 3: 86 Sam Pacifico (80)
-Midfield 1: 29 Mason Arnold (80)
-Midfield 2: 71 Charlie Hilbert (80)
-Midfield 3: 61 Bob White (80)
-Attack 1: 72 Grant Bender (80)
-Attack 2: 84 Sam Grilli (80)
-Attack 3: 27 Madden Bobo (80)
+Goalie: 77 Max Shearer (99)
+Defense 1: 45 Sam Parker (92)
+Defense 2: 10 Miles Blake (92
+Defense 3: 86 Sam Pacifico (94)
+Midfield 1: 29 Mason Arnold (94)
+Midfield 2: 71 Charlie Hilbert (89)
+Midfield 3: 61 Bob White (94)
+Attack 1: 72 Grant Bender (87
+Attack 2: 84 Sam Grilli (89)
+Attack 3: 27 Madden Bobo (95)
