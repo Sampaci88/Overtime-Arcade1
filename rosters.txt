@@ -27,7 +27,7 @@ Right D 2: 50 Davis (85)
 [Lacrosse]
 Goalie: 77 Max Shearer (99)
 Defense 1: 45 Sam Parker (92)
-Defense 2: 10 Miles Blake (92
+Defense 2: 10 Miles Blake (92)
 Defense 3: 86 Sam Pacifico (94)
 Midfield 1: 29 Mason Arnold (94)
 Midfield 2: 71 Charlie Hilbert (89)
