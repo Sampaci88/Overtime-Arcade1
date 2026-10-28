@@ -250,8 +250,9 @@ footer .by b{color:var(--cardinal)}
       const h=line.match(/^\[(.+)\]$/);if(h){const t=h[1].trim().toLowerCase();sp=t.startsWith('hock')?'hockey':t.startsWith('lac')?'lacrosse':null;continue}
       const m=line.match(/^([^:]+):\s*(\d{1,2})?\s*(.*)$/);if(!sp||!m)continue;
       const slot=SLOTS[sp].find(([,lab])=>lab.toLowerCase()===m[1].trim().toLowerCase());if(!slot)continue;
-      const name=clean(m[3]);if(!name)continue;
-      const k=slot[0];out[sp][k]={name,num:m[2]!=null?+m[2]:(NUMS[sp][k]!=null?NUMS[sp][k]:0)}}
+      let rest=m[3],rt=null;const rm=rest.match(/\((\d{1,2})\)\s*$/);if(rm){rt=+rm[1];rest=rest.slice(0,rm.index)}
+      const name=clean(rest);if(!name)continue;
+      const k=slot[0];out[sp][k]={name,num:m[2]!=null?+m[2]:(NUMS[sp][k]!=null?NUMS[sp][k]:0)};if(rt>=1&&rt<=99)out[sp][k].r=rt}
     return out}
   function wire(R){for(const sp of Object.keys(SLOTS)){const r=R[sp]||{},a=document.querySelector('a.play[href^="'+sp+'.html"]');
     if(a)a.href=sp+'.html?stc='+encodeURIComponent(JSON.stringify(r));try{localStorage.setItem('stc-roster-'+sp,JSON.stringify(r))}catch(e){}}}

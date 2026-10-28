@@ -262,7 +262,7 @@ function sfx(k){if(!AC||!soundOn||G.demo)return;
 /* ---------- players ---------- */
 function mk(team,role,idx){const a=ATTR[role];return{team,role,idx,num:NUMS[role][idx],x:MX,y:MY,vx:0,vy:0,face:0,spd:a.spd*(.97+Math.random()*.06),acc:a.acc,reach:a.reach,hands:a.hands,
   stun:0,checkCD:0,dodgeT:0,dodgeCD:0,catchCD:0,bodyCD:0,scoopCD:0,cutT:0,cutCD:2+Math.random()*3,aiT:Math.random()*.3,drive:0,holdT:0,hist:[],hold:null}}
-function buildTeams(){P=[];for(const t of [0,1]){const ci=G.clubs[t],nm=roster(ci);let n=0;const g=mk(t,'G',0);g.name=RO.n(ci,'G0',nm[n++]);g.num=RO.u(ci,'G0',g.num);P.push(g);for(const r of ['D','M','A'])for(let i=0;i<3;i++){const p=mk(t,r,i);p.name=RO.n(ci,r+i,nm[n++]);p.num=RO.u(ci,r+i,p.num);P.push(p)}}}
+function buildTeams(){P=[];for(const t of [0,1]){const ci=G.clubs[t],nm=roster(ci);let n=0;const g=mk(t,'G',0);g.name=RO.n(ci,'G0',nm[n++]);g.num=RO.u(ci,'G0',g.num);g.rat=RO.r(ci,'G0');P.push(g);for(const r of ['D','M','A'])for(let i=0;i<3;i++){const p=mk(t,r,i);p.name=RO.n(ci,r+i,nm[n++]);p.num=RO.u(ci,r+i,p.num);p.rat=RO.r(ci,r+i);const k=rk(p.rat);p.spd*=1+.07*k;p.acc*=1+.1*k;p.hands=Math.min(.99,p.hands+.03*k);P.push(p)}}}
 const find=(t,r,i)=>P.find(p=>p.team===t&&p.role===r&&p.idx===i);
 const goalieOf=t=>find(t,'G',0);
 const markOf=p=>p.role==='G'?null:find(1-p.team,p.role==='D'?'A':p.role==='A'?'D':'M',p.idx);
@@ -583,11 +583,11 @@ function tryCatch(){
 function resolveShot(){
   const t=ball.defTeam,g=goalieOf(t),y=ball.y,h=ball.h,gx=ball.goalX,out=gx<MX?-1:1;
   const onFrame=Math.abs(y-MY)<1&&h>.05&&h<2,pipe=!onFrame&&Math.abs(y-MY)<1.13&&h<2.13;
-  const lat=Math.abs(g.y-y),front=Math.abs(g.x-gx)<2.6,reach=.8-((h>1.75||h<.3)?.13:0)+(!G.demo?(t===1?diff().gk:.14)*.3:0);
+  const lat=Math.abs(g.y-y),front=Math.abs(g.x-gx)<2.6,reach=.8-((h>1.75||h<.3)?.13:0)+(!G.demo?(t===1?diff().gk:.14)*.3:0)+rk(g.rat)*.15;
   const shooter=ball.shooter;
   if(onFrame)G.stats.sog[1-t]++;
   if(front&&lat<reach&&g.stun<=0){
-    let p=clamp(1.03-ball.sp*.012+(!G.demo?(t===1?diff().gk:.14)*.6:0),.4,.91);if(!onFrame)p=.98;
+    let p=clamp(1.03-ball.sp*.012+(!G.demo?(t===1?diff().gk:.14)*.6:0)+rk(g.rat)*.06,.4,.94);if(!onFrame)p=.98;
     if(Math.random()<p){
       if(onFrame){G.stats.saves[t]++;logIt(`Save by ${g.name} #${g.num} ${club(t).abbr} on ${shooter.name} #${shooter.num}.`)}
       floatText(g,'Save','#9fe0ff');
@@ -1212,8 +1212,10 @@ $('sound').onclick=()=>{soundOn=!soundOn;$('sound').textContent='Sound: '+(sound
 
 const RCFG={sport:'lacrosse',slots:ci=>{const nm=roster(ci),L={D:'Defense',M:'Midfield',A:'Attack'},out=[{key:'G0',label:'Goalie',name:nm[0],num:NUMS.G[0]}];let n=1;for(const r of ['D','M','A'])for(let i=0;i<3;i++)out.push({key:r+i,label:L[r]+' '+(i+1),name:nm[n++],num:NUMS[r][i]});return out}};
 /* ---------- fixed rosters: St. Charles names come from the home page (the owner edits them there) ---------- */
-const FIXED=(()=>{let d=null;try{const q=new URLSearchParams(location.search).get("stc");if(q)d=JSON.parse(q)}catch(e){}if(!d)try{d=JSON.parse(localStorage.getItem("stc-roster-lacrosse")||"null")}catch(e){}const out={};if(d&&typeof d==="object")for(const k of Object.keys(d)){const v=d[k];if(!/^[A-Z]{1,2}\d?$/.test(k)||!v)continue;const name=String(v.name||"").replace(/[^A-Za-z0-9 .'\-]/g,"").trim().slice(0,24),num=Math.max(0,Math.min(99,parseInt(v.num,10)));if(name)out[k]={name,num:isNaN(num)?0:num}}return Object.keys(out).length?{STC:out}:{}})();
-const RO={n:(ci,k,def)=>{const v=(FIXED[CLUBS[ci].abbr]||{})[k];return v?v.name:def},u:(ci,k,def)=>{const v=(FIXED[CLUBS[ci].abbr]||{})[k];return v?v.num:def},render(){}};
+const FIXED=(()=>{let d=null;try{const q=new URLSearchParams(location.search).get("stc");if(q)d=JSON.parse(q)}catch(e){}if(!d)try{d=JSON.parse(localStorage.getItem("stc-roster-lacrosse")||"null")}catch(e){}const out={};if(d&&typeof d==="object")for(const k of Object.keys(d)){const v=d[k];if(!/^[A-Z]{1,2}\d?$/.test(k)||!v)continue;const name=String(v.name||"").replace(/[^A-Za-z0-9 .'\-]/g,"").trim().slice(0,24),num=Math.max(0,Math.min(99,parseInt(v.num,10)));const rt=parseInt(v.r,10);if(name){out[k]={name,num:isNaN(num)?0:num};if(rt>=1&&rt<=99)out[k].r=rt}}return Object.keys(out).length?{STC:out}:{}})();
+// a player's rating (1 to 99, from the roster file) makes them faster, surer with the stick and, for goalies, better at stopping shots; 75 is average
+const rk=r=>r==null?0:Math.max(-1,Math.min(1,(r-75)/24));
+const RO={r:(ci,k)=>{const v=(FIXED[CLUBS[ci].abbr]||{})[k];return v&&v.r?v.r:null},n:(ci,k,def)=>{const v=(FIXED[CLUBS[ci].abbr]||{})[k];return v?v.name:def},u:(ci,k,def)=>{const v=(FIXED[CLUBS[ci].abbr]||{})[k];return v?v.num:def},render(){}};
 /* ---------- pregame warmups: both teams run drills while the booth previews the game ---------- */
 const WARM_DUR=50,WARM_AT=[1,8,16,25,44];
 function startWarmup(){G.phase='warm';G.warm={t:0,said:0,goals:0,shots:0,ch:-1,noise:.35,hypeT:0,nextRoar:4,shook:0};ctrl=null;WU.setup();WP.setup();ctrl=WP.u;cache.mode=null;if(typeof renderPanel==='function')renderPanel();roar(.6,3);const u=WP.u;if(u)callout('Warmups: you have control',`You're #${u.num} ${u.name} · WASD ${WP.move} · hold Space to ${WP.verb}`,'#ffc23d')}

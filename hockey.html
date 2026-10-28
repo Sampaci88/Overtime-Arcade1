@@ -272,9 +272,10 @@ function mk(team,role){const a=ATTR[akey(role)],b=isSTC(team);return{team,role,a
 function buildTeams(){
   P=[];G.lines=[0,1].map(()=>({cur:0,bench:{}}));
   for(const t of [0,1]){const nm=roster(G.clubs[t]);const g=mk(t,'G');g.name=nm[0];P.push(g);
-    const ci=G.clubs[t];g.name=RO.n(ci,'G',g.name);g.num=RO.u(ci,'G',g.num);
-    SK.forEach((r,i)=>{const p=mk(t,r);p.name=RO.n(ci,r,nm[1+i]);p.num=RO.u(ci,r,p.num);P.push(p);G.lines[t].bench[r]={num:RO.u(ci,r+'2',NUMS[r][1]),stam:1,name:RO.n(ci,r+'2',nm[6+i])}})}
+    const ci=G.clubs[t];g.name=RO.n(ci,'G',g.name);g.num=RO.u(ci,'G',g.num);g.rat=RO.r(ci,'G');
+    SK.forEach((r,i)=>{const p=mk(t,r);p.name=RO.n(ci,r,nm[1+i]);p.num=RO.u(ci,r,p.num);p.rat=RO.r(ci,r);rateApply(p);P.push(p);G.lines[t].bench[r]={num:RO.u(ci,r+'2',NUMS[r][1]),stam:1,name:RO.n(ci,r+'2',nm[6+i]),rat:RO.r(ci,r+'2')}})}
 }
+function rateApply(p){if(!p.base)p.base={spd:p.spd,acc:p.acc,hands:p.hands,shot:p.shot};const k=rk(p.rat),b=p.base;p.spd=b.spd*(1+.07*k);p.acc=b.acc*(1+.1*k);p.hands=Math.min(.98,b.hands+.04*k);p.shot=b.shot*(1+.1*k)}
 const find=(t,r)=>P.find(p=>p.team===t&&p.role===r);
 const goalieOf=t=>find(t,'G');
 function lineChange(t,force){
@@ -282,7 +283,7 @@ function lineChange(t,force){
   const on=P.filter(p=>p.team===t&&p.role!=='G'&&p.active);if(!on.length)return;
   const avg=on.reduce((s,p)=>s+p.stam,0)/on.length;
   if(!force&&avg>.6)return;
-  for(const p of P.filter(p=>p.team===t&&p.role!=='G')){const b=G.lines[t].bench[p.role];const n=b.num,s=b.stam,nm=b.name;b.num=p.num;b.stam=p.stam;b.name=p.name;p.num=n;p.stam=s;p.name=nm}
+  for(const p of P.filter(p=>p.team===t&&p.role!=='G')){const b=G.lines[t].bench[p.role];const n=b.num,s=b.stam,nm=b.name,rt=b.rat;b.num=p.num;b.stam=p.stam;b.name=p.name;b.rat=p.rat;p.num=n;p.stam=s;p.name=nm;p.rat=rt;rateApply(p)}
   G.lines[t].cur=1-G.lines[t].cur;
   if(!G.demo)logIt(`${club(t).abbr} changes lines. Line ${G.lines[t].cur+1} is on.`);
 }
@@ -370,7 +371,7 @@ function shotQuality(c,t,gx,ty,th,sp,ot){
   for(const o of P){if(!o.active||o===c||o.role==='G')continue;const ex=gx-c.x,ey=MY-c.y,L2=ex*ex+ey*ey,k=clamp(((o.x-c.x)*ex+(o.y-c.y)*ey)/L2,0,1);if(k>.55&&hyp(o.x-(c.x+ex*k),o.y-(c.y+ey*k))<1.8){q-=.1;break}}
   if(Math.abs(ty-MY)>2.3)q-=.06;if(th>2.7)q-=.04;if(sp>110)q-=.03;
   if(!G.demo&&t===0)q+=diff().gk-.09;
-  if(isSTC(1-t))q+=.1;if(isSTC(t))q-=.06;
+  if(isSTC(1-t))q+=.1;if(isSTC(t))q-=.06;{const gk=goalieOf(1-t);if(gk)q+=rk(gk.rat)*.06}
   return clamp(q,.25,isSTC(1-t)?.95:.9)}
 function accMul(c){return !G.demo&&c.team===1?diff().acc:1}
 function pass(c,to,power){
@@ -610,7 +611,7 @@ function goalLine(gx,out){
   const defT=ownGX(0)===gx?0:1,inMouth=Math.abs(puck.y-MY)<NHW-.25&&puck.h<4;
   if(inMouth){
     const g=goalieOf(defT),sh=puck.shot,lat=Math.abs(g.y-puck.y),front=Math.abs(g.x-gx)<5&&g.active;
-    const reach=(puck.h>2.6||puck.h<.6?1.9:2.3)+(!G.demo&&defT===1?diff().gk*.6:0)+(isSTC(defT)?.4:0);
+    const reach=(puck.h>2.6||puck.h<.6?1.9:2.3)+(!G.demo&&defT===1?diff().gk*.6:0)+(isSTC(defT)?.4:0)+rk(g.rat)*.25;
     if(front&&g.stun<=0&&lat<reach){
       let p=sh?clamp((sh.q!=null?sh.q:.85)-(hyp(g.vx,g.vy)>9?.08:0),.25,.97):.95;
       if(Math.random()<p){save(g,gx,out);return true}
@@ -1366,8 +1367,10 @@ $('sound').onclick=()=>{soundOn=!soundOn;$('sound').textContent='Sound: '+(sound
 
 const RCFG={sport:'hockey',slots:ci=>{const nm=roster(ci),L={C:'Center',LW:'Left wing',RW:'Right wing',LD:'Left D',RD:'Right D'};return[{key:'G',label:'Goalie',name:nm[0],num:31},...SK.map((r,i)=>({key:r,label:L[r]+' (line 1)',name:nm[1+i],num:NUMS[r][0]})),...SK.map((r,i)=>({key:r+'2',label:L[r]+' (line 2)',name:nm[6+i],num:NUMS[r][1]}))]}};
 /* ---------- fixed rosters: St. Charles names come from the home page (the owner edits them there) ---------- */
-const FIXED=(()=>{let d=null;try{const q=new URLSearchParams(location.search).get("stc");if(q)d=JSON.parse(q)}catch(e){}if(!d)try{d=JSON.parse(localStorage.getItem("stc-roster-hockey")||"null")}catch(e){}const out={};if(d&&typeof d==="object")for(const k of Object.keys(d)){const v=d[k];if(!/^[A-Z]{1,2}\d?$/.test(k)||!v)continue;const name=String(v.name||"").replace(/[^A-Za-z0-9 .'\-]/g,"").trim().slice(0,24),num=Math.max(0,Math.min(99,parseInt(v.num,10)));if(name)out[k]={name,num:isNaN(num)?0:num}}return Object.keys(out).length?{STC:out}:{}})();
-const RO={n:(ci,k,def)=>{const v=(FIXED[CLUBS[ci].abbr]||{})[k];return v?v.name:def},u:(ci,k,def)=>{const v=(FIXED[CLUBS[ci].abbr]||{})[k];return v?v.num:def},render(){}};
+const FIXED=(()=>{let d=null;try{const q=new URLSearchParams(location.search).get("stc");if(q)d=JSON.parse(q)}catch(e){}if(!d)try{d=JSON.parse(localStorage.getItem("stc-roster-hockey")||"null")}catch(e){}const out={};if(d&&typeof d==="object")for(const k of Object.keys(d)){const v=d[k];if(!/^[A-Z]{1,2}\d?$/.test(k)||!v)continue;const name=String(v.name||"").replace(/[^A-Za-z0-9 .'\-]/g,"").trim().slice(0,24),num=Math.max(0,Math.min(99,parseInt(v.num,10)));const rt=parseInt(v.r,10);if(name){out[k]={name,num:isNaN(num)?0:num};if(rt>=1&&rt<=99)out[k].r=rt}}return Object.keys(out).length?{STC:out}:{}})();
+// a player's rating (1 to 99, from the roster file) makes them faster, surer with the stick and, for goalies, better at stopping shots; 75 is average
+const rk=r=>r==null?0:Math.max(-1,Math.min(1,(r-75)/24));
+const RO={r:(ci,k)=>{const v=(FIXED[CLUBS[ci].abbr]||{})[k];return v&&v.r?v.r:null},n:(ci,k,def)=>{const v=(FIXED[CLUBS[ci].abbr]||{})[k];return v?v.name:def},u:(ci,k,def)=>{const v=(FIXED[CLUBS[ci].abbr]||{})[k];return v?v.num:def},render(){}};
 /* ---------- pregame warmups: both teams run drills while the booth previews the game ---------- */
 const WARM_DUR=50,WARM_AT=[1,8,16,25,44];
 function startWarmup(){G.phase='warm';G.warm={t:0,said:0,goals:0,shots:0,ch:-1,noise:.35,hypeT:0,nextRoar:4,shook:0};ctrl=null;WU.setup();WP.setup();ctrl=WP.u;cache.mode=null;if(typeof renderPanel==='function')renderPanel();roar(.6,3);const u=WP.u;if(u)callout('Warmups: you have control',`You're #${u.num} ${u.name} · WASD ${WP.move} · hold Space to ${WP.verb}`,'#ffc23d')}

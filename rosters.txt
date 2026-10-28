@@ -1,32 +1,38 @@
 # St. Charles rosters for Overtime Arcade
 #
-# Each line is:  Position: number name
-# To change a player, change the number or name after the colon.
+# Each line is:  Position: number name (rating)
+# Example:  Goalie: 78 Somma (90)
+#
+# The rating goes from 1 to 99. 75 is average. Higher makes that player better:
+#   skaters and runners get faster, quicker and surer with the puck or stick,
+#   goalies stop more shots and reach farther. No rating = 75.
+#
+# To change a player, change the number, name or rating after the colon.
 # To take a player out, delete everything after the colon. The game puts a made-up name there.
 # Lines that start with # are notes and are ignored.
 # When you are done, tap "Commit changes". The site updates in a few minutes.
 
 [Hockey]
-Goalie: 78 Somma
-Center 1: 43 Dawso
-Left wing 1: 88 Pacifico
-Right wing 1: 44 Clay
-Left D 1: 11 Luffler
-Right D 1: 61 Cesarz
-Center 2: 47 Frencho
-Left wing 2: 13 Hadden
-Right wing 2: 21 Paul
-Left D 2: 20 Saad
-Right D 2: 50 Davis
+Goalie: 78 Somma (80)
+Center 1: 43 Dawso (80)
+Left wing 1: 88 Pacifico (80)
+Right wing 1: 44 Clay (80)
+Left D 1: 11 Luffler (80)
+Right D 1: 61 Cesarz (80)
+Center 2: 47 Frencho (80)
+Left wing 2: 13 Hadden (80)
+Right wing 2: 21 Paul (80)
+Left D 2: 20 Saad (80)
+Right D 2: 50 Davis (80)
 
 [Lacrosse]
-Goalie: 77 Max Shearer
-Defense 1: 45 Sam Parker
-Defense 2: 10 Miles Blake
-Defense 3: 86 Sam Pacifico
-Midfield 1: 29 Mason Arnold
-Midfield 2: 71 Charlie Hilbert
-Midfield 3: 61 Bob White
-Attack 1: 72 Grant Bender
-Attack 2: 84 Sam Grilli
-Attack 3: 27 Madden Bobo
+Goalie: 77 Max Shearer (80)
+Defense 1: 45 Sam Parker (80)
+Defense 2: 10 Miles Blake (80)
+Defense 3: 86 Sam Pacifico (80)
+Midfield 1: 29 Mason Arnold (80)
+Midfield 2: 71 Charlie Hilbert (80)
+Midfield 3: 61 Bob White (80)
+Attack 1: 72 Grant Bender (80)
+Attack 2: 84 Sam Grilli (80)
+Attack 3: 27 Madden Bobo (80)
