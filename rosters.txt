@@ -24,9 +24,9 @@ Goalie: 77 Max Shearer
 Defense 1: 45 Sam Parker
 Defense 2: 10 Miles Blake
 Defense 3: 86 Sam Pacifico
-Midfield 1: 61 Bob White
+Midfield 1: 29 Mason Arnold
 Midfield 2: 71 Charlie Hilbert
-Midfield 3: 74 Ellis Obravac
+Midfield 3: 61 Bob White
 Attack 1: 72 Grant Bender
 Attack 2: 84 Sam Grilli
 Attack 3: 27 Madden Bobo
