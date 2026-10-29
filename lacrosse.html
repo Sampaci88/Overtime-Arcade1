@@ -274,7 +274,7 @@ function floatText(p,text,col){fx.push({x:p.x,y:p.y,text,t:0,col:col||'#ffffff'}
 
 /* ---------- movement ---------- */
 function accelTo(p,dvx,dvy,dt,acc){let ax=dvx-p.vx,ay=dvy-p.vy;const m=hyp(ax,ay);if(dvx*p.vx+dvy*p.vy<0||hyp(dvx,dvy)<hyp(p.vx,p.vy)-.3)acc*=1.7;const lim=acc*dt;if(m>lim){ax*=lim/m;ay*=lim/m}p.vx+=ax;p.vy+=ay}
-function maxSpd(p){let s=p.spd;if(p.stun>0)s*=.3;if(p.dodgeT>0)s*=1.15;if(p===ctrl&&charging)s*=chargeKind==='shot'?.8:.9;if(ball.owner===p)s*=.95;return s}
+function maxSpd(p){let s=p.spd;if(p.downT>.5)return 0;if(p.stun>0)s*=.3;if(p.dodgeT>0)s*=1.15;if(p===ctrl&&charging)s*=chargeKind==='shot'?.8:.9;if(ball.owner===p)s*=.95;return s}
 function seek(p,tx,ty,dt,mul=1,arr=1.2){const dx=tx-p.x,dy=ty-p.y,d=hyp(dx,dy),sp=maxSpd(p)*mul*Math.min(1,d/arr);accelTo(p,d>.05?dx/d*sp:0,d>.05?dy/d*sp:0,dt,p.acc)}
 function histOf(p,lag){const h=p.hist,t=GT-lag;for(let i=h.length-1;i>=0;i--)if(h[i].t<=t)return h[i];return h[0]||p}
 function inputVec(){let ix=(K.right-K.left)+joy.x,iy=(K.down-K.up)+joy.y;if(VCAM){const d=dirOf(0),wx=-iy*d;iy=ix*d;ix=wx}const m=hyp(ix,iy);if(m>1){ix/=m;iy/=m}return{x:ix,y:iy,m:Math.min(1,m)}}
@@ -411,11 +411,22 @@ function dislodge(c,how){
   c.catchCD=.5;floatText(c,how==='body'?'Laid out':'Checked loose','#ff7a1a');sfx(how==='body'?'hit':'check');
   logIt(`${c.name} #${c.num} ${club(c.team).abbr} ${how==='body'?'knocked off the ball by a body check':'checked loose'}. Ground ball.`);
 }
+// a body check puts the man on the ground for two to three seconds (longer the harder the hit), which leaves his team a man short
 function bodyHit(o,c){
   if(o.bodyCD>0)return;o.bodyCD=1.5;
-  const dx=c.x-o.x,dy=c.y-o.y,d=hyp(dx,dy)||1;c.stun=.8;c.vx+=dx/d*4;c.vy+=dy/d*4;o.vx*=.5;o.vy*=.5;
-  if(ball.owner===c&&Math.random()<.5)dislodge(c,'body');else{sfx('hit');floatText(c,'Hit','#ff7a1a')}
+  const dx=c.x-o.x,dy=c.y-o.y,d=hyp(dx,dy)||1,sp=hyp(o.vx,o.vy),down=clamp(1.9+sp*.12+Math.random()*.4,2,3.2);
+  c.stun=down;c.downT=down;c.vx+=dx/d*5.5;c.vy+=dy/d*5.5;o.vx*=.5;o.vy*=.5;roar(.35,1.6);
+  if(ball.owner===c)dislodge(c,'body');else{sfx('hit');floatText(c,'Down!','#ff7a1a')}
+  if(!G.demo)say(pick([`${o.name} lays out ${c.name}!`,`Big hit by ${o.name}! ${c.name} is down!`,`${c.name} gets flattened by ${o.name}!`]),2);
+  // if you were the one knocked down, you take over the nearest teammate who can still play
+  if(c===ctrl){let best=null,bd=1e9;for(const p of P)if(p.team===c.team&&p!==c&&p.role!=='G'&&!(p.stun>0)){const q=dist(p,ball);if(q<bd){bd=q;best=p}}if(best){ctrl=best;switchLock=1}}
+  G.odd={team:o.team,until:GT+down,said:false,down:c};
 }
+// while the man is down, the other team pushing the ball up the field is an odd-man rush
+function oddCheck(){const o=G.odd;if(!o||o.said)return;if(GT>o.until){G.odd=null;return}
+  const c=ball.owner;if(!c||c.team!==o.team||c.role==='G')return;const dir=dirOf(o.team);
+  if((c.x-MX)*dir>-8&&hyp(c.vx,c.vy)>4){o.said=true;callout('Odd-man rush!',`${club(o.team).abbr} up a man while ${o.down.name} is down`,'#ff9f1a');
+    say(pick([`${club(o.team).name} have a man advantage! Odd-man rush!`,`${o.down.name} is still down and ${club(o.team).abbr} are pushing!`]),2)}}
 
 /* ---------- AI ---------- */
 function offTarget(p){
@@ -668,7 +679,8 @@ function checkViolations(dt){
 
 /* ---------- game flow ---------- */
 function setupFaceoff(){
-  for(const p of P){p.vx=p.vy=0;p.stun=0;p.cutT=0;p.drive=0;p.hist=[];p.hold=null;p.dodgeT=0;p.catchCD=0}
+  G.odd=null;
+  for(const p of P){p.vx=p.vy=0;p.stun=0;p.downT=0;p.cutT=0;p.drive=0;p.hist=[];p.hold=null;p.dodgeT=0;p.catchCD=0}
   for(const t of [0,1]){
     const dir=dirOf(t),own=ownGoal(t),atk=atkGoal(t),ys=[18,30,42];
     const g=goalieOf(t);g.x=own+dir*.9;g.y=MY;
@@ -891,6 +903,7 @@ function electric(l,secs){try{
 
 /* ---------- main step ---------- */
 function step(dt,rdt){
+  if(G.phase==='live')oddCheck();
   for(const f of fx)f.t+=rdt;fx=fx.filter(f=>f.t<1.8);
   if(G.callout)G.callout.t+=rdt;
   if(G.comm)G.comm.t+=rdt;
@@ -911,7 +924,7 @@ function step(dt,rdt){
   if(charging){if(ball.owner!==ctrl)charging=false;else charge=Math.min(1,charge+rdt*1.25)}
   updateCtrl(dt);if(ctrl&&ctrl.lungeT>0)lungeStep(dt);updateHolds(0);updateHolds(1);computeSlider(0);computeSlider(1);computeChasers();
   for(const p of P){
-    for(const k of ['stun','checkCD','dodgeT','dodgeCD','catchCD','bodyCD','scoopCD','trickT','fakeCD','fakeT','biteT'])if(p[k]>0)p[k]-=dt;
+    for(const k of ['stun','checkCD','dodgeT','dodgeCD','catchCD','bodyCD','scoopCD','trickT','fakeCD','fakeT','biteT','downT'])if(p[k]>0)p[k]-=dt;
     if(p===ball.owner){if(p===ctrl){userMove(p,dt);if(p.role==='G'){p.holdT+=dt;if(p.holdT>3.5){const b=bestPass(p);if(b)pass(p,b.p)}}}else carrierAI(p,dt)}
     else if(p===ctrl&&p.lungeT>0&&p.lungeTo&&inputVec().m<=.12){seek(p,p.lungeTo.x+p.lungeTo.vx*.2,p.lungeTo.y+p.lungeTo.vy*.2,dt,1.3,.2);faceBall(p,dt)}
     else if(p===ctrl){if(inputVec().m<=.12&&ball.state==='air'&&ball.kind==='pass'&&ball.intended===p){meetBall(p,dt)}else{userMove(p,dt);if(inputVec().m<=.12)faceBall(p,dt)}}
@@ -1151,7 +1164,7 @@ function renderInfo(){
   else if(m==='fo')h=`<h3>Faceoff</h3><p>Press Space (or Shoot) the instant the whistle goes. Too early is a violation and the other team gets the ball.</p>`;
   else if(m==='off')h=`<h3>Your ball</h3><p>Work it around. A long pole's check reaches twice as far as a short stick's.</p><div class="keys"><span><kbd>WASD</kbd> run</span><span><kbd>Space</kbd> shoot: tap to place it, hold longer to shoot harder</span><span><kbd>1</kbd>–<kbd>9</kbd> pass to the number over a teammate's head (<kbd>0</kbd> goalie): tap for a soft pass, hold for a hard one</span><span>Click a number or a teammate to pass, hold the click to pass harder</span><span><kbd>E</kbd> pass to the man you're running toward (or the best open man)</span><span><kbd>Q</kbd> dodge</span><span><kbd>F</kbd> fake shot: the goalie and a close defender may bite</span><span><b>Trick shots:</b> shoot right after a dodge for a behind-the-back, sprint across the front of the crease and shoot for a dive, shoot from right behind the cage for an Air Gait</span></div>`;
   else if(m==='gk')h=`<h3>Clear it</h3><p>Your goalie has the ball. Hold E, a number key, or click a teammate to outlet it. He'll throw it himself after 3.5 seconds.</p>`;
-  else if(m==='def')h=`<h3>Defense</h3><p>Stay between your man and the cage. Run at the ball carrier to check.</p><div class="keys"><span><kbd>Space</kbd> tap for a stick check, hold for a body check. From a few yards out you lunge at him first</span><span><kbd>E</kbd> body check</span><span><kbd>Q</kbd> switch player</span></div>`;
+  else if(m==='def')h=`<h3>Defense</h3><p>Stay between your man and the cage. Run at the ball carrier to check. A body check puts him on the ground for a few seconds, so push the ball for an odd-man rush.</p><div class="keys"><span><kbd>Space</kbd> tap for a stick check, hold for a body check. From a few yards out you lunge at him first</span><span><kbd>E</kbd> body check</span><span><kbd>Q</kbd> switch player</span></div>`;
   else h=`<h3>Ground ball</h3><p>Run through it to scoop. The nearest player is yours automatically.</p><div class="keys"><span><kbd>Space</kbd> body check an opponent going for the ball</span><span><kbd>Q</kbd> switch player</span><span><kbd>E</kbd> body check</span></div>`;
   $('info').innerHTML=h;
   $('bAct').textContent=m==='fo'?'Clamp':m==='off'?'Shoot':m==='gk'?'Pass':'Check';
