@@ -306,7 +306,8 @@ function buildTeams(){
   P=[];
   for(const t of [0,1]){const r=seeded(G.clubs[t]*7919+101),used=new Set(),names=new Set();
     for(const role of ROLES){const p=mk(t,role,r,used);while(names.has(p.name))p.name=SURN[Math.floor(r()*SURN.length)];names.add(p.name);
-      const ci=G.clubs[t],full=RO.n(ci,role,null);if(full){const w=full.split(/\s+/);p.name=w.pop();p.first=w.join(' ')||p.first}p.num=RO.u(ci,role,p.num);P.push(p)}}
+      const ci=G.clubs[t],full=RO.n(ci,role,null);if(full){const w=full.split(/\s+/);p.name=w.pop();p.first=w.join(' ')||p.first}p.num=RO.u(ci,role,p.num);
+      if(CLUBS[ci].abbr==='STC'){p.spd*=1.05;for(const k of ['r3','mid','ins','ft','hand','stl','blk','reb'])p[k]=Math.min(.97,p[k]+.06)}P.push(p)}}
   for(const p of P)p.man=find(1-p.team,p.role);
 }
 const tag=p=>`#${p.num} ${p.name}`;
@@ -2000,7 +2001,7 @@ ping=function(low){if(!AC||!soundOn||G.demo)return;try{
 }catch(e){}};
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
-const FRCFG={sport:'basketball',otPts:2,sim:(a,b)=>{const d=a-b,m=7*G.qlen,s=x=>Math.max(4,Math.round(m*(1+x*.5)+gauss()*m*.11));return[s(d),s(-d)]}};
+const FRCFG={sport:'basketball',otPts:2,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b,m=7*G.qlen,s=x=>Math.max(4,Math.round(m*(1+x*.5)+gauss()*m*.11));return[s(d),s(-d)]}};
 const startGame=$('start').onclick;$('start').onclick=()=>{G.fr=false;startGame()};
 /* ---------- franchise mode: the CCL. 4 schools, 6 conference games (each opponent twice, home and away), all 4 make single-game playoffs, the regular-season champion is the 1 seed ---------- */
 const FR=(()=>{

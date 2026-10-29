@@ -228,7 +228,7 @@ const CLUBS=[
 const SURN=['Abernathy','Boone','Calloway','Dupree','Ellison','Fontenot','Garrison','Hairston','Ingram','Jamison','Kinlaw','Lockett','Mabry','Nwosu','Oakes','Pruitt','Quarles','Rountree','Sherrod','Tatum','Upshaw','Varner','Whitaker','Yarbrough','Ziegler','Ashby','Benning','Crowder','Dearing','Easley','Fairley','Gaskins','Holt','Iverson','Jeffcoat','Kemp','Ledbetter','McCray','Nix','Overton','Pettway','Redd','Stallworth','Toler','Vick','Weems','Bledsoe','Cornett','Dorsey','Flowers','Goins','Hatcher','Lusk','Mims','Nettles','Prather','Revis','Spruill','Tidwell','Wofford'];
 const ROLES22=['C','LG','RG','LT','RT','TE','QB','RB','X','Z','SL','DE_L','DT_L','DT_R','DE_R','WLB','MLB','SLB','CB_L','CB_R','FS','SS'];
 function seeded(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
-const RATE=CLUBS.map((c,ci)=>{const r=seeded(ci*389+7),off=Math.round(74+r()*18),def=Math.round(74+r()*18);return{off,def,ovr:Math.round((off+def)/2)}});
+const RATE=CLUBS.map((c,ci)=>{const r=seeded(ci*389+7),off=Math.round(74+r()*18),def=Math.round(74+r()*18);return c.abbr==='STC'?{off:95,def:95,ovr:95}:{off,def,ovr:Math.round((off+def)/2)}});
 const ROSTER=CLUBS.map((c,ci)=>{const r=seeded(ci*733+11),pool=[...SURN],o={};for(const role of ROLES22)o[role]=pool.splice(Math.floor(r()*pool.length),1)[0];return o});
 
 const DIFFS=[

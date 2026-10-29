@@ -265,7 +265,7 @@ function sfx(k){if(!AC||!soundOn||G.demo)return;
 /* ---------- players ---------- */
 function mk(team,role,idx){const a=ATTR[role];return{team,role,idx,num:NUMS[role][idx],x:MX,y:MY,vx:0,vy:0,face:0,spd:a.spd*(.97+Math.random()*.06),acc:a.acc,reach:a.reach,hands:a.hands,
   stun:0,checkCD:0,dodgeT:0,dodgeCD:0,catchCD:0,bodyCD:0,scoopCD:0,cutT:0,cutCD:2+Math.random()*3,aiT:Math.random()*.3,drive:0,holdT:0,hist:[],hold:null}}
-function buildTeams(){P=[];for(const t of [0,1]){const ci=G.clubs[t],nm=roster(ci);let n=0;const g=mk(t,'G',0);g.name=RO.n(ci,'G0',nm[n++]);g.num=RO.u(ci,'G0',g.num);g.rat=RO.r(ci,'G0');{const k=rk(g.rat);if(k>0){g.spd*=1+.15*k;g.acc*=1+.3*k}}P.push(g);for(const r of ['D','M','A'])for(let i=0;i<3;i++){const p=mk(t,r,i);p.name=RO.n(ci,r+i,nm[n++]);p.num=RO.u(ci,r+i,p.num);p.rat=RO.r(ci,r+i);const k=rk(p.rat);p.spd*=1+.07*k;p.acc*=1+.1*k;p.hands=Math.min(.99,p.hands+.03*k);P.push(p)}}}
+function buildTeams(){P=[];for(const t of [0,1]){const ci=G.clubs[t],nm=roster(ci);let n=0;const g=mk(t,'G',0);g.name=RO.n(ci,'G0',nm[n++]);g.num=RO.u(ci,'G0',g.num);g.rat=RO.r(ci,'G0');{const k=rk(g.rat);if(k>0){g.spd*=1+.15*k;g.acc*=1+.3*k}}P.push(g);for(const r of ['D','M','A'])for(let i=0;i<3;i++){const p=mk(t,r,i);p.name=RO.n(ci,r+i,nm[n++]);p.num=RO.u(ci,r+i,p.num);p.rat=RO.r(ci,r+i);const k=rk(p.rat);if(CLUBS[ci].abbr==='STC'){p.spd*=1.06;p.acc*=1.08;p.hands=Math.min(.99,p.hands+.03)}p.spd*=1+.07*k;p.acc*=1+.1*k;p.hands=Math.min(.99,p.hands+.03*k);P.push(p)}}}
 const find=(t,r,i)=>P.find(p=>p.team===t&&p.role===r&&p.idx===i);
 const goalieOf=t=>find(t,'G',0);
 const markOf=p=>p.role==='G'?null:find(1-p.team,p.role==='D'?'A':p.role==='A'?'D':'M',p.idx);
@@ -1767,7 +1767,7 @@ ping=function(low){if(!AC||!soundOn||G.demo)return;try{
 }catch(e){}};
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
-const FRCFG={sport:'lacrosse',otPts:1,sim:(a,b)=>{const d=a-b;return[frPois(9+d*10),frPois(9-d*10)]}};
+const FRCFG={sport:'lacrosse',otPts:1,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b;return[frPois(9+d*10),frPois(9-d*10)]}};
 const startGame=$('start').onclick;$('start').onclick=()=>{G.fr=false;startGame()};
 /* ---------- franchise mode: the CCL. 4 schools, 6 conference games (each opponent twice, home and away), all 4 make single-game playoffs, the regular-season champion is the 1 seed ---------- */
 const FR=(()=>{

@@ -277,7 +277,7 @@ function sfx(k){if(!AC||!soundOn||G.demo)return;
 /* ---------- players ---------- */
 function mk(team,role,idx){const a=ATTR[role];return{team,role,idx,num:NUMS[role][idx],x:MX,y:MY,vx:0,vy:0,face:0,spd:a.spd*(.97+Math.random()*.06),acc:a.acc,reach:a.reach,ctl:a.ctl,
   stun:0,tackleCD:0,dodgeT:0,dodgeCD:0,touchCD:0,slideT:0,downT:0,kickT:0,saveT:0,pressT:0,cutT:0,cutCD:2+Math.random()*3,aiT:Math.random()*.3,holdT:0,hist:[],yc:0}}
-function buildTeams(){P=[];for(const t of [0,1]){const ci=G.clubs[t],nm=roster(ci);let n=0;for(const[r,c]of ROLES)for(let i=0;i<c;i++){const p=mk(t,r,i);p.name=RO.n(ci,r+i,nm[n++]);p.num=RO.u(ci,r+i,p.num);P.push(p)}}}
+function buildTeams(){P=[];for(const t of [0,1]){const ci=G.clubs[t],nm=roster(ci);let n=0;for(const[r,c]of ROLES)for(let i=0;i<c;i++){const p=mk(t,r,i);p.name=RO.n(ci,r+i,nm[n++]);p.num=RO.u(ci,r+i,p.num);if(CLUBS[ci].abbr==='STC'){p.spd*=1.06;p.acc*=1.08;p.ctl=Math.min(.98,p.ctl+.04);if(r==='G')p.reach*=1.12}P.push(p)}}}
 const find=(t,r,i)=>P.find(p=>p.team===t&&p.role===r&&p.idx===i);
 const goalieOf=t=>find(t,'G',0);
 function newBall(){return{state:'dead',owner:null,x:MX,y:MY,h:.12,vx:0,vy:0,vz:0,kind:'',from:null,to:null,t:0,T:1,peak:0,h0:.12,h1:.12,intended:null,shooter:null,lastTeam:null,last:null,held:false,cross:false,offside:false,checked:new Set()}}
@@ -1916,7 +1916,7 @@ ping=function(low){if(!AC||!soundOn||G.demo)return;try{
 }catch(e){}};
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
-const FRCFG={sport:'soccer',otPts:1,ties:true,pts:true,pk:true,sim:(a,b)=>{const d=a-b;return[frPois(1.5+d*3),frPois(1.5-d*3)]}};
+const FRCFG={sport:'soccer',otPts:1,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,ties:true,pts:true,pk:true,sim:(a,b)=>{const d=a-b;return[frPois(1.5+d*3),frPois(1.5-d*3)]}};
 const startGame=$('start').onclick;$('start').onclick=()=>{G.fr=false;startGame()};
 /* ---------- franchise mode: the CCL. 4 schools, 6 conference games (each opponent twice, home and away), all 4 make single-game playoffs, the regular-season champion is the 1 seed ---------- */
 const FR=(()=>{
