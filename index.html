@@ -103,6 +103,7 @@ footer .by{font:800 20px/1.2 var(--display);letter-spacing:.06em;text-transform:
 footer .by b{color:var(--cardinal)}
 @media (prefers-reduced-motion:no-preference){.play{transition:filter .15s}}
 .apps{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}.apps div{display:grid;gap:6px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}.apps strong{font:700 16px/1.3 var(--body)}.apps span{color:var(--muted);font-size:14px}
+#support{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}#support p{margin:0;color:var(--muted);max-width:52ch}#support a{display:inline-flex;align-items:center;min-height:46px;padding:0 18px;border-radius:10px;background:var(--led);color:#1a1405;font:900 20px/1 var(--display);letter-spacing:.05em;text-transform:uppercase;text-decoration:none}#support a:focus-visible{outline:3px solid var(--fg);outline-offset:3px}#adslot{min-height:90px}
 </style>
 
 <div class="wrap">
@@ -129,6 +130,8 @@ footer .by b{color:var(--cardinal)}
     </ol>
   </section>
 
+  <div id="adslot" hidden></div>
+
   <section aria-labelledby="games-h">
   <h2 class="section" id="games-h">Pick a sport</h2>
   <main class="grid">
@@ -145,6 +148,7 @@ footer .by b{color:var(--cardinal)}
           <li><kbd>Space</kbd><span>Shoot, hold for a slap shot. On defense, hold to body check, double-tap to switch player</span></li>
           <li><kbd>1–5</kbd><span>Pass to that teammate, hold for a hard pass</span></li>
           <li><kbd>E / Q</kbd><span>Pass or poke check / deke or switch player</span></li>
+          <li><kbd>Tricks</kbd><span>Shoot right after a deke to go between the legs</span></li>
         </ul></div>
       </div>
     </article>
@@ -197,7 +201,7 @@ footer .by b{color:var(--cardinal)}
           <li><kbd>WASD</kbd><span>Move</span></li>
           <li><kbd>Space</kbd><span>Shoot, let go at the top of the meter. On defense, tap to steal, hold to block</span></li>
           <li><kbd>1–5</kbd><span>Pass to that teammate, hold for a bullet pass</span></li>
-          <li><kbd>E / Q</kbd><span>Pass or steal / crossover or switch player</span></li>
+          <li><kbd>E / Q</kbd><span>Pass or steal / crossover or switch player. A crossover right in front of a defender can break his ankles</span></li>
         </ul></div>
       </div>
     </article>
@@ -215,6 +219,7 @@ footer .by b{color:var(--cardinal)}
           <li><kbd>Space</kbd><span>Shoot, hold for power. On defense, tap to tackle, hold to slide tackle</span></li>
           <li><kbd>1–9, 0</kbd><span>Pass to that teammate, hold for a driven ball</span></li>
           <li><kbd>E / Q</kbd><span>Pass or press / skill move or switch player</span></li>
+          <li><kbd>Tricks</kbd><span>Hold Shoot as a cross comes into the box for a bicycle kick</span></li>
         </ul></div>
       </div>
     </article>
@@ -231,6 +236,11 @@ footer .by b{color:var(--cardinal)}
     </div>
   </section>
 
+  <section id="support" hidden aria-label="Support the creator">
+    <p><strong>Like the game?</strong> Overtime Arcade is free. A tip helps Sam keep adding to it.</p>
+    <a id="supportlink" href="#" target="_blank" rel="noopener noreferrer">Support the creator</a>
+  </section>
+
   <section id="getapp" aria-labelledby="app-h">
     <h2 class="section" id="app-h">Get the app</h2>
     <div class="apps">
@@ -240,7 +250,7 @@ footer .by b{color:var(--cardinal)}
     </div>
   </section>
 
-  <footer><span class="by">Made by <b>Sam Pacifico</b></span><span>Best on a computer with a keyboard. On a phone, each game shows an on-screen joystick and buttons. Turn the sound on in a game to hear the commentary and the crowd.</span><span><b>Version 25</b> · hockey and lacrosse: superstar players (★ Sniper, Brick Wall, Engine, Enforcer), a players-to-watch preview, individual player stats and Player of the Game, a stronger St. Charles in every sport, franchise settings (number of games, difficulty, game length), a realistic post ping, much louder crowds and goal horn, bigger stands, longer cheering, lacrosse body checks knock players down for a few seconds (odd-man rushes), fake shot (F, or Fake on a phone) and trick shots (behind the back, dive, Air Gait), better goalies, player ratings you set in the roster file, much lighter sound so phones stay steady, plus an even stronger St. Charles hockey team, the 4-chime goal horn and goal song, Save &amp; quit, your stats, Bill Bender on the call, fans in the stands and The Cockpit.</span></footer>
+  <footer><span class="by">Made by <b>Sam Pacifico</b></span><span>Best on a computer with a keyboard. On a phone, each game shows an on-screen joystick and buttons. Turn the sound on in a game to hear the commentary and the crowd.</span><span><b>Version 26</b> · Senior Night and Homecoming, a highlight reel after every game, game winners and buzzer beaters, between-the-legs (hockey), ankle breakers (basketball), bicycle kicks (soccer), hockey and lacrosse: superstar players (★ Sniper, Brick Wall, Engine, Enforcer), a players-to-watch preview, individual player stats and Player of the Game, a stronger St. Charles in every sport, franchise settings (number of games, difficulty, game length), a realistic post ping, much louder crowds and goal horn, bigger stands, longer cheering, lacrosse body checks knock players down for a few seconds (odd-man rushes), fake shot (F, or Fake on a phone) and trick shots (behind the back, dive, Air Gait), better goalies, player ratings you set in the roster file, much lighter sound so phones stay steady, plus an even stronger St. Charles hockey team, the 4-chime goal horn and goal song, Save &amp; quit, your stats, Bill Bender on the call, fans in the stands and The Cockpit.</span></footer>
 </div>
 <script>
 // St. Charles names come from rosters.txt (edited on GitHub by the site's owner) and go to the games through the Play links
@@ -266,5 +276,16 @@ footer .by b{color:var(--cardinal)}
 // the offline copy, and no "Get the app" section once it is already installed
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 if(navigator.standalone||matchMedia('(display-mode: standalone)').matches)document.getElementById('getapp').hidden=true;
+</script>
+<script>
+// the tip button and the ad spot come from support.txt, which the site's owner edits on GitHub
+fetch('support.txt',{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{
+  const val=k=>{const m=t.match(new RegExp('^'+k+':[ \\t]*(\\S*)[ \\t]*$','mi'));return m?m[1]:''};
+  const link=val('link');
+  if(/^https:\/\/(www\.)?(ko-fi\.com|buymeacoffee\.com|paypal\.me|paypal\.com|venmo\.com|account\.venmo\.com|cash\.app|github\.com\/sponsors)\//i.test(link)){document.getElementById('supportlink').href=link;document.getElementById('support').hidden=false}
+  const pub=val('adsense'),slot=val('adslot');
+  if(/^ca-pub-\d{10,20}$/.test(pub)&&/^\d{6,14}$/.test(slot)){const box=document.getElementById('adslot'),ins=document.createElement('ins');ins.className='adsbygoogle';ins.style.display='block';ins.dataset.adClient=pub;ins.dataset.adSlot=slot;ins.dataset.adFormat='auto';ins.dataset.fullWidthResponsive='true';box.appendChild(ins);box.hidden=false;
+    const sc=document.createElement('script');sc.async=true;sc.crossOrigin='anonymous';sc.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+pub;document.head.appendChild(sc);(window.adsbygoogle=window.adsbygoogle||[]).push({})}
+}).catch(()=>{});
 </script>
 </html>

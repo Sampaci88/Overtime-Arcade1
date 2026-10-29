@@ -587,6 +587,8 @@ function missed(p,si){
 }
 function scoreBasket(p,si){
   const t=p.team,pts=si.pts;G.score[t]+=pts;p.pts+=pts;
+  if(p.ankleAt!=null&&GT-p.ankleAt<3&&si.kind!=='ft'){p.ankleAt=null;setTimeout(()=>{callout('Ankle breaker bucket!',`${p.name} drops him and scores`,'#ff9f1c');roar(1,4);say(pick([`He broke his ankles and finished it! ${p.name}!`,`${p.name} with the ankle breaker... and the bucket!`]),3)},300)}
+  if(si.kind!=='ft')setTimeout(()=>CLUTCH.check(t),0);
   if(si.kind==='ft'){G.stats.ftm[t]++;say(pick(['Free throw is good.','Good.','Knocks it down.','Splits the net.']),0);ftNext(true);return}
   G.stats.fgm[t]++;if(si.three)G.stats.tpm[t]++;if(si.assist)G.stats.ast[t]++;
   p.streak++;
@@ -893,7 +895,7 @@ function crossover(c){
   const v=inputVec(),o=nearestOpp(c);let a;
   if(c===ctrl&&v.m>.3)a=Math.atan2(v.y,v.x);else{const base=Math.atan2(c.vy||Math.sin(c.face),c.vx||Math.cos(c.face)),s=Math.random()<.5?1:-1;a=base+s*1.1}
   c.vx=c.vx*.5+Math.cos(a)*8;c.vy=c.vy*.5+Math.sin(a)*8;floatText(c,'Crossover','#ff9f1c');sfx('squeak');
-  if(o.o&&o.d<4.2&&o.o.z===0&&Math.random()<.1+c.hand*.15){o.o.stun=.75;callout('Ankle breaker',`${c.name} drops ${o.o.name}`,'#ff9f1c');say(pick([`Oh! ${c.name} breaks his ankles!`,`${o.o.name} is on the floor! ${c.name} with the crossover!`]),2);roar(.3,2)}
+  if(o.o&&o.d<4.2&&o.o.z===0&&Math.random()<(c===ctrl?.32:.1)){o.o.stun=c===ctrl?1.7:.9;c.ankleAt=GT;callout('Ankle breaker',`${c.name} drops ${o.o.name}`,'#ff9f1c');say(pick([`Oh! ${c.name} breaks his ankles!`,`${o.o.name} is on the floor! ${c.name} with the crossover!`]),2);roar(.3,2)}
 }
 
 /* ---------- user control ---------- */
@@ -1738,7 +1740,7 @@ function drawFans(c2d,pf,xa,xb,y0,y1,gap,u,W,H){
     for(let r=rows-1;r>=0;r--){const yy=yIn+side*(r+.5)*dep,z=r*rise;
       for(let x=xa+(r%2)*stp*.5;x<xb;x+=stp){const p=P(x,yy,z);if(!p||p.x<-30||p.x>W+30||p.y<-30||p.y>H+30)continue;
         const h=(Math.imul((x*7.3+r*31.7+side*17)|0,2654435761)>>>0)%1000,stu=side>0&&x>s0&&x<s1,k=p.s*u;
-        const col=stu?(h%6===0?v.t:v.c):h%10<7?A.crowd[h%A.crowd.length]:FANAWAY[h%FANAWAY.length];
+        const col=stu||(THEME.id==='homecoming'&&!G.demo&&h%10<7)?(h%6===0?v.t:v.c):h%10<7?A.crowd[h%A.crowd.length]:FANAWAY[h%FANAWAY.length];
         const jump=(stu?bob*1.4:bob*.5)*(h%3?1:.55)*k*.12+(stu?Math.sin(t*3+h)*k*.02:0);
         add(col,p.x-.23*k,p.y-.62*k+jump,.46*k,.55*k);add(FANSKIN[h%5],p.x-.14*k,p.y-.92*k+jump,.28*k,.28*k);
         if(stu&&bob<-1&&h%4===0){add(col,p.x-.3*k,p.y-1.2*k+jump,.12*k,.42*k);add(col,p.x+.18*k,p.y-1.2*k+jump,.12*k,.42*k)}}}
@@ -1999,6 +2001,56 @@ ping=function(low){if(!AC||!soundOn||G.demo)return;try{
   vm.connect(f1).connect(vo);vm.connect(f2).connect(vo);vo.connect(AC.destination);const s=t+.12;vo.gain.setValueAtTime(.0001,s);vo.gain.linearRampToValueAtTime(1.1,s+.22);vo.gain.setValueAtTime(1.1,s+.55);vo.gain.exponentialRampToValueAtTime(.0001,s+1.35);
   for(let i=0;i<(TOUCH?5:9);i++){const o=AC.createOscillator(),og=AC.createGain(),f=150+Math.random()*130;o.type='sawtooth';o.frequency.setValueAtTime(f,s);o.frequency.linearRampToValueAtTime(f*1.06,s+.3);o.frequency.exponentialRampToValueAtTime(f*.82,s+1.3);og.gain.value=.05;o.connect(og).connect(vm);o.start(s+Math.random()*.06);o.stop(s+1.4)}
 }catch(e){}};
+/* ---------- game night: Senior Night and Homecoming (picked on the menu) bring an opening banner, the call, a louder crowd, and for Homecoming stands full of school colors ---------- */
+const THEME=(()=>{const KEY='game-theme',NAMES={regular:'Regular season',senior:'Senior Night',homecoming:'Homecoming'};
+  let id='regular';try{id=localStorage.getItem(KEY)||'regular'}catch(e){}if(!NAMES[id])id='regular';
+  const on=()=>id!=='regular'&&!G.demo;
+  const box=document.createElement('section');box.className='fr';box.id='themebox';box.hidden=true;$('fr').before(box);
+  function render(){box.innerHTML=`<h2>Game <span>night</span></h2><div class="frchips">${Object.keys(NAMES).map(k=>`<button class="chip plain" type="button" aria-pressed="${k===id}" data-th="${k}">${NAMES[k]}</button>`).join('')}</div><p class="frnote">${id==='senior'?'The home team honors its seniors before the game, and the crowd is louder all night.':id==='homecoming'?'Homecoming: the stands are packed with fans in school colors and the student section never sits down.':'A normal game night.'} It applies to every game you play until you change it.</p>`}
+  box.addEventListener('click',e=>{const b=e.target.closest('[data-th]');if(!b)return;id=b.dataset.th;try{localStorage.setItem(KEY,id)}catch(_){}render()});
+  const css=document.createElement('style');css.textContent=`#themebox .frchips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.thban{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);z-index:29;width:min(620px,92%);text-align:center;padding:14px 18px 12px;border-radius:12px;color:var(--tt,#fff);background:var(--tc,#b31b1b);box-shadow:0 10px 30px rgba(0,0,0,.45);font:600 15px/1.3 system-ui,sans-serif;pointer-events:none}
+.thban b{display:block;font-family:var(--display);font-weight:900;font-size:clamp(30px,6vw,54px);line-height:1;letter-spacing:.04em;text-transform:uppercase}
+@media (prefers-reduced-motion:no-preference){.thban{animation:thin .5s ease-out}}@keyframes thin{from{opacity:0;transform:translate(-50%,-40%)}to{opacity:1;transform:translate(-50%,-50%)}}`;document.head.appendChild(css);
+  function banner(){const st=$('stage')||$('pitch')||$('fieldbox');if(!st)return;let el=$('thban');if(!el){el=document.createElement('div');el.id='thban';el.className='thban';st.appendChild(el)}
+    const c=vclub();el.style.setProperty('--tc',c.c);el.style.setProperty('--tt',c.t==='#ffffff'||c.t==='#fff'?'#fff':c.t);
+    el.innerHTML=`<b>${id==='senior'?'Senior Night':'Homecoming'}</b>${esc(c.name)} · ${esc(venueName())}`;el.hidden=false;clearTimeout(banner.t);banner.t=setTimeout(()=>{el.hidden=true},6500);
+    setTimeout(()=>{if(typeof say==='function')say(id==='senior'?`It's Senior Night at ${venueName()}! ${c.name} honored their senior class before the game, and this crowd is ready.`:`Welcome to Homecoming at ${venueName()}! The place is packed, and ${studentName()} is in full voice.`,2)},2600);
+    setTimeout(()=>{try{studentChant(true)}catch(e){}},1200)}
+  // louder all night, and the students chant more often
+  const _roar=roar;roar=function(l,secs){return _roar.call(this,on()?Math.min(1,l*1.15):l,secs)};
+  setInterval(()=>{if(!on()||!AC||!soundOn||G.paused||G.phase!=='live')return;if(performance.now()>CHANT.until+6000&&Math.random()<.35)studentChant(false)},4000);
+  let was='';setInterval(()=>{box.hidden=!$('menu').hidden?false:true;const ph=G.demo?'demo':G.phase;if(on()&&ph==='warm'&&was!=='warm')banner();was=ph},300);
+  render();return{get id(){return id},on}})();
+/* ---------- highlight reel: every moment the game replays is saved, and after the final horn you can watch them back to back ---------- */
+const HLREEL=(()=>{let clips=[],busy=false,lastCard=null;
+  const strip=s=>String(s||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
+  const lastLine=()=>{const l=G.log&&G.log[0];return strip(typeof l==='string'?l:l?(l.txt||l.text||((l.pre||'')+' '+(l.name||''))):'')};
+  const _sr=startReplay;
+  startReplay=function(after){if(!G.demo&&!busy&&REC.length>=20){clips.push({f:REC.slice(),sub:lastLine().slice(0,110)});if(clips.length>8)clips.shift()}return _sr.call(this,after)};
+  const _ng=newGame;newGame=function(){clips=[];busy=false;return _ng.apply(this,arguments)};
+  const _card=card;card=function(title,text,buttons){
+    if(G.phase==='final'&&!G.demo&&clips.length&&!busy){lastCard=[title,text,buttons.filter(b=>!b.hl)];buttons=lastCard[2].concat([{label:`Highlights (${clips.length})`,hl:1,fn:play}])}
+    return _card.call(this,title,text,buttons)};
+  function play(){if(busy||!clips.length)return;busy=true;hideCard();const saved=lastCard;let i=0;
+    if(typeof say==='function')say(`Here are tonight's highlights.`,2);
+    const next=()=>{if(i>=clips.length){busy=false;G.rp=null;G.phase='final';G.callout=null;if(saved)card(saved[0],saved[1],saved[2]);return}
+      const c=clips[i++];G.rp={f:c.f,t:0,after:next,dur:c.f[c.f.length-1].t-c.f[0].t};G.phase='replay';callout(`Highlight ${i} of ${clips.length}`,c.sub,'#ffc23d')};
+    next()}
+  return{count:()=>clips.length,play}})();
+/* ---------- clutch moments: an overtime winner or a score at the buzzer gets its own call ---------- */
+const CLUTCH=(()=>{const last={hockey:3,soccer:2}[CELESPORT]||4,per=()=>CELESPORT==='hockey'?G.per:G.q;
+  function check(team){if(G.demo||team==null||team<0||team>1)return;const p=per(),ot=CELESPORT==='hockey'?p===4:CELESPORT==='soccer'?false:p>=5,lead=G.score[team]-G.score[1-team];
+    let kind=null;
+    if(ot&&lead>0&&(CELESPORT==='hockey'||CELESPORT==='lacrosse'))kind='winner';
+    else if(p>=last&&G.clock<=1.5&&lead>=0)kind='buzzer';
+    else if(ot&&lead>0)kind='ot';
+    if(!kind)return;const c=club(team);
+    setTimeout(()=>{callout(kind==='winner'?'Game winner!':kind==='buzzer'?'At the buzzer!':'Overtime score!',kind==='winner'?`${c.name} win it in overtime`:kind==='buzzer'?`${c.name} beat the clock`:`${c.name} strike in overtime`,'#ffc23d');
+      say(kind==='winner'?pick([`${c.name} win it! What a finish at ${venueName()}!`,`Game over! ${c.name} win it in overtime!`]):kind==='buzzer'?pick([`At the buzzer! ${c.name} beat the clock!`,`Right at the horn! Unbelievable timing by ${c.name}!`]):`Overtime score for ${c.name}!`,3);
+      roar(1,5);try{studentChant(true)}catch(e){}},700)}
+  if(CELESPORT!=='basketball'){const _c=celebrate;celebrate=function(t){const r=_c.apply(this,arguments);check(t);return r}}
+  return{check}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'basketball',otPts:2,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b,m=7*G.qlen,s=x=>Math.max(4,Math.round(m*(1+x*.5)+gauss()*m*.11));return[s(d),s(-d)]}};

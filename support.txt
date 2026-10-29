@@ -1,0 +1,14 @@
+# Support button for Overtime Arcade
+#
+# Paste your tip link after "link:" and tap "Commit changes". A "Support the creator" button shows up
+# on the home page. Ko-fi, Buy Me a Coffee, PayPal.me, Venmo, Cash App and GitHub Sponsors links work.
+# Example:  link: https://ko-fi.com/yourname
+# Leave it empty to hide the button.
+link:
+
+# Ads (only works once the site has its own web address, like overtimearcade.com, and Google AdSense
+# has approved it). Paste the codes AdSense gives you:
+# Example:  adsense: ca-pub-1234567890123456
+#           adslot: 1234567890
+adsense:
+adslot:
