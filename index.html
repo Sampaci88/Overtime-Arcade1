@@ -240,7 +240,7 @@ footer .by b{color:var(--cardinal)}
     </div>
   </section>
 
-  <footer><span class="by">Made by <b>Sam Pacifico</b></span><span>Best on a computer with a keyboard. On a phone, each game shows an on-screen joystick and buttons. Turn the sound on in a game to hear the commentary and the crowd.</span><span><b>Version 24</b> · a stronger St. Charles in every sport, franchise settings (number of games, difficulty, game length), a realistic post ping, much louder crowds and goal horn, bigger stands, longer cheering, lacrosse body checks knock players down for a few seconds (odd-man rushes), fake shot (F, or Fake on a phone) and trick shots (behind the back, dive, Air Gait), better goalies, player ratings you set in the roster file, much lighter sound so phones stay steady, plus an even stronger St. Charles hockey team, the 4-chime goal horn and goal song, Save &amp; quit, your stats, Bill Bender on the call, fans in the stands and The Cockpit.</span></footer>
+  <footer><span class="by">Made by <b>Sam Pacifico</b></span><span>Best on a computer with a keyboard. On a phone, each game shows an on-screen joystick and buttons. Turn the sound on in a game to hear the commentary and the crowd.</span><span><b>Version 25</b> · hockey and lacrosse: superstar players (★ Sniper, Brick Wall, Engine, Enforcer), a players-to-watch preview, individual player stats and Player of the Game, a stronger St. Charles in every sport, franchise settings (number of games, difficulty, game length), a realistic post ping, much louder crowds and goal horn, bigger stands, longer cheering, lacrosse body checks knock players down for a few seconds (odd-man rushes), fake shot (F, or Fake on a phone) and trick shots (behind the back, dive, Air Gait), better goalies, player ratings you set in the roster file, much lighter sound so phones stay steady, plus an even stronger St. Charles hockey team, the 4-chime goal horn and goal song, Save &amp; quit, your stats, Bill Bender on the call, fans in the stands and The Cockpit.</span></footer>
 </div>
 <script>
 // St. Charles names come from rosters.txt (edited on GitHub by the site's owner) and go to the games through the Play links
@@ -252,9 +252,9 @@ footer .by b{color:var(--cardinal)}
       const h=line.match(/^\[(.+)\]$/);if(h){const t=h[1].trim().toLowerCase();sp=t.startsWith('hock')?'hockey':t.startsWith('lac')?'lacrosse':null;continue}
       const m=line.match(/^([^:]+):\s*(\d{1,2})?\s*(.*)$/);if(!sp||!m)continue;
       const slot=SLOTS[sp].find(([,lab])=>lab.toLowerCase()===m[1].trim().toLowerCase());if(!slot)continue;
-      let rest=m[3],rt=null;const rm=rest.match(/\(\s*(\d{1,3})\s*\)?\s*$/);if(rm){rt=+rm[1];rest=rest.slice(0,rm.index)}
+      let rest=m[3],rt=null,tr=null;const tm=rest.match(/\[\s*([A-Za-z ]{2,16}?)\s*(\]|$)/);if(tm){tr=tm[1];rest=rest.slice(0,tm.index)+rest.slice(tm.index+tm[0].length)}const rm=rest.match(/\(\s*(\d{1,3})\s*\)?\s*$/);if(rm){rt=+rm[1];rest=rest.slice(0,rm.index)}
       const name=clean(rest);if(!name)continue;
-      const k=slot[0];out[sp][k]={name,num:m[2]!=null?+m[2]:(NUMS[sp][k]!=null?NUMS[sp][k]:0)};if(rt>=1&&rt<=120)out[sp][k].r=rt}
+      const k=slot[0];out[sp][k]={name,num:m[2]!=null?+m[2]:(NUMS[sp][k]!=null?NUMS[sp][k]:0)};if(rt>=1&&rt<=120)out[sp][k].r=rt;if(tr)out[sp][k].s=tr}
     return out}
   function wire(R){for(const sp of Object.keys(SLOTS)){const r=R[sp]||{},a=document.querySelector('a.play[href^="'+sp+'.html"]');
     if(a)a.href=sp+'.html?stc='+encodeURIComponent(JSON.stringify(r));try{localStorage.setItem('stc-roster-'+sp,JSON.stringify(r))}catch(e){}}}

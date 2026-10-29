@@ -2054,7 +2054,7 @@ const FR=(()=>{
   function gameOver(){
     if(!G.fr||!S)return false;G.fr=false;
     const msg=report(G.score[0],G.score[1],G.pkWin),w=G.score[0]===G.score[1]?(G.pkWin!=null?G.pkWin:-1):G.score[0]>G.score[1]?0:1;
-    card(w<0?'Final: a draw':`${club(w).name} win`,`${scoreLine()}${G.pkWin!=null?' (won on penalties)'.replace('won',w===0?'won':'lost'):''}. ${msg}`,[{label:'Back to franchise',fn:()=>{toDemo();renderMenu();render();setTimeout(()=>$('fr').scrollIntoView({block:'start',behavior:'smooth'}),50)}}]);
+    card(w<0?'Final: a draw':`${club(w).name} win`,`${scoreLine()}${G.pkWin!=null?' (won on penalties)'.replace('won',w===0?'won':'lost'):''}. ${msg}${typeof potg==='function'?' '+potg():''}`,[{label:'Back to franchise',fn:()=>{toDemo();renderMenu();render();setTimeout(()=>$('fr').scrollIntoView({block:'start',behavior:'smooth'}),50)}}]);
     return true;
   }
   load();

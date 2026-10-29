@@ -7,6 +7,14 @@
 #   skaters and runners get faster, quicker and surer with the puck or stick,
 #   goalies stop more shots and reach farther. No rating = 75.
 #
+# Superstars: anyone rated 100 or more is a superstar (a ★ in the game). You can also give
+# any player a superstar trait by adding it in [brackets], like:  Attack 1: 72 Grant Bender (95) [Sniper]
+#   [Sniper]      shoots harder and more accurately
+#   [Brick Wall]  goalies only: stops more shots, reaches farther
+#   [Engine]      faster and quicker
+#   [Enforcer]    his hits keep players down longer, his checks knock the ball loose more
+# (Rated 100+ with no trait: goalies get Brick Wall, shooters Sniper, midfielders Engine, defenders Enforcer.)
+#
 # To change a player, change the number, name or rating after the colon.
 # To take a player out, delete everything after the colon. The game puts a made-up name there.
 # Lines that start with # are notes and are ignored.

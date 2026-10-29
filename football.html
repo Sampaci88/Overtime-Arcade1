@@ -2118,7 +2118,7 @@ const FR=(()=>{
   function gameOver(){
     if(!G.fr||!S)return false;G.fr=false;
     const msg=report(G.score[0],G.score[1]),w=G.score[0]===G.score[1]?-1:G.score[0]>G.score[1]?0:1;
-    card(w<0?'Final: tie':`${club(w).name} win`,`${scoreLine()}. ${msg}`,[{label:'Back to franchise',fn:()=>{toDemo();renderMenu();render();setTimeout(()=>$('fr').scrollIntoView({block:'start',behavior:'smooth'}),50)}}]);
+    card(w<0?'Final: tie':`${club(w).name} win`,`${scoreLine()}. ${msg}${typeof potg==='function'?' '+potg():''}`,[{label:'Back to franchise',fn:()=>{toDemo();renderMenu();render();setTimeout(()=>$('fr').scrollIntoView({block:'start',behavior:'smooth'}),50)}}]);
     return true;
   }
   load();
