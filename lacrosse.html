@@ -144,6 +144,7 @@ thead th{font-family:var(--display);font-weight:800;font-size:15px;letter-spacin
 .rorow input{min-width:0;width:100%;box-sizing:border-box;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit;font-size:14px}
 .rorow input:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
 #ro .chips{margin-bottom:4px}
+.frset{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px;align-items:start;margin:8px 0}.frlbl{font-family:var(--display);font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-top:6px}.frchips{display:flex;flex-wrap:wrap;gap:6px}.frset .chip[disabled]{opacity:.45}
 </style>
 
 <div class="wrap">
@@ -1741,13 +1742,41 @@ const LOUD=(()=>{const M=new WeakMap(),oc=AudioNode.prototype.connect;
   AudioNode.prototype.connect=function(d,...a){if(d&&typeof AudioDestinationNode!=='undefined'&&d instanceof AudioDestinationNode){const m=bus(d.context);if(m&&this!==m.inp)return oc.call(this,m.inp,...a)}return oc.call(this,d,...a)};
   const _roar=roar;roar=function(l,secs){return _roar.call(this,Math.min(1,l*1.2),secs*1.6)};
   return{bus}})();
+/* ---------- the post: a struck steel pipe (its real, uneven overtones, each shimmering), the click of the hit, the arena echo and the crowd's "OHHH" ---------- */
+ping=function(low){if(!AC||!soundOn||G.demo)return;try{
+  const t=AC.currentTime+.01,fx=sfxBus(),out=AC.createGain(),wet=AC.createGain();out.gain.value=low?.9:.8;wet.gain.value=.38;out.connect(fx.out);out.connect(wet).connect(fx.verb);
+  const env=(g,a,v,d)=>{g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(v,t+a);g.gain.exponentialRampToValueAtTime(.0001,t+d)};
+  const tone=(f,v,d,type,bend)=>{const o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(bend)o.frequency.exponentialRampToValueAtTime(f*bend,t+d);env(g,.002,v,d);o.connect(g).connect(out);o.start(t);o.stop(t+d+.05);return g};
+  if(!low){
+    // a goal pipe: free-ringing tube modes, two slightly detuned voices each so it shimmers
+    const f0=1180+Math.random()*170;
+    for(const[m,v,d]of[[1,.34,1.9],[2.756,.2,1.1],[5.404,.11,.6],[8.933,.06,.35],[13.34,.03,.2]])for(const det of TOUCH?[0]:[-.0016,.0016])tone(f0*m*(1+det),v*(TOUCH?1:.7),d);
+    tone(f0*.5,.05,.5)}
+  else{
+    // a football upright: a lower DOINK that wobbles as the post shakes
+    const f0=380+Math.random()*60,g=AC.createGain(),lfo=AC.createOscillator(),lg=AC.createGain();g.gain.value=1;lfo.frequency.value=7+Math.random()*3;lg.gain.value=.35;lfo.connect(lg).connect(g.gain);lfo.start(t);lfo.stop(t+1.4);g.connect(out);
+    for(const[m,v,d]of[[1,.42,1.3],[2.756,.2,.7],[5.404,.08,.35]]){const o=AC.createOscillator(),e=AC.createGain();o.frequency.setValueAtTime(f0*m*1.04,t);o.frequency.exponentialRampToValueAtTime(f0*m,t+.12);env(e,.003,v,d);o.connect(e).connect(g);o.start(t);o.stop(t+d+.05)}}
+  // the hit: a bright metal tick and the thump of the puck or ball
+  const n=AC.createBufferSource(),nf=AC.createBiquadFilter(),ng=AC.createGain();n.buffer=noiseBuf();nf.type='bandpass';nf.frequency.value=low?2500:4200;nf.Q.value=1.2;env(ng,.001,.5,.03);n.connect(nf).connect(ng).connect(out);n.start(t,Math.random());n.stop(t+.05);
+  tone(low?140:190,.4,.09,'sine',.6);
+  // the crowd: a rising "OHHH" that dies away
+  if(typeof roar==='function')roar(.3,1.4);
+  const vo=AC.createGain(),f1=AC.createBiquadFilter(),f2=AC.createBiquadFilter(),vm=AC.createGain();f1.type='bandpass';f1.frequency.value=420;f1.Q.value=2.2;f2.type='bandpass';f2.frequency.value=820;f2.Q.value=3;
+  vm.connect(f1).connect(vo);vm.connect(f2).connect(vo);vo.connect(AC.destination);const s=t+.12;vo.gain.setValueAtTime(.0001,s);vo.gain.linearRampToValueAtTime(1.1,s+.22);vo.gain.setValueAtTime(1.1,s+.55);vo.gain.exponentialRampToValueAtTime(.0001,s+1.35);
+  for(let i=0;i<(TOUCH?5:9);i++){const o=AC.createOscillator(),og=AC.createGain(),f=150+Math.random()*130;o.type='sawtooth';o.frequency.setValueAtTime(f,s);o.frequency.linearRampToValueAtTime(f*1.06,s+.3);o.frequency.exponentialRampToValueAtTime(f*.82,s+1.3);og.gain.value=.05;o.connect(og).connect(vm);o.start(s+Math.random()*.06);o.stop(s+1.4)}
+}catch(e){}};
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'lacrosse',otPts:1,sim:(a,b)=>{const d=a-b;return[frPois(9+d*10),frPois(9-d*10)]}};
 const startGame=$('start').onclick;$('start').onclick=()=>{G.fr=false;startGame()};
 /* ---------- franchise mode: the CCL. 4 schools, 6 conference games (each opponent twice, home and away), all 4 make single-game playoffs, the regular-season champion is the 1 seed ---------- */
 const FR=(()=>{
-  const KEY='ccl-'+FRCFG.sport,WEEKS=6,NT=CLUBS.length;
+  const KEY='ccl-'+FRCFG.sport,NT=CLUBS.length;
+  // season settings: how many games, the difficulty, and the period/quarter/half length for every franchise game
+  const LENS=typeof PLENS!=='undefined'?PLENS:typeof QLENS!=='undefined'?QLENS:typeof HLENS!=='undefined'?HLENS:[],LK=typeof PLENS!=='undefined'?'pi':'qi',
+    UNIT={hockey:'period',soccer:'half'}[FRCFG.sport]||'quarter',GAMES=[NT-1,(NT-1)*2,(NT-1)*3,(NT-1)*4],TIMES=['once','twice','three times','four times'];
+  let WEEKS=(NT-1)*2,PEND=null,editCfg=false;
+  const UNITS=UNIT==='half'?'halves':UNIT+'s',cfgText=c=>`${c.games} games · ${DIFFS[c.diff].label} · ${LENS[c.len]}-minute ${UNITS}`;
   let S=null,armReset=0;
   function load(){try{S=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){S=null}}
   function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -1762,8 +1791,8 @@ const FR=(()=>{
     return out;
   }
   function newSeason(my){
-    const seed=Math.floor(Math.random()*1e9),r=rng(seed+7);
-    S={v:3,my,week:0,seed,sched:schedule(seed),res:[],phase:'season',str:CLUBS.map((c,i)=>FRCFG.strength?FRCFG.strength(i):.38+r()*.24),rec:CLUBS.map(()=>({w:0,l:0,t:0,pf:0,pa:0,st:''})),po:null,champ:null};
+    const seed=Math.floor(Math.random()*1e9),r=rng(seed+7),cfg=Object.assign({},PEND);WEEKS=cfg.games;
+    S={v:3,my,cfg,week:0,seed,sched:schedule(seed),res:[],phase:'season',str:CLUBS.map((c,i)=>FRCFG.strength?FRCFG.strength(i):.38+r()*.24),rec:CLUBS.map(()=>({w:0,l:0,t:0,pf:0,pa:0,st:''})),po:null,champ:null};
     save();render();
   }
   function apply(g){
@@ -1820,6 +1849,7 @@ const FR=(()=>{
   }
   function play(){
     const n=nextGame();if(!n)return;const opp=n.a===S.my?n.b:n.a;
+    if(S.cfg){G.diff=S.cfg.diff;G[LK]=S.cfg.len}
     G.clubs=[S.my,opp];G.fr=true;G.frHome=n.a;startGame();
     toast(`CCL · ${n.label} vs ${nm(opp)}`);
   }
@@ -1832,10 +1862,16 @@ const FR=(()=>{
   function bracket(){
     return S.po.rounds.map((rd,k)=>`<div class="frround"><h4>${S.po.names[k]}</h4>${rd.map(m=>`<div class="frgame${m.a===S.my||m.b===S.my?' me':''}"><span>${ab(m.a)} <small>#${S.po.seed.indexOf(m.a)+1}</small></span><b>${m.done?`${m.sa}–${m.sb}`:'vs'}</b><span>${ab(m.b)} <small>#${S.po.seed.indexOf(m.b)+1}</small></span></div>`).join('')}</div>`).join('');
   }
+  function chipRow(label,key,items,cur,locked){return`<div class="frset"><span class="frlbl">${label}</span><div class="frchips">${items.map((it,i)=>`<button class="chip plain" type="button" aria-pressed="${it.v===cur}" ${locked?'disabled':''} data-fs="${key}:${it.v}">${it.t}</button>`).join('')}</div></div>`}
+  function settings(c,locked){return chipRow('Games','games',GAMES.map((g,i)=>({v:g,t:`${g} <small>each school ${TIMES[i]}</small>`})),c.games,locked)
+    +chipRow('Difficulty','diff',DIFFS.map((d,i)=>({v:i,t:d.label})),c.diff)
+    +chipRow(UNITS[0].toUpperCase()+UNITS.slice(1),'len',LENS.map((m,i)=>({v:i,t:`${m} min`})),c.len)}
   function render(){
     const el=$('frBody');if(!el)return;
+    if(!PEND)PEND={games:(NT-1)*2,diff:G.diff,len:G[LK]||0};
     let h='';
-    if(!S){h=`<p>Play a ${WEEKS}-game CCL season. You play each of the other ${NT-1} schools twice, once at home and once away. All ${NT} make the playoffs, every round is one game, and the regular-season conference champion gets the No. 1 seed. Your progress saves in this browser.</p>
+    if(!S){h=`<p>Play a ${PEND.games}-game CCL season. You play each of the other ${NT-1} schools ${TIMES[GAMES.indexOf(PEND.games)]}, home and away. All ${NT} make the playoffs, every round is one game, and the regular-season conference champion gets the No. 1 seed. Your progress saves in this browser.</p>
+      ${settings(PEND,false)}
       <div class="frbtns"><button class="go" type="button" data-fr="new">Start CCL season with ${esc(nm(G.clubs[0]))}</button></div><p class="frnote">Pick your school in the list above first.</p>`}
     else{
       const r=S.rec[S.my],n=nextGame(),opp=n?(n.a===S.my?n.b:n.a):null,rec=`${r.w}-${r.l}${r.t?'-'+r.t:''}`;
@@ -1843,7 +1879,8 @@ const FR=(()=>{
       if(S.phase==='season')status=`<b>${esc(nm(S.my))}</b> · ${rec} · Game ${S.week+1} of ${WEEKS}`;
       else if(S.phase==='playoffs')status=S.po.out?`<b>${esc(nm(S.my))}</b> finished ${rec} and missed the playoffs`:n?`<b>${esc(nm(S.my))}</b> · ${rec} · Playoffs: ${S.po.names[S.po.rounds.length-1]}`:`<b>${esc(nm(S.my))}</b> are out of the playoffs`;
       else status=S.champ===S.my?`<b>${esc(nm(S.my))} are CCL champions!</b> Final record ${rec}`:`<b>${esc(nm(S.champ))}</b> won the CCL championship. You finished ${rec}`;
-      h=`<p class="frstatus">${status}</p>`;
+      if(!S.cfg)S.cfg={games:WEEKS,diff:G.diff,len:G[LK]||0};
+      h=`<p class="frstatus">${status}</p><p class="frnote">Season settings: ${esc(cfgText(S.cfg))} <button class="btn" type="button" data-fr="cfg">${editCfg?'Done':'Change'}</button></p>`+(editCfg?settings(S.cfg,true)+'<p class="frnote">The number of games is set when the season starts. Difficulty and length apply to your next game.</p>':'');
       if(n){const or=S.rec[opp];h+=`<div class="frnext"><span>Next: ${esc(n.label)} vs <b>${esc(nm(opp))}</b> (${or.w}-${or.l}${or.t?'-'+or.t:''})</span><div class="frbtns"><button class="go" type="button" data-fr="play">Play game</button><button class="btn" type="button" data-fr="sim">Simulate it</button></div></div>`}
       else if(S.phase==='playoffs')h+=`<div class="frbtns"><button class="go" type="button" data-fr="rest">Simulate the rest of the playoffs</button></div>`;
       h+=`<div class="frcols"><div><h4>CCL standings</h4>${table()}<p class="frnote">All ${NT} make the playoffs. First place is the conference champion and the No. 1 seed: 1 plays 4, 2 plays 3.</p></div><div>`;
@@ -1854,11 +1891,13 @@ const FR=(()=>{
     }
     el.innerHTML=h;
   }
-  function click(e){const b=e.target.closest('[data-fr]');if(!b)return;const k=b.dataset.fr;audio();
+  function click(e){const sb=e.target.closest('[data-fs]');if(sb&&!sb.disabled){const[k,v]=sb.dataset.fs.split(':');const c=S?S.cfg:PEND;if(c&&!(S&&k==='games')){c[k]=+v;if(S)save()}render();return}
+    const b=e.target.closest('[data-fr]');if(!b)return;const k=b.dataset.fr;audio();
     if(k==='new')newSeason(G.clubs[0]);
     else if(k==='play')play();
     else if(k==='sim')simNext();
     else if(k==='rest')simRest();
+    else if(k==='cfg'){editCfg=!editCfg;render()}
     else if(k==='reset'){if(armReset>Date.now()){armReset=0;S=null;try{localStorage.removeItem(KEY)}catch(e){}render()}else{armReset=Date.now()+4000;render();setTimeout(render,4100)}}
   }
   // called from endGame: records the result and shows the franchise card
@@ -1869,6 +1908,7 @@ const FR=(()=>{
     return true;
   }
   load();
+  if(S)WEEKS=S.cfg&&S.cfg.games?S.cfg.games:(NT-1)*2;
   if(S&&(S.v!==3||S.sched.length!==WEEKS||S.rec.length!==NT))S=null;
   $('fr').addEventListener('click',click);
   setInterval(()=>{const h=$('menu').hidden;if($('fr').hidden!==h)$('fr').hidden=h},250);
