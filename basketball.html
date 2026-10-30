@@ -208,6 +208,9 @@ const CLUBS=[
   {name:'Bishop Watterson Eagles',abbr:'BWE',c:'#d4a017',t:'#9b1c1c',city:'Watterson'},
   {name:'Bishop Hartley Hawks',abbr:'BHH',c:'#1d4fa8',t:'#ffffff',city:'Hartley'},
 ];
+// tournament guests: slot 4 holds an opponent from outside the CCL, slot 5 the neutral championship site; CCL is just the four league schools
+const CCL=CLUBS.slice();CLUBS.push({name:'Guest',abbr:'GST',c:'#5a6270',t:'#ffffff',guest:true},{name:'State Championship',abbr:'STATE',c:'#3a3f48',t:'#ffc23d',neutral:true});let GUESTSEED=4;
+
 const DIFFS=[
   {label:'Rookie',sub:'softer defense',acc:.92,def:.9,stl:.75,tim:.9},
   {label:'Pro',sub:'a real test',acc:1.06,def:1.12,stl:1.15,tim:1.12},
@@ -304,7 +307,7 @@ function mk(team,role,r,used){
 }
 function buildTeams(){
   P=[];
-  for(const t of [0,1]){const r=seeded(G.clubs[t]*7919+101),used=new Set(),names=new Set();
+  for(const t of [0,1]){const r=seeded((G.clubs[t]===4?GUESTSEED:G.clubs[t])*7919+101),used=new Set(),names=new Set();
     for(const role of ROLES){const p=mk(t,role,r,used);while(names.has(p.name))p.name=SURN[Math.floor(r()*SURN.length)];names.add(p.name);
       const ci=G.clubs[t],full=RO.n(ci,role,null);if(full){const w=full.split(/\s+/);p.name=w.pop();p.first=w.join(' ')||p.first}p.num=RO.u(ci,role,p.num);
       if(CLUBS[ci].abbr==='STC'){p.spd*=1.05;for(const k of ['r3','mid','ins','ft','hand','stl','blk','reb'])p[k]=Math.min(.97,p[k]+.06)}P.push(p)}}
@@ -993,7 +996,7 @@ function endGame(){try{STATS.record()}catch(e){}if(!G.demo&&soundOn&&AC&&G.score
   const w=G.score[0]>G.score[1]?0:1,top=t=>P.filter(p=>p.team===t).sort((a,b)=>b.pts-a.pts)[0];
   say(`And that's the ballgame! ${club(w).name} win it, ${Math.max(...G.score)} to ${Math.min(...G.score)}.`,3);
   color(`${top(w).name} led the way with ${top(w).pts} points. What a performance.`,3200);roar(.4,4);
-  if(FR.gameOver())return;
+  if(FR.gameOver()||TOURNS.some(t=>t.gameOver()))return;
   card(`${club(w).name} win`,`Final${G.q>4?' (OT)':''}: ${scoreLine()}. Top scorers: ${top(0).name} ${top(0).pts}, ${top(1).name} ${top(1).pts}.`,[{label:'Rematch',fn:()=>newGame(false)},{label:'Change clubs',fn:toDemo}]);
 }
 function step(dt,rdt){
@@ -1437,9 +1440,9 @@ addEventListener('touchstart',()=>{if(!G.demo)pad.hidden=false},{passive:true});
 function chips(el,items,sel,on){el.innerHTML='';items.forEach((it,i)=>{const b=document.createElement('button');b.type='button';b.className='chip'+(it.plain?' plain':'');b.setAttribute('aria-pressed',String(i===sel));b.innerHTML=it.html;b.onclick=()=>on(i);el.appendChild(b)})}
 function renderMenu(){
   if(G.demo&&!$('card').hidden)setTimeout(()=>{buildTeams();setupTip();showStartCard()},0);
-  const items=CLUBS.map(c=>({html:`<span class="dot" style="--j:${c.c};--t:${c.t}"></span>${esc(c.name)}`}));
-  chips($('pick0'),items,G.clubs[0],i=>{G.clubs[0]=i;if(G.clubs[1]===i)G.clubs[1]=(i+1)%CLUBS.length;renderMenu()});
-  chips($('pick1'),items,G.clubs[1],i=>{G.clubs[1]=i;if(G.clubs[0]===i)G.clubs[0]=(i+1)%CLUBS.length;renderMenu()});
+  const items=CCL.map(c=>({html:`<span class="dot" style="--j:${c.c};--t:${c.t}"></span>${esc(c.name)}`}));
+  chips($('pick0'),items,G.clubs[0],i=>{G.clubs[0]=i;if(G.clubs[1]===i)G.clubs[1]=(i+1)%CCL.length;renderMenu()});
+  chips($('pick1'),items,G.clubs[1],i=>{G.clubs[1]=i;if(G.clubs[0]===i)G.clubs[0]=(i+1)%CCL.length;renderMenu()});
   chips($('pickD'),DIFFS.map(d=>({plain:1,html:`${d.label} <small>${d.sub}</small>`})),G.diff,i=>{G.diff=i;renderMenu()});
   chips($('pickQ'),QLENS.map(m=>({plain:1,html:`${m} min <small>${m===4?'CCL default':m===6?'longer':'full pro'}</small>`})),G.qi,i=>{G.qi=i;renderMenu()});
   chips($('pickS'),SPEEDS.map(s=>({plain:1,html:`${s.label} <small>${s.sub}</small>`})),G.speed,i=>{G.speed=i;renderMenu();setSpeedLabel()});
@@ -1448,7 +1451,7 @@ function setSpeedLabel(){$('spd').textContent='Speed: '+SPEEDS[G.speed].label}
 function showStartCard(){card('You vs the CPU',`Pick your club and the opponent above, then start. You control ${club(0).name}. The CPU plays ${club(1).name}.`,[{label:'Play vs CPU',fn:()=>$('start').click()}])}
 function newStats(){const z=()=>[0,0];return{fgm:z(),fga:z(),tpm:z(),tpa:z(),ftm:z(),fta:z(),reb:z(),ast:z(),stl:z(),blk:z(),to:z(),pf:z()}}
 function newGame(demo){
-  G.demo=demo;G.venue=G.fr&&G.frHome!=null?G.frHome:G.clubs[0];CELE.parts=[];CELE.fw=[];G.celeBy=null;G._recorded=false;G.qlen=QLENS[G.qi];G.score=[0,0];G.q=1;G.clock=G.qlen*60;G.log=[];$('log').innerHTML='';G.paused=false;$('pause').textContent='Pause';G.callout=null;G.slowT=0;G.lastPass=null;
+  G.demo=demo;G.venue=G.tvenue!=null?G.tvenue:G.fr&&G.frHome!=null?G.frHome:G.clubs[0];CELE.parts=[];CELE.fw=[];G.celeBy=null;G._recorded=false;G.qlen=QLENS[G.qi];G.score=[0,0];G.q=1;G.clock=G.qlen*60;G.log=[];$('log').innerHTML='';G.paused=false;$('pause').textContent='Pause';G.callout=null;G.slowT=0;G.lastPass=null;
   G.stats=newStats();G.fouls=[0,0];G.comm=null;G.rp=null;REC=[];G.run=null;G.buzz=false;G.bigPlay=false;G.grade=null;G.ft=null;G.inb=null;GT=0;G.dbg={};G.chatT=null;G.minSaid=0;G.flash=0;
   hideCard();buildTeams();cache.mode=null;ctrl=null;
   if(!demo){$('menu').hidden=true;$('quit').hidden=false;$('pause').hidden=false;if(matchMedia('(pointer: coarse)').matches)pad.hidden=false}
@@ -1474,7 +1477,7 @@ const RO=(()=>{
   const u=(ci,k,def)=>{const v=get(ci,k);return v&&v.num!=null?v.num:def};
   function render(){
     const el=$('roBody');if(!el)return;const slots=RCFG.slots(sel);
-    el.innerHTML=`<div class="chips">${CLUBS.map((c,i)=>`<button type="button" class="chip" data-ro-club="${i}" aria-pressed="${i===sel}"><span class="dot" style="--j:${c.c};--t:${c.t}"></span>${esc(c.name)}</button>`).join('')}</div>
+    el.innerHTML=`<div class="chips">${CCL.map((c,i)=>`<button type="button" class="chip" data-ro-club="${i}" aria-pressed="${i===sel}"><span class="dot" style="--j:${c.c};--t:${c.t}"></span>${esc(c.name)}</button>`).join('')}</div>
       <div class="rogrid">${slots.map(s=>`<div class="rorow"><span class="rolab">${esc(s.label)}</span><input id="ro-num-${s.key}" class="ronum" type="number" inputmode="numeric" min="0" max="99" value="${u(sel,s.key,s.num)}" data-k="${s.key}" data-f="num" aria-label="${esc(s.label)} number"><input id="ro-name-${s.key}" class="roname" type="text" maxlength="24" value="${esc(n(sel,s.key,s.name))}" placeholder="${esc(s.name)}" data-k="${s.key}" data-f="name" aria-label="${esc(s.label)} name"></div>`).join('')}</div>
       <div class="frbtns"><button class="btn" type="button" data-ro="reset">${arm>Date.now()?'Tap again to reset this roster':'Reset to default names'}</button></div>
       <p class="frnote">Changes save as you type and show up the next time you start a game. Your rosters stay in this browser only: sharing the game file doesn't share them.</p>`;
@@ -1583,6 +1586,8 @@ const ARENAS=[
   {name:'The Aerie',stad:'Eagle Field',chant:'FLY EAGLES FLY',crowd:['#d4a017','#d4a017','#9b1c1c','#f0c94a','#5e0f0f'],grass:['#357f34','#2d702d'],stripe:'plaid',wood:['#d8aa70','#e9bd86','#f2cb96'],trim:'#9b1c1c'},
   {name:'The Roost',stad:'Hawk Stadium',chant:'HAWK TERRITORY',crowd:['#1d4fa8','#1d4fa8','#ffffff','#0f2d66','#9fc0ff'],grass:['#2b7a3e','#246b37'],stripe:'thin',wood:['#b9844e','#cc9760','#d9a670'],trim:'#9fc0ff'},
 ];
+ARENAS.push(Object.assign({},ARENAS[1]),Object.assign({},ARENAS[0],{name:'The Championship',rink:'State Championship Arena',gym:'State Championship Arena',stad:'State Championship Stadium',chant:'STATE CHAMPS',student:'',crowd:['#3a3f48','#ffc23d','#e9e9e4','#2a2e35','#9aa4b0'],trim:'#ffc23d'}));
+
 function venueIdx(){return G.venue!=null?G.venue:G.clubs[0]}
 function ARENA(){return ARENAS[venueIdx()]||ARENAS[0]}
 function vclub(){return CLUBS[venueIdx()]}
@@ -2051,13 +2056,118 @@ const CLUTCH=(()=>{const last={hockey:3,soccer:2}[CELESPORT]||4,per=()=>CELESPOR
       roar(1,5);try{studentChant(true)}catch(e){}},700)}
   if(CELESPORT!=='basketball'){const _c=celebrate;celebrate=function(t){const r=_c.apply(this,arguments);check(t);return r}}
   return{check}})();
+/* ---------- championship celebration: a trophy, the horn, the goal song and the whole building ---------- */
+function BIGCELE(title,sub){try{let el=$('bigcele');
+  if(!el){el=document.createElement('div');el.id='bigcele';el.className='bigcele';el.addEventListener('click',()=>{el.hidden=true});document.body.appendChild(el)}
+  el.innerHTML=`<div class="bc-in"><svg viewBox="0 0 64 72" width="120" height="135" aria-hidden="true"><path d="M16 6h32v14c0 12-7 21-16 21S16 32 16 20z" fill="#ffc23d"/><path d="M16 10H6c0 10 5 16 12 17M48 10h10c0 10-5 16-12 17" fill="none" stroke="#ffc23d" stroke-width="4"/><rect x="28" y="40" width="8" height="12" fill="#e0a51f"/><rect x="18" y="52" width="28" height="8" rx="2" fill="#ffc23d"/><rect x="14" y="60" width="36" height="8" rx="2" fill="#c98d12"/></svg><b>${esc(title)}</b><span>${esc(sub)}</span><small>Tap to continue</small></div>`;
+  el.hidden=false;clearTimeout(BIGCELE.t);BIGCELE.t=setTimeout(()=>{el.hidden=true},11000);
+  if(AC&&soundOn){try{goalHorn()}catch(e){}try{goalSong(1.6,true)}catch(e){}try{roar(1,6)}catch(e){}try{studentChant(true)}catch(e){}setTimeout(()=>{try{studentChant(true);roar(1,5)}catch(e){}},5200)}
+  if(typeof say==='function')say(`${sub}! ${title}!`,3)}catch(e){}}
+{const css=document.createElement('style');css.textContent=`.bigcele{position:fixed;inset:0;z-index:300;display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,rgba(60,45,10,.9),rgba(5,7,10,.94) 70%);cursor:pointer;padding:20px}
+.bc-in{display:grid;justify-items:center;gap:10px;text-align:center;color:#fff;font:600 16px/1.35 system-ui,sans-serif;max-width:90vw}
+.bc-in b{font-family:var(--display);font-weight:900;font-size:clamp(40px,9vw,92px);line-height:.95;letter-spacing:.03em;text-transform:uppercase;color:#ffc23d;text-shadow:0 0 24px rgba(255,194,61,.45)}
+.bc-in span{font-size:clamp(16px,2.6vw,22px)}.bc-in small{color:#b9c2cc;margin-top:6px}
+@media (prefers-reduced-motion:no-preference){.bc-in{animation:bcin .7s ease-out}.bc-in svg{animation:bcup 1.2s ease-out}}
+@keyframes bcin{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}@keyframes bcup{from{transform:translateY(30px)}to{transform:none}}`;document.head.appendChild(css)}
+/* ---------- tournaments: the state playoffs after the CCL season (every sport) and, in basketball, March Mayhem ---------- */
+const GTOWNS=['Riverbend','Cedar Ridge','Maple Heights','Lakeview','Stonebridge','Pine Hollow','Fairmont','Ashford','Brookside','Hillcrest','Oak Grove','Westbrook','Eastlake','Summit Ridge','Harbor View','Clearwater','Millbrook','Granite Falls','Kingsport','Northgate','Southridge','Silver Lake','Red Oak','Willow Creek','Bayside','Elm Park','Highland','Bear Creek','Copper Hill','Fox Run','Glenwood','Iron Ridge','Juniper','Kettle Creek','Laurel Hills','Meadowbrook','Newport','Orchard Park','Prairie View','Quarry Hill','Rolling Hills','Spring Valley','Timber Lake','Union Grove','Shady Grove','Walnut Creek','Black River','Crystal Lake','Deer Park','Evergreen','Falcon Ridge','Green Meadow','Hawthorne','Mill Valley','Stone Creek','Cobblestone','Lincoln Park','North Star','Oakmont','Pleasant Hill','Riverside','Sunset Hills','Twin Oaks','Bridgewater'];
+const GMASC=['Rams','Knights','Panthers','Wolves','Bears','Hornets','Titans','Falcons','Spartans','Vikings','Raiders','Comets','Pioneers','Bulldogs','Tigers','Owls','Mustangs','Blazers','Storm','Lions','Huskies','Warriors','Rockets','Jaguars'];
+const GPAL=[['#0b5d3b','#ffffff'],['#1b3a8a','#f2c14e'],['#7a1f2b','#e9e9e4'],['#e05a00','#111111'],['#2a2a2a','#d4a017'],['#006c7a','#ffffff'],['#5b2a86','#ffffff'],['#8a6d00','#111111'],['#14532d','#facc15'],['#9b1c1c','#111111'],['#0f4c81','#ffffff'],['#3f3f46','#f97316'],['#166534','#ffffff'],['#1e3a5f','#c0c0c0'],['#7c2d12','#fde68a'],['#4c1d95','#fbbf24']];
+const gabbr=t=>{const w=t.toUpperCase().replace(/[^A-Z ]/g,'').split(' ').filter(Boolean);return(w.length>1?w[0][0]+w[1].slice(0,2):w[0].slice(0,3)).slice(0,3)};
+// a guest from outside the CCL takes slot 4 for the game, with its own colors, roster and home floor
+function setGuest(x){Object.assign(CLUBS[4],{name:x.name,abbr:x.abbr,c:x.c,t:x.t});let h=0;for(const ch of x.abbr+x.name)h=(h*31+ch.charCodeAt(0))>>>0;GUESTSEED=10+h%997;
+  ARENAS[4]=Object.assign({},ARENAS[1],{name:`${x.town} Gym`,rink:`${x.town} Ice Arena`,gym:`${x.town} Fieldhouse`,stad:`${x.town} Stadium`,chant:x.name.split(' ').pop().toUpperCase(),student:`the ${x.town} student section`,crowd:[x.c,x.c,x.t,x.c,'#e9e9e4'],trim:x.t});
+  for(const k in _crowdCache)delete _crowdCache[k];if(typeof guestRefresh==='function')guestRefresh()}
+const TLK=typeof PLENS!=='undefined'?'pi':'qi';
+function makeTourney(o){
+  const KEY=o.key+'-'+FRCFG.sport;let T=null,arm=0;
+  const load=()=>{try{T=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){T=null}if(T&&T.v!==1)T=null};
+  const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(T))}catch(e){}};
+  const rng=s=>{let a=s|0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}};
+  const tm=i=>T.teams[i],nm=i=>{const x=tm(i);return x.ccl!=null?CCL[x.ccl].name:x.name},ab=i=>{const x=tm(i);return x.ccl!=null?CCL[x.ccl].abbr:x.abbr};
+  const ccl=()=>{try{return JSON.parse(localStorage.getItem('ccl-'+FRCFG.sport)||'null')}catch(e){return null}};
+  const R=o.regions||1,per=o.size/R,REGR=Math.log2(per);
+  function start(my){const seed=Math.random()*1e9|0,r=rng(seed),fr=ccl(),champ=fr&&fr.phase==='done'?fr.champ:null;
+    const strOf=i=>fr&&fr.str&&fr.str[i]!=null?fr.str[i]:FRCFG.strength?FRCFG.strength(i):.5;
+    const teams=CCL.map((c,i)=>({ccl:i,str:strOf(i)+(i===champ?.06:0)}));
+    const used=new Set(CCL.map(c=>c.abbr)),towns=GTOWNS.slice().sort(()=>r()-.5);
+    for(let k=0;teams.length<o.size;k++){const town=towns[k%towns.length]+(k>=towns.length?' North':''),col=GPAL[Math.floor(r()*GPAL.length)];
+      let abbr=gabbr(town);while(used.has(abbr))abbr=abbr.slice(0,2)+String.fromCharCode(65+Math.floor(r()*26));used.add(abbr);
+      teams.push({name:`${town} ${GMASC[Math.floor(r()*GMASC.length)]}`,town,abbr,c:col[0],t:col[1],str:.3+r()*.36})}
+    // seeds go strongest first; a CCL champion is guaranteed a top seed
+    const order=teams.map((t,i)=>i).sort((a,b)=>teams[b].str-teams[a].str);
+    if(champ!=null){const ci=order.indexOf(champ);if(ci>=R){order.splice(ci,1);order.splice(Math.floor(r()*R),0,champ)}}
+    order.forEach((ti,k)=>{const line=Math.floor(k/R),pos=k%R;teams[ti].seed=line+1;teams[ti].reg=line%2?R-1-pos:pos});
+    const PAIR=per===16?[1,16,8,9,5,12,4,13,6,11,3,14,7,10,2,15]:per===8?[1,8,4,5,3,6,2,7]:[1,4,2,3],first=[];
+    for(let ri=0;ri<R;ri++){const at=s=>teams.findIndex(t=>t.reg===ri&&t.seed===s);for(let k=0;k<PAIR.length;k+=2)first.push({a:at(PAIR[k]),b:at(PAIR[k+1])})}
+    T={v:1,seed,me:teams.findIndex(t=>t.ccl===my),teams,rounds:[first],champ:null,cfg:fr&&fr.cfg?fr.cfg:null,wasCCLChamp:champ===my};save();render()}
+  const cur=()=>T.rounds[T.rounds.length-1];
+  const myMatch=()=>T&&T.champ==null?cur().find(m=>!m.done&&(m.a===T.me||m.b===T.me)):null;
+  const alive=()=>T&&T.rounds.every(rd=>!rd.some(m=>m.done&&(m.a===T.me||m.b===T.me)&&m.w!==T.me));
+  function decide(m,sa,sb){if(sa===sb){if(Math.random()<.5+(tm(m.a).str-tm(m.b).str))sa+=FRCFG.otPts||1;else sb+=FRCFG.otPts||1}m.sa=sa;m.sb=sb;m.done=true;m.w=sa>sb?m.a:m.b}
+  function simMatch(m){const[x,y]=FRCFG.sim(tm(m.a).str,tm(m.b).str);decide(m,x,y)}
+  function advance(){const rd=cur();if(rd.some(m=>!m.done))return;if(rd.length===1){T.champ=rd[0].w;return}const nx=[];for(let k=0;k<rd.length;k+=2)nx.push({a:rd[k].w,b:rd[k+1].w});T.rounds.push(nx)}
+  function finishRound(){for(const m of cur())if(!m.done&&m.a!==T.me&&m.b!==T.me)simMatch(m);advance()}
+  function roundName(r){return o.rounds[r]||`Round ${r+1}`}
+  function oppOf(m){return m.a===T.me?m.b:m.a}
+  function play(){const m=myMatch();if(!m)return;const op=oppOf(m),x=tm(op),r=T.rounds.length-1;
+    let oi;if(x.ccl!=null)oi=x.ccl;else{setGuest(x);oi=4}
+    const myC=tm(T.me).ccl,homeMe=tm(T.me).seed<=x.seed;
+    G.tvenue=r>=o.neutralFrom?5:homeMe?myC:oi;G.tourn=o.key;G.fr=false;
+    if(T.cfg){if(T.cfg.diff!=null)G.diff=T.cfg.diff;if(T.cfg.len!=null)G[TLK]=T.cfg.len}
+    G.clubs=[myC,oi];startGame();toast(`${o.short} · ${roundName(r)} vs ${nm(op)}`)}
+  function record(s0,s1){const m=myMatch();if(!m)return;const meA=m.a===T.me;decide(m,meA?s0:s1,meA?s1:s0);finishRound();save()}
+  function gameOver(){if(!T||G.tourn!==o.key)return false;G.tourn=null;G.tvenue=null;const r=T.rounds.length-1;
+    let s0=G.score[0],s1=G.score[1];if(s0===s1&&G.pkWin!=null){if(G.pkWin===0)s0+=1;else s1+=1}
+    record(s0,s1);const won=s0>s1;let title,msg;
+    if(T.champ===T.me){title=o.champTitle;msg=`${nm(T.me)} win the ${o.lc||o.short}!`}
+    else if(won){title=`${club(0).name} advance`;msg=`${scoreLine()}. Next: the ${roundName(T.rounds.length-1)}.`}
+    else{title=`${club(1).name} win`;msg=`${scoreLine()}. ${nm(T.me)} are out in the ${roundName(r)}.`}
+    card(title,msg+(typeof potg==='function'?' '+potg():''),[{label:`Back to the ${o.short.toLowerCase()}`,fn:()=>{toDemo();renderMenu();render();setTimeout(()=>box.scrollIntoView({block:'start',behavior:'smooth'}),50)}}]);
+    if(T.champ===T.me)setTimeout(()=>BIGCELE(o.champTitle,`${nm(T.me)} win the ${o.lc||o.short}`),600);
+    return true}
+  function simNext(){const m=myMatch();if(!m)return;simMatch(m);finishRound();save();if(T.champ===T.me)BIGCELE(o.champTitle,`${nm(T.me)} win the ${o.lc||o.short}`);render()}
+  function simRest(){let g=0;while(T.champ==null&&g++<20){for(const m of cur())if(!m.done)simMatch(m);advance()}save();render()}
+  const box=document.createElement('section');box.className='fr';box.id='tb-'+o.key;box.hidden=true;$('fr').before(box);
+  const line=(m,showReg)=>{const sa=m.a!=null?tm(m.a):null,sb=m.b!=null?tm(m.b):null;const side=(i,t)=>i==null?'<span>TBD</span>':`<span>${esc(ab(i))} <small>#${t.seed}</small></span>`;
+    return`<div class="frgame${m.a===T.me||m.b===T.me?' me':''}">${side(m.a,sa)}<b>${m.done?`${m.sa}–${m.sb}`:'vs'}</b>${side(m.b,sb)}</div>`};
+  function bracket(){const myReg=tm(T.me).reg;let h='';
+    T.rounds.forEach((rd,r)=>{let ms=rd;if(R>1&&r<REGR){const n=rd.length/R;ms=rd.slice(myReg*n,myReg*n+n)}
+      h+=`<div class="frround"><h4>${roundName(r)}${R>1&&r<REGR?` · ${o.regionNames[myReg]}`:''}</h4>${ms.map(m=>line(m)).join('')}</div>`});
+    if(R>1){const rc=[];const rr=T.rounds[REGR-1];if(rr)rr.forEach((m,i)=>{if(m.done)rc.push(`${o.regionNames[i]}: ${esc(nm(m.w))}`)});if(rc.length)h+=`<p class="frnote">Region champions: ${rc.join(' · ')}</p>`}
+    return h}
+  function render(){let h=`<h2>${o.title}</h2>`;
+    if(!T){const fr=ccl(),champ=fr&&fr.phase==='done'?fr.champ:null;
+      h+=`<p>${o.intro}</p>${champ!=null?`<p class="frnote">${esc(CCL[champ].name)} won the CCL and get a top seed.</p>`:''}<div class="frbtns"><button class="go" type="button" data-tb="new">Start with ${esc(CCL[G.clubs[0]]?CCL[G.clubs[0]].name:CCL[0].name)}</button></div><p class="frnote">Pick your school in the list above first. Your franchise difficulty and game length carry over.</p>`}
+    else{const m=myMatch(),r=T.rounds.length-1;
+      if(T.champ!=null)h+=`<p class="frstatus">${T.champ===T.me?`<b>${esc(nm(T.me))} are ${esc(o.champTitle.toLowerCase())}!</b>`:`<b>${esc(nm(T.champ))}</b> won the ${esc(o.short)}.`}</p>`;
+      else if(m){const op=oppOf(m);h+=`<div class="frnext"><span>${esc(roundName(r))}: <b>${esc(nm(T.me))}</b> (#${tm(T.me).seed}) vs <b>${esc(nm(op))}</b> (#${tm(op).seed})${r>=o.neutralFrom?' · at the State Championship site':''}</span><div class="frbtns"><button class="go" type="button" data-tb="play">Play game</button><button class="btn" type="button" data-tb="sim">Simulate it</button></div></div>`}
+      else if(!alive())h+=`<p class="frstatus">${esc(nm(T.me))} are out.</p><div class="frbtns"><button class="go" type="button" data-tb="rest">Simulate the rest</button></div>`;
+      h+=`<div class="frcols tb">${bracket()}</div><div class="frbtns"><button class="btn" type="button" data-tb="reset">${arm>Date.now()?'Tap again to end this tournament':'Start a new tournament'}</button></div>`}
+    box.innerHTML=h}
+  box.addEventListener('click',e=>{const b=e.target.closest('[data-tb]');if(!b)return;audio();const k=b.dataset.tb;
+    if(k==='new')start(G.clubs[0]<CCL.length?G.clubs[0]:0);else if(k==='play')play();else if(k==='sim')simNext();else if(k==='rest')simRest();
+    else if(k==='reset'){if(arm>Date.now()){arm=0;T=null;try{localStorage.removeItem(KEY)}catch(_){}render()}else{arm=Date.now()+4000;render();setTimeout(render,4100)}}});
+  load();
+  // the next opponent is set up again on reload, so a saved or autosaved tournament game resumes correctly
+  if(T){const m=myMatch();if(m){const x=tm(oppOf(m));if(x.ccl==null)setGuest(x)}}
+  setInterval(()=>{const menu=!$('menu').hidden;box.hidden=!menu},300);
+  render();return{gameOver,render}}
+// built once the whole game has loaded (the franchise settings are defined further down)
+const TOURNS=[];setTimeout(()=>{TOURNS.push(makeTourney({key:'state',title:'State <span>tournament</span>',short:'State tournament',lc:'state tournament',size:16,rounds:['Regional semifinal','Regional final','State semifinal','State championship'],neutralFrom:2,champTitle:'State Champions',
+  intro:'After the CCL season comes the state tournament: 16 of the best teams in the state, one game at a time, win or go home. The higher seed hosts until the state semifinals, which are played at the State Championship site.'}));
+if(FRCFG.sport==='basketball')TOURNS.push(makeTourney({key:'mayhem',title:'March <span>Mayhem</span>',short:'March Mayhem',size:64,regions:4,regionNames:['North','South','East','West'],rounds:['First round','Second round','Sweet 16','Elite 8','Final Four','Championship'],neutralFrom:4,champTitle:'March Mayhem Champions',
+  intro:'64 teams, four regions, six rounds. Seeds 1 through 16 in every region, upsets everywhere, and the Final Four and Championship at the State Championship site. You play every one of your games.'}));},0);
+// leaving a game clears the tournament flags; a saved game keeps them
+setInterval(()=>{if(!$('menu').hidden){G.tourn=null;G.tvenue=null}},500);
+try{SAVECFG.keys.push('tourn','tvenue','venue')}catch(e){}
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'basketball',otPts:2,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b,m=7*G.qlen,s=x=>Math.max(4,Math.round(m*(1+x*.5)+gauss()*m*.11));return[s(d),s(-d)]}};
 const startGame=$('start').onclick;$('start').onclick=()=>{G.fr=false;startGame()};
 /* ---------- franchise mode: the CCL. 4 schools, 6 conference games (each opponent twice, home and away), all 4 make single-game playoffs, the regular-season champion is the 1 seed ---------- */
 const FR=(()=>{
-  const KEY='ccl-'+FRCFG.sport,NT=CLUBS.length;
+  const KEY='ccl-'+FRCFG.sport,NT=CCL.length;
   // season settings: how many games, the difficulty, and the period/quarter/half length for every franchise game
   const LENS=typeof PLENS!=='undefined'?PLENS:typeof QLENS!=='undefined'?QLENS:typeof HLENS!=='undefined'?HLENS:[],LK=typeof PLENS!=='undefined'?'pi':'qi',
     UNIT={hockey:'period',soccer:'half'}[FRCFG.sport]||'quarter',GAMES=[NT-1,(NT-1)*2,(NT-1)*3,(NT-1)*4],TIMES=['once','twice','three times','four times'];
@@ -2078,7 +2188,7 @@ const FR=(()=>{
   }
   function newSeason(my){
     const seed=Math.floor(Math.random()*1e9),r=rng(seed+7),cfg=Object.assign({},PEND);WEEKS=cfg.games;
-    S={v:3,my,cfg,week:0,seed,sched:schedule(seed),res:[],phase:'season',str:CLUBS.map((c,i)=>FRCFG.strength?FRCFG.strength(i):.38+r()*.24),rec:CLUBS.map(()=>({w:0,l:0,t:0,pf:0,pa:0,st:''})),po:null,champ:null};
+    S={v:3,my,cfg,week:0,seed,sched:schedule(seed),res:[],phase:'season',str:CCL.map((c,i)=>FRCFG.strength?FRCFG.strength(i):.38+r()*.24),rec:CCL.map(()=>({w:0,l:0,t:0,pf:0,pa:0,st:''})),po:null,champ:null};
     save();render();
   }
   function apply(g){
@@ -2148,6 +2258,13 @@ const FR=(()=>{
   function bracket(){
     return S.po.rounds.map((rd,k)=>`<div class="frround"><h4>${S.po.names[k]}</h4>${rd.map(m=>`<div class="frgame${m.a===S.my||m.b===S.my?' me':''}"><span>${ab(m.a)} <small>#${S.po.seed.indexOf(m.a)+1}</small></span><b>${m.done?`${m.sa}–${m.sb}`:'vs'}</b><span>${ab(m.b)} <small>#${S.po.seed.indexOf(m.b)+1}</small></span></div>`).join('')}</div>`).join('');
   }
+  // season awards from the games you played: MVP, Offensive and Defensive Player of the Year, Goalie of the Year
+  function awards(){const ps=Object.values(S.ps||{});if(!ps.length)return[];
+    const best=(f,ok)=>{const c=ps.filter(ok||(()=>true)).sort((a,b)=>f(b)-f(a))[0];return c&&f(c)>0?c:null},sk=p=>p.role!=='G',dr=p=>/D/.test(p.role);
+    const line=p=>[p.g&&`${p.g} G`,p.a&&`${p.a} A`,p.sv&&`${p.sv} saves`,p.gb&&`${p.gb} GB`,p.hit&&`${p.hit} hits`].filter(Boolean).join(', ')+` in ${p.gp} game${p.gp>1?'s':''}`;
+    return[['MVP',best(p=>p.g*3+p.a*2+p.sv*.25+p.gb*.5+p.hit*.5+p.sh*.2)],['Offensive Player of the Year',best(p=>p.g*3+p.a*2+p.sh*.2,sk)],['Defensive Player of the Year',best(p=>p.hit+p.gb*.6,p=>sk(p)&&dr(p))||best(p=>p.hit+p.gb*.6,sk)],['Goalie of the Year',best(p=>p.sv,p=>p.role==='G')]].filter(x=>x[1]).map(([t,p])=>({t,p,line:line(p)}))}
+  function awardsHtml(){const a=awards();if(!a.length)return'';const me=CLUBS[S.my].abbr;
+    return`<h4>${S.phase==='done'?'Season awards':'Award race'}</h4><ul class="frres">${a.map(x=>`<li class="${x.p.club===me?'me':''}"><b>${x.t}</b> · #${x.p.num} ${esc(x.p.name)}${x.p.star?' ★':''} (${esc(x.p.club)}) · ${esc(x.line)}</li>`).join('')}</ul><p class="frnote">Counted from the games you played.</p>`}
   function chipRow(label,key,items,cur,locked){return`<div class="frset"><span class="frlbl">${label}</span><div class="frchips">${items.map((it,i)=>`<button class="chip plain" type="button" aria-pressed="${it.v===cur}" ${locked?'disabled':''} data-fs="${key}:${it.v}">${it.t}</button>`).join('')}</div></div>`}
   function settings(c,locked){return chipRow('Games','games',GAMES.map((g,i)=>({v:g,t:`${g} <small>each school ${TIMES[i]}</small>`})),c.games,locked)
     +chipRow('Difficulty','diff',DIFFS.map((d,i)=>({v:i,t:d.label})),c.diff)
@@ -2173,6 +2290,7 @@ const FR=(()=>{
       if(S.po)h+=`<h4>CCL playoffs</h4>${S.conf!=null?`<p class="frnote">${esc(nm(S.conf))} won the regular season and are the No. 1 seed.</p>`:''}${bracket()}`;
       const last=S.res[S.res.length-1];
       if(last&&S.phase==='season')h+=`<h4>Last week</h4><ul class="frres">${last.map(g=>`<li class="${g.a===S.my||g.b===S.my?'me':''}">${esc(ab(g.a))} ${g.sa} – ${g.sb} ${esc(ab(g.b))}</li>`).join('')}</ul>`;
+      h+=awardsHtml();
       h+=`</div></div><div class="frbtns"><button class="btn" type="button" data-fr="reset">${armReset>Date.now()?'Tap again to erase this season':'Start a new season'}</button></div>`;
     }
     el.innerHTML=h;
@@ -2189,8 +2307,11 @@ const FR=(()=>{
   // called from endGame: records the result and shows the franchise card
   function gameOver(){
     if(!G.fr||!S)return false;G.fr=false;
+    if(G.pst){S.ps=S.ps||{};for(const r of Object.values(G.pst)){const k=CLUBS[G.clubs[r.team]].abbr,id=k+'|'+r.num+'|'+r.name,e=S.ps[id]||(S.ps[id]={club:k,num:r.num,name:r.name,role:r.role,star:r.star,gp:0,g:0,a:0,sh:0,gb:0,hit:0,sv:0});e.gp++;for(const f of ['g','a','sh','gb','hit','sv'])e[f]+=r[f]||0}}
     const msg=report(G.score[0],G.score[1]),w=G.score[0]===G.score[1]?-1:G.score[0]>G.score[1]?0:1;
     card(w<0?'Final: tie':`${club(w).name} win`,`${scoreLine()}. ${msg}${typeof potg==='function'?' '+potg():''}`,[{label:'Back to franchise',fn:()=>{toDemo();renderMenu();render();setTimeout(()=>$('fr').scrollIntoView({block:'start',behavior:'smooth'}),50)}}]);
+    if(S.phase==='done'&&S.champ===S.my)setTimeout(()=>BIGCELE('CCL Champions',`${nm(S.my)} win the CCL`),600);
+    if(S.phase==='done'){const aw=awards();if(aw[0])setTimeout(()=>say(`And the CCL MVP is ${aw[0].p.name}!`,2),7000)}
     return true;
   }
   load();
