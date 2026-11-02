@@ -246,6 +246,7 @@ const diff=()=>DIFFS[G.diff];
 const club=t=>CLUBS[G.clubs[t]];
 const isUserTeam=t=>!G.demo&&t===0;
 const team0Right=()=>G.q===5||G.q%2===1;
+const OTL=()=>(G.otn||1)>1?(G.otn+'OT'):'OT';
 const dirOf=t=>(team0Right()?1:-1)*(t===0?1:-1);
 const atkGoal=t=>dirOf(t)>0?GL[1]:GL[0];
 const ownGoal=t=>dirOf(t)>0?GL[0]:GL[1];
@@ -451,6 +452,7 @@ function offTarget(p){
 function defTarget(p){
   const t=p.team,m=markOf(p),og=goalPt(ownGoal(t)),c=ball.owner;
   if(G.slider[t]===p&&c)return{x:c.x+(og.x-c.x)*.15,y:c.y+(og.y-c.y)*.15};
+  if(!m){const b=c||ball;return{x:og.x+(b.x-og.x)*.3,y:og.y+(b.y-og.y)*.3}} // his man is in the penalty box: sag in and help
   const lag=!G.demo&&t===1?diff().lag:.2,h=histOf(m,lag);
   const gap=m===c?1.4:(c&&dist(m,c)<12?2.6:4.2);
   let vx=og.x-h.x,vy=og.y-h.y;const l=hyp(vx,vy)||1;
@@ -733,8 +735,8 @@ function goal(t,shooter){
 }
 function scoreLine(){return`${club(0).abbr} ${G.score[0]}, ${club(1).abbr} ${G.score[1]}`}
 function endQuarter(){
-  sfx('horn');charging=false;say(`That's the end of the ${G.q===5?'overtime':ORD[G.q-1]+' quarter'}. ${club(0).name} ${G.score[0]}, ${club(1).name} ${G.score[1]}.`,3);
-  if(G.q===5){G.clock=Math.min(240,G.qm*120);toast('Still tied. Another overtime');setupFaceoff();return}
+  sfx('horn');charging=false;say(`That's the end of the ${G.q===5?(G.otn>1?'overtime number '+G.otn:'overtime'):ORD[G.q-1]+' quarter'}. ${club(0).name} ${G.score[0]}, ${club(1).name} ${G.score[1]}.`,3);
+  if(G.q===5){G.otn=(G.otn||1)+1;G.clock=Math.min(240,G.qm*120);toast(`Still tied. ${G.otn===2?'Double':G.otn===3?'Triple':OTL()} overtime`);if(!G.demo){say(pick([`We're going to ${G.otn===2?'double':G.otn===3?'triple':'another'} overtime! Nobody can break this tie!`,`Still tied! ${OTL()} at ${venueName()}, and nobody here is sitting down!`]),3);roar(.7,4)}setupFaceoff();return}
   if(G.q<4){
     const nq=G.q+1;
     const go=()=>{hideCard();G.q=nq;G.clock=G.qm*60;setupFaceoff();toast(`${ORD[nq-1]} quarter. Teams switch ends`)};
@@ -743,9 +745,9 @@ function endQuarter(){
     go();return;
   }
   if(G.score[0]===G.score[1]){
-    const go=()=>{hideCard();G.q=5;G.clock=Math.min(240,G.qm*120);setupFaceoff();toast('Sudden-victory overtime')};
+    const go=()=>{hideCard();G.q=5;G.otn=1;G.clock=Math.min(240,G.qm*120);setupFaceoff();toast('Sudden-victory overtime. Next goal wins');if(!G.demo){say(pick(['Sudden victory overtime! Next goal wins it!','Here we go! Overtime! Whoever scores next goes home happy!']),3);roar(.8,5)}};
     if(G.demo){go();return}
-    G.phase='break';card('Overtime',`Tied ${G.score[0]}–${G.score[1]}. ${Math.min(4,G.qm*2)}-minute sudden victory.`,[{label:'Face off',fn:go}]);return;
+    G.phase='break';try{roar(.6,4)}catch(e){}say(`We are tied at ${G.score[0]} after four quarters. We're headed to overtime!`,3);card('Overtime',`Tied ${G.score[0]}–${G.score[1]} after four quarters. ${Math.min(4,G.qm*2)}-minute sudden-victory periods: the next goal wins. If nobody scores, you play another overtime.`,[{label:'Face off',fn:go}]);return;
   }
   endGame();
 }
@@ -754,7 +756,7 @@ function endGame(){try{STATS.record()}catch(e){}
   if(G.demo){setTimeout(()=>{if(G.demo)newGame(true)},2500);return}
   if(FR.gameOver()||TOURNS.some(t=>t.gameOver()))return;
   const w=G.score[0]>G.score[1]?0:1;
-  card(`${club(w).name} win`,`Final${G.q===5?' (OT)':''}: ${scoreLine()}. Shots ${G.stats.shots[0]}–${G.stats.shots[1]}, ground balls ${G.stats.gb[0]}–${G.stats.gb[1]}. ${potg()}`,[{label:'Rematch',fn:()=>newGame(false)},{label:'Change clubs',fn:toDemo}]);
+  card(`${club(w).name} win`,`Final${G.q===5?' ('+OTL()+')':''}: ${scoreLine()}. Shots ${G.stats.shots[0]}–${G.stats.shots[1]}, ground balls ${G.stats.gb[0]}–${G.stats.gb[1]}. ${potg()}`,[{label:'Rematch',fn:()=>newGame(false)},{label:'Change clubs',fn:toDemo}]);
 }
 
 /* ---------- user control ---------- */
@@ -1119,7 +1121,7 @@ function drawBug(){
   for(const t of [0,1]){const c=club(t);ctx.fillStyle=c.c;ctx.fillRect(x,y,50,h);ctx.fillStyle=c.t;ctx.textAlign='center';ctx.fillText(c.abbr,x+25,y+h/2+1);
     ctx.fillStyle='#0b100e';ctx.fillRect(x+50,y,30,h);ctx.fillStyle='#ffffff';ctx.fillText(String(G.score[t]),x+65,y+h/2+1);
     if(G.shotTeam===t){ctx.fillStyle='#ffcf4a';ctx.fillRect(x,y+h-3,80,3)}x+=82}
-  const per=G.demo?'PREGAME':G.q===5?'OT':ORD[G.q-1],s=`${per}  ${fmt(G.clock)}`;
+  const per=G.demo?'PREGAME':G.q===5?OTL():ORD[G.q-1],s=`${per}  ${fmt(G.clock)}`;
   const w=ctx.measureText(s).width+18;ctx.fillStyle='#1a2420';ctx.fillRect(x,y,w,h);ctx.fillStyle='#ffffff';ctx.textAlign='left';ctx.fillText(s,x+9,y+h/2+1);x+=w+2;
   if(G.shotTeam!==null){const sc=String(Math.ceil(G.shot));ctx.fillStyle=G.shot<10?'#ff4b3e':'#3a1512';ctx.fillRect(x,y,40,h);ctx.fillStyle='#ffffff';ctx.textAlign='center';ctx.fillText(sc,x+20,y+h/2+1)}
 }
@@ -1154,9 +1156,9 @@ function fmt(s){s=Math.ceil(s);return Math.floor(s/60)+':'+String(s%60).padStart
 function hud(){
   for(const t of [0,1]){const c=club(t);setText('ab'+t,c.abbr);setText('fn'+t,c.name+(t===0&&!G.demo?' (you)':''));setText('sc'+t,String(G.score[t]));
     const el=$('s'+t);if(cache['j'+t]!==c.c){cache['j'+t]=c.c;el.style.setProperty('--j',c.c)}el.classList.toggle('poss',G.shotTeam===t)}
-  setText('clk',G.clock<60&&G.clock>0?G.clock.toFixed(1):fmt(G.clock));setText('qtr',G.demo?'Pregame':G.q===5?'OT':ORD[G.q-1]);
+  setText('clk',G.clock<60&&G.clock>0?G.clock.toFixed(1):fmt(G.clock));setText('qtr',G.demo?'Pregame':G.q===5?OTL():ORD[G.q-1]);
   setText('shot',G.shotTeam===null?'--':String(Math.ceil(G.shot)));
-  const s=G.stats,rows=[['Goals',G.score],['Shots',s.shots],['On goal',s.sog],['Saves',s.saves],['Ground balls',s.gb],['Faceoffs',s.fo],['Turnovers',s.to],['Trick-shot goals',s.tricks||[0,0]]];
+  const s=G.stats,rows=[['Goals',G.score],['Shots',s.shots],['On goal',s.sog],['Saves',s.saves],['Ground balls',s.gb],['Faceoffs',s.fo],['Turnovers',s.to],['Penalties',s.pens||[0,0]],['Trick-shot goals',s.tricks||[0,0]]];
   const html=`<table><thead><tr><th></th><th>${club(0).abbr}</th><th>${club(1).abbr}</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1][0]}</td><td>${r[1][1]}</td></tr>`).join('')}</tbody></table>`;
   const html2=html+playerBox();if(cache.box!==html2){cache.box=html2;$('box').innerHTML=html2}
   const mode=G.demo?'demo':G.phase==='warm'?'warm':G.phase==='fo'?'fo':ball.owner&&ball.owner.team===0?(ball.owner.role==='G'?'gk':'off'):ball.owner?'def':'loose';
@@ -1181,7 +1183,7 @@ function toast(s){const t=$('toast');t.textContent=s;t.hidden=false;clearTimeout
 function card(title,text,buttons){$('cardT').textContent=title;$('cardP').textContent=text;const row=$('cardB');row.innerHTML='';buttons.forEach((b,i)=>{const el=document.createElement('button');el.type='button';el.className='btn'+(i===0?' primary':'');el.textContent=b.label;el.onclick=b.fn;row.appendChild(el)});$('card').hidden=false}
 const hideCard=()=>{$('card').hidden=true};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function logIt(s){const q=G.q===5?'OT':ORD[G.q-1];G.log.unshift(`<li><b>${q} ${fmt(G.clock)}</b> ${esc(s)}</li>`);G.log.length=Math.min(G.log.length,40);$('log').innerHTML=G.log.join('')}
+function logIt(s){const q=G.q===5?OTL():ORD[G.q-1];G.log.unshift(`<li><b>${q} ${fmt(G.clock)}</b> ${esc(s)}</li>`);G.log.length=Math.min(G.log.length,40);$('log').innerHTML=G.log.join('')}
 
 /* ---------- input ---------- */
 const KEYMAP={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right'};
@@ -2096,6 +2098,55 @@ const TWO=(()=>{const KEY='two-player';let en=false;try{en=localStorage.getItem(
   const _d=draw;draw=function(){_d.apply(this,arguments);if(on()&&ctrl2)try{groundRing(ctrl2.x,ctrl2.y,1.1,'#4ea1ff',null);nameTag(ctrl2,'#4ea1ff')}catch(e){}};
   {const _ng=newGame;newGame=function(){ctrl2=null;return _ng.apply(this,arguments)}}
   render();return{on,vec}})();
+/* ---------- lacrosse penalties: the fouling player sits in the box and his team plays a man down; a man-up goal lets him out early ---------- */
+const LPEN=(()=>{const box=[];
+  const scale=()=>clamp((G.qm||2)/2,1,2),fmtT=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+  function can(o){return!!o&&!G.demo&&!G.skills&&G.phase==='live'&&o.role!=='G'&&P.includes(o)&&box.filter(b=>b.p.team===o.team).length<2}
+  function call(o,kind,tech,victim){
+    if(!can(o))return false;const t=o.team;
+    // the faceoff man stays on the field: another midfielder takes his spot
+    if(o.role==='M'&&o.idx===0){const m=P.find(p=>p.team===t&&p.role==='M'&&p.idx!==0);if(!m)return false;const k=m.idx;m.idx=0;o.idx=k}
+    if(ball.owner===o)ball.owner=null;
+    P.splice(P.indexOf(o),1);REC=[];G.odd=null;
+    const secs=Math.round((tech?20:30)*scale());box.push({p:o,t:secs,kind,tech});
+    G.stats.pens=G.stats.pens||[0,0];G.stats.pens[t]++;if(!G.demo)(pst(o).pen=(pst(o).pen||0)+1);
+    if(ctrl===o){let best=null,bd=1e9;for(const p of P)if(p.team===o.team&&p.role!=='G'){const d=dist(p,ball);if(d<bd){bd=d;best=p}}ctrl=best}
+    try{if(ctrl2===o)ctrl2=null}catch(e){}
+    for(const p of P){p.stun=Math.min(p.stun||0,.3);p.downT=0}
+    const ft=1-t,bx=clamp(victim?victim.x:ball.x,8,FL-8),by=clamp(victim?victim.y:ball.y,6,FWD-6);
+    awardTeam(ft,bx,by,`${tech?'Technical foul':'Personal foul'}: ${kind} on ${o.name} #${o.num} ${club(t).abbr}. ${secs} seconds in the box. ${club(ft).abbr} man-up.`,`Penalty · ${kind}`);
+    say(pick([`Flag is down! ${o.name} is going to the box for ${kind}.`,`${kind} on ${o.name}. ${club(ft).name} go man-up.`,`That's ${kind}. ${o.name} sits for ${secs} seconds.`]),3);
+    try{color(pick(["You can't do that. Now you're playing a man down.","Ref had a great look at it. That's a penalty all day.","Big chance for the man-up offense here."]),3200)}catch(e){}
+    return true}
+  function release(b,why){const i=box.indexOf(b);if(i<0)return;box.splice(i,1);const p=b.p;
+    p.x=MX+(p.team===0?-3:3);p.y=FWD-1;p.vx=0;p.vy=-4;p.stun=0;p.downT=0;p.hold=null;p.hist=[];P.push(p);REC=[];
+    say(`${p.name} is ${why}. ${box.some(x=>x.p.team===p.team)?'':club(p.team).name+' are back to full strength.'}`,1);logIt(`${p.name} #${p.num} ${club(p.team).abbr} ${why}.`)}
+  function tick(dt){if(G.phase!=='live'||!box.length)return;for(const b of box.slice()){b.t-=dt;if(b.t<=0)release(b,'out of the box')}}
+  // a goal by the man-up team frees one player (personal fouls only; technicals are served in full)
+  function goalBy(t){const b=box.find(x=>x.p.team!==t&&!x.tech);if(b)release(b,'released after the man-up goal')}
+  function clear(){while(box.length){const b=box.pop();if(!P.includes(b.p))P.push(b.p)}}
+  function draw(){if(G.demo)return;let y=44;ctx.font='800 14px "Big Shoulders Display","Arial Narrow",sans-serif';ctx.textBaseline='middle';ctx.textAlign='left';
+    if(G.q===5&&(G.phase==='live'||G.phase==='fo')){const s='SUDDEN VICTORY · NEXT GOAL WINS',w=ctx.measureText(s).width+16;ctx.fillStyle='#ffcf4a';ctx.fillRect(10,y-11,w,22);ctx.fillStyle='#1a1405';ctx.fillText(s,18,y+1);y+=26}
+    for(const b of box){const c=club(b.p.team),s=`${c.abbr} #${b.p.num} ${b.kind.toUpperCase()}  ${fmtT(b.t)}`,w=ctx.measureText(s).width+16;
+      ctx.fillStyle=c.c;ctx.fillRect(10,y-11,6,22);ctx.fillStyle='rgba(10,14,12,.85)';ctx.fillRect(16,y-11,w,22);ctx.fillStyle='#fff';ctx.fillText(s,24,y+1);y+=24}
+    if(box.length){const n=[0,1].map(t=>box.filter(b=>b.p.team===t).length);if(n[0]!==n[1]){const up=n[0]<n[1]?0:1,s=`${club(up).abbr} MAN-UP`,w=ctx.measureText(s).width+16;ctx.fillStyle='#ff7a1a';ctx.fillRect(10,y-11,w,22);ctx.fillStyle='#fff';ctx.fillText(s,18,y+1)}}}
+  return{call,tick,goalBy,clear,draw,box,boxed:t=>box.filter(b=>b.p.team===t).length}})();
+// penalties come out of hits and checks
+{const _bh=bodyHit;bodyHit=function(o,c){const fresh=o&&o.bodyCD<=0,live=G.phase==='live',hadBall=ball.owner===c,
+    looseNear=ball.state==='loose'&&dist(c,ball)<3.5,hx=c.x-o.x,hy=c.y-o.y,hl=hyp(hx,hy)||1,behind=(Math.cos(c.face)*hx+Math.sin(c.face)*hy)/hl>.55;
+  _bh(o,c);if(!fresh||!live)return;
+  const r=Math.random();
+  if(!hadBall&&!looseNear){if(r<.5)setTimeout(()=>LPEN.call(o,'illegal body check',false,c),0)}
+  else if(behind){if(r<.35)setTimeout(()=>LPEN.call(o,'push from behind',true,c),0)}
+  else if(r<.05)setTimeout(()=>LPEN.call(o,'unnecessary roughness',false,c),0)}}
+{const _cc=contactCheck;contactCheck=function(c,d,kind){const had=ball.owner===c,r=_cc(c,d,kind);if(r&&kind!=='body'&&had&&ball.owner===c&&G.phase==='live'&&Math.random()<.05)setTimeout(()=>LPEN.call(ctrl,'slashing',false,c),0);return r}}
+{const _ac=aiChecks;aiChecks=function(){const c=ball.owner;_ac();if(c&&ball.owner===c&&G.phase==='live'&&Math.random()<.00025){const o=P.find(p=>p.team!==c.team&&p.role!=='G'&&p!==ctrl&&dist(p,c)<2.2);if(o)LPEN.call(o,pick(['slashing','holding','tripping']),!0,c)}}}
+{const _st=step;step=function(dt,rdt){_st(dt,rdt);try{LPEN.tick(dt)}catch(e){}}}
+{const _gl=goal;goal=function(t,s){_gl(t,s);try{LPEN.goalBy(t)}catch(e){}}}
+{const _sf=setupFaceoff;setupFaceoff=function(){const out=LPEN.box.map(b=>b.p);for(const p of out)P.push(p);try{_sf()}finally{for(const p of out){const i=P.indexOf(p);if(i>=0)P.splice(i,1)}if(ctrl&&!P.includes(ctrl))ctrl=P.find(p=>p.team===0&&p.role==='M')||null}}}
+{const _ng=newGame;newGame=function(d){LPEN.clear();G.otn=1;_ng(d);G.stats.pens=[0,0]}}
+{const _dr=draw;draw=function(){_dr();try{if(!G.rp)LPEN.draw()}catch(e){}}}
+{const _eg=endGame;endGame=function(){LPEN.clear();_eg()}}
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'lacrosse',otPts:1,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b;return[frPois(9+d*10),frPois(9-d*10)]}};
