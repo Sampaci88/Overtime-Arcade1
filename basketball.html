@@ -519,7 +519,7 @@ function launchShot(p){
 function blockShot(p,b,hx,hy,hz){
   const t=p.team,dir=dirOf(t),a=Math.atan2(p.y-b.y,p.x-b.x);
   ball.x=hx;ball.y=hy;ball.z=hz;loose(Math.cos(a)*9-dir*4+rnd(3),Math.sin(a)*9+rnd(4),2+Math.random()*4,b.team);ball.blocked=true;ball.rimHit=false;ball.lastTouch=b;
-  G.stats.blk[b.team]++;sfx('block');roar(.3,2.2);G.slowT=.7;G.bigPlay=false;G.flash=1.2;
+  G.stats.blk[b.team]++;if(!G.demo)pst(b).blk++;sfx('block');roar(.3,2.2);G.slowT=.7;G.bigPlay=false;G.flash=1.2;
   callout('Blocked',`${tag(b)} rejects ${p.name}`,'#ff4d3d');floatText(b,'BLOCKED','#ff4d3d');
   say(pick([`Rejected! ${b.name} sends it away!`,`Get that out of here! ${b.name} with the block!`,`Blocked by ${b.name}!`,`${b.name} says no!`]),2);
   if(Math.random()<.5)color(pick(['Great timing on the contest. He waited for him to leave the floor.','You do not bring that weak stuff in here.','That is rim protection.']),1700);
@@ -589,11 +589,11 @@ function missed(p,si){
   if(si.three&&si.grade&&si.grade.g.startsWith('Very')&&Math.random()<.5)color('Way off on the release there. He rushed that one.',1500);
 }
 function scoreBasket(p,si){
-  const t=p.team,pts=si.pts;G.score[t]+=pts;p.pts+=pts;
+  const t=p.team,pts=si.pts;G.score[t]+=pts;p.pts+=pts;if(!G.demo)pst(p).pts+=pts;
   if(p.ankleAt!=null&&GT-p.ankleAt<3&&si.kind!=='ft'){p.ankleAt=null;setTimeout(()=>{callout('Ankle breaker bucket!',`${p.name} drops him and scores`,'#ff9f1c');roar(1,4);say(pick([`He broke his ankles and finished it! ${p.name}!`,`${p.name} with the ankle breaker... and the bucket!`]),3)},300)}
   if(si.kind!=='ft')setTimeout(()=>CLUTCH.check(t),0);
   if(si.kind==='ft'){G.stats.ftm[t]++;say(pick(['Free throw is good.','Good.','Knocks it down.','Splits the net.']),0);ftNext(true);return}
-  G.stats.fgm[t]++;if(si.three)G.stats.tpm[t]++;if(si.assist)G.stats.ast[t]++;
+  G.stats.fgm[t]++;if(si.three)G.stats.tpm[t]++;if(si.assist){G.stats.ast[t]++;if(!G.demo)pst(si.assist).a++}
   p.streak++;
   if(G.run&&G.run.team===t)G.run.pts+=pts;else G.run={team:t,pts,said:0};
   const n=p.name,big=si.kind==='dunk'||(si.three&&Math.abs(G.score[0]-G.score[1])<=3&&G.q>=4&&G.clock<60);
@@ -674,7 +674,7 @@ function grabs(){
   if(best===ctrl)pr+=.1;
   if(Math.random()>=pr){if(ball.z>4&&Math.random()<.3){ball.vx+=rnd(4);ball.vy+=rnd(4);ball.vz=Math.max(ball.vz,3);ball.lastTouch=best}return}
   const rim=ball.rimHit,off=rim&&best.team===ball.shotTeam;
-  if(rim){G.stats.reb[best.team]++;
+  if(rim){G.stats.reb[best.team]++;if(!G.demo)pst(best).reb++;
     if(off){say(pick([`Offensive board, ${best.name}!`,`${best.name} keeps it alive!`,`Second chance for ${club(best.team).city}.`]),1)}
     else if(Math.random()<.4)say(pick([`Rebound ${best.name}.`,`${best.name} cleans the glass.`,`${best.name} pulls it down.`]),0)}
   ball.rimHit=false;ball.blocked=false;ball.airball=false;
@@ -682,7 +682,7 @@ function grabs(){
 }
 function steal(d,h,how){
   const victim=h||ball.lastTouch;
-  G.stats.stl[d.team]++;if(victim)G.stats.to[victim.team]++;
+  G.stats.stl[d.team]++;if(!G.demo)pst(d).stl++;if(victim)G.stats.to[victim.team]++;
   giveBall(d,'steal');floatText(d,'Steal','#3ddc84');sfx('squeak');roar(.22,1.6);
   callout('Steal',`${tag(d)} ${how==='int'?'picks off the pass':'strips '+(victim?victim.name:'him')}`,'#3ddc84');
   say(how==='int'?pick([`Picked off by ${d.name}!`,`Intercepted! ${d.name} jumps the passing lane!`]):pick([`Stolen by ${d.name}!`,`${d.name} picks his pocket!`,`Turnover! ${d.name} with the steal.`,`${d.name} pokes it away!`]),2);
@@ -997,7 +997,7 @@ function endGame(){try{STATS.record()}catch(e){}if(!G.demo&&soundOn&&AC&&G.score
   say(`And that's the ballgame! ${club(w).name} win it, ${Math.max(...G.score)} to ${Math.min(...G.score)}.`,3);
   color(`${top(w).name} led the way with ${top(w).pts} points. What a performance.`,3200);roar(.4,4);
   if(FR.gameOver()||TOURNS.some(t=>t.gameOver()))return;
-  card(`${club(w).name} win`,`Final${G.q>4?' (OT)':''}: ${scoreLine()}. Top scorers: ${top(0).name} ${top(0).pts}, ${top(1).name} ${top(1).pts}.`,[{label:'Rematch',fn:()=>newGame(false)},{label:'Change clubs',fn:toDemo}]);
+  card(`${club(w).name} win`,`Final${G.q>4?' (OT)':''}: ${scoreLine()}. Top scorers: ${top(0).name} ${top(0).pts}, ${top(1).name} ${top(1).pts}. ${potg()}`,[{label:'Rematch',fn:()=>newGame(false)},{label:'Change clubs',fn:toDemo}]);
 }
 function step(dt,rdt){
   for(const f of fx)f.t+=rdt;fx=fx.filter(f=>f.t<1.6);
@@ -1370,7 +1370,7 @@ function hud(){
   const rows=[['Points',G.score],['Field goals',[pc(st.fgm[0],st.fga[0]),pc(st.fgm[1],st.fga[1])]],['3-pointers',[pc(st.tpm[0],st.tpa[0]),pc(st.tpm[1],st.tpa[1])]],['Free throws',[pc(st.ftm[0],st.fta[0]),pc(st.ftm[1],st.fta[1])]],['Rebounds',st.reb],['Assists',st.ast],['Steals',st.stl],['Blocks',st.blk],['Turnovers',st.to],['Fouls',st.pf]];
   const top=t=>{const p=P.filter(q=>q.team===t).sort((a,b)=>b.pts-a.pts)[0];return p?`${p.name} ${p.pts}`:''};
   const html=`<table><thead><tr><th></th><th>${club(0).abbr}</th><th>${club(1).abbr}</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1][0]}</td><td>${r[1][1]}</td></tr>`).join('')}<tr><td>Top scorer</td><td>${esc(top(0))}</td><td>${esc(top(1))}</td></tr></tbody></table>`;
-  if(cache.box!==html){cache.box=html;$('box').innerHTML=html}
+  const html2=html+playerBox();if(cache.box!==html2){cache.box=html2;$('box').innerHTML=html2}
   const mode=G.demo?'demo':G.phase==='warm'?'warm':G.phase==='tip'?'tip':G.phase==='ft'&&G.ft&&G.ft.team===0?'ft':G.phase==='inbound'&&G.inb&&G.inb.team===0?'inb':ball&&ball.owner&&ball.owner.team===0?'off':ball&&ball.owner?'def':'loose';
   if(cache.mode!==mode){cache.mode=mode;renderInfo()}
 }
@@ -2242,6 +2242,49 @@ const ACH=(()=>{const KEY='overtime-achievements',L=[['first','First W','Win a g
   AFTER.push(()=>{if(G.skills)return;if(Object.values(G.pst||{}).some(r=>r.team===0&&r.g>=3))give('hat');if(!userWon())return;give('first');if(G.diff===3)give('legend');if(G.score[1]===0)give('shutout');if(G.score[0]-G.score[1]>=BIG)give('blowout');
     if(WX.on())give('weather');if(THEME.on())give('night');D.sports[CELESPORT]=1;save();if(['hockey','lacrosse','football','basketball','soccer'].every(s=>D.sports[s]))give('five')});
   render();return{give}})();
+const PCOLS=[['pts','PTS'],['reb','REB'],['a','AST'],['stl','STL'],['blk','BLK']],PW={pts:1,reb:1.2,a:1.5,stl:2,blk:2},
+  AWDEF=[['MVP',r=>pscore(r)],['Offensive Player of the Year',r=>r.pts+r.a*1.5],['Defensive Player of the Year',r=>r.stl*2+r.blk*2+r.reb*.5],['Rebounder of the Year',r=>r.reb]];
+/* ---------- players: individual stats, the players-to-watch preview, Player of the Game and season awards ---------- */
+const pkey=p=>p.team+'|'+p.num+'|'+p.name;
+function pst(p){if(!G.pst)G.pst={};const k=pkey(p);let e=G.pst[k];if(!e){e=G.pst[k]={team:p.team,num:p.num,name:p.name,role:p.role,star:p.star||null};for(const[c]of PCOLS)e[c]=0}return e}
+const pscore=r=>Object.keys(PW).reduce((s,k)=>s+(r[k]||0)*PW[k],0);
+const statline=r=>PCOLS.filter(([k])=>r[k]).map(([k,l])=>`${r[k]} ${l}`).join(', ');
+function playerBox(){const rows=Object.values(G.pst||{});if(!rows.length)return'';
+  return[0,1].map(t=>{const rs=rows.filter(r=>r.team===t&&PCOLS.some(([k])=>r[k])).sort((a,b)=>pscore(b)-pscore(a));if(!rs.length)return'';
+    return`<h4 class="pbh">${esc(club(t).abbr)} players</h4><div class="pboxw"><table class="pbox"><thead><tr><th>Player</th>${PCOLS.map(c=>`<th>${c[1]}</th>`).join('')}</tr></thead><tbody>${rs.map(r=>`<tr><td>#${r.num} ${esc(r.name)}</td>${PCOLS.map(([k])=>`<td>${r[k]||''}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`}).join('')}
+function potg(){const rows=Object.values(G.pst||{});if(!rows.length)return'';const w=G.score[0]===G.score[1]?(G.pkWin!=null?G.pkWin:null):G.score[0]>G.score[1]?0:1;
+  const b=rows.filter(r=>w==null||r.team===w).sort((a,c)=>pscore(c)-pscore(a))[0];if(!b||pscore(b)<=0)return'';return`Player of the game: #${b.num} ${b.name} (${statline(b)}).`}
+function rateOf(p){if(p.rat)return p.rat;let h=0;for(const ch of p.name+'|'+G.clubs[p.team])h=(h*31+ch.charCodeAt(0))>>>0;return 68+h%15}
+function showPreview(){const st=$('stage')||$('fieldbox')||$('pitch');if(!st)return;let el=$('pvcard');
+  if(!el){el=document.createElement('div');el.id='pvcard';el.className='pvcard';el.hidden=true;st.appendChild(el);el.addEventListener('click',()=>{el.hidden=true})}
+  const pool=t=>P.filter(p=>p.team===t&&(CELESPORT!=='football'||p.side==='O'||p.side==='D'));
+  const top=t=>{const seen=new Set();return pool(t).filter(p=>{const k=p.name+p.num;if(seen.has(k))return false;seen.add(k);return true}).map(p=>({p,r:rateOf(p)})).sort((a,b)=>b.r-a.r).slice(0,3)};
+  el.innerHTML=`<h3>Players to watch</h3><div class="pvcols">${[0,1].map(t=>`<div><b>${esc(club(t).name)}</b>${top(t).map(({p,r})=>`<div class="pvrow"><span>#${p.num} ${esc(p.name)} <small>${esc(p.pos||p.role)}</small></span><b>${r}</b></div>`).join('')}</div>`).join('')}</div><small>Tap to close</small>`;
+  el.hidden=false;clearTimeout(showPreview.t);showPreview.t=setTimeout(()=>{el.hidden=true},10000);
+  const a=top(0)[0],b=top(1)[0];if(a&&b&&typeof say==='function')say(`Players to watch tonight: ${a.p.name} for ${club(0).name}, and ${b.p.name} for ${club(1).name}.`,1)}
+{const css=document.createElement('style');css.textContent=`.pvcard{position:absolute;left:50%;top:12%;transform:translateX(-50%);z-index:30;width:min(560px,92%);background:rgba(10,14,22,.95);border:1px solid rgba(255,255,255,.2);border-radius:12px;padding:12px 16px;color:#fff;font:600 14px/1.35 system-ui,sans-serif;cursor:pointer}
+.pvcard h3{margin:0 0 8px;font-family:var(--display);font-size:24px;text-transform:uppercase;letter-spacing:.04em;color:var(--led,#ffc23d)}
+.pvcols{display:grid;grid-template-columns:1fr 1fr;gap:14px}.pvcols>div>b{display:block;font-family:var(--display);font-size:17px;text-transform:uppercase;margin-bottom:4px}
+.pvrow{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-top:1px solid rgba(255,255,255,.12)}.pvrow small{color:#9aa6b2}.pvrow>b{font-variant-numeric:tabular-nums;color:#ffc23d}
+.pvcard>small{display:block;margin-top:6px;color:#9aa6b2;text-align:right}
+.pboxw{overflow-x:auto}.pbox{width:100%;font-size:13px;margin-top:4px;border-collapse:collapse}.pbox td,.pbox th{text-align:right;padding:2px 4px;font-variant-numeric:tabular-nums;white-space:nowrap}.pbox td:first-child,.pbox th:first-child{text-align:left}.pbh{margin:12px 0 2px}
+@media (max-width:520px){.pvcols{grid-template-columns:1fr}}`;document.head.appendChild(css)}
+let _pvPhase='';setInterval(()=>{const ph=G.demo?'demo':G.phase;if(ph==='warm'&&_pvPhase!=='warm'&&!G.skills)setTimeout(showPreview,typeof THEME!=='undefined'&&THEME.on()?6800:0);_pvPhase=ph},300);
+{const _ngP=newGame;newGame=function(){G.pst={};return _ngP.apply(this,arguments)}}
+// season awards for the franchise, from the games you played
+const AWCFG=ps=>AWDEF.map(([t,f,ok])=>{const c=ps.filter(ok||(()=>true)).sort((a,b)=>f(b)-f(a))[0];return c&&f(c)>0?{t,p:c,line:statline(c)+` in ${c.gp} game${c.gp>1?'s':''}`}:null}).filter(Boolean);
+/* ---------- team records: the best your team has done, kept on this device ---------- */
+const RECS=(()=>{const KEY='records-'+CELESPORT,PTS=CELESPORT==='basketball'||CELESPORT==='football'?'points':'goals';let R={};try{R=JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){}
+  const box=menuBox('recbox','');
+  const LBL={most:`Most ${PTS} in a game`,margin:'Biggest win',streak:'Longest winning streak',player:'Best single-game performance'};
+  function render(){const keys=Object.keys(LBL).filter(k=>R[k]);box.innerHTML=`<h2>Team <span>records</span></h2>${keys.length?`<ul class="frres">${keys.map(k=>`<li><b>${LBL[k]}</b> · ${esc(R[k].txt)} <small>(${esc(R[k].d)})</small></li>`).join('')}</ul>`:'<p class="frnote">Play a game and your records start here.</p>'}${R.cur?`<p class="frnote">Current winning streak: ${R.cur}</p>`:''}`}
+  AFTER.push(()=>{if(G.skills)return;const me=club(0).abbr,op=club(1).abbr,s0=G.score[0],s1=G.score[1],won=userWon(),d=new Date().toLocaleDateString(),got=[];
+    const set=(k,v,txt)=>{if(v>0&&(!R[k]||v>R[k].v)){R[k]={v,txt,d};got.push(LBL[k])}};
+    set('most',s0,`${me} ${s0}–${s1} ${op}`);if(won)set('margin',s0-s1,`${me} ${s0}–${s1} ${op}`);
+    R.cur=won?(R.cur||0)+1:0;set('streak',R.cur,`${R.cur} straight`);
+    if(typeof PCOLS!=='undefined'&&G.pst){const k=PCOLS[0][0],lbl=PCOLS[0][1],b=Object.values(G.pst).filter(r=>r.team===0).sort((x,y)=>(y[k]||0)-(x[k]||0))[0];if(b)set('player',b[k]||0,`#${b.num} ${b.name}, ${b[k]} ${lbl} vs ${op}`)}
+    try{localStorage.setItem(KEY,JSON.stringify(R))}catch(e){}render();if(got.length)setTimeout(()=>toast(`New team record: ${got[0]}`),1500)});
+  render();return{}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'basketball',otPts:2,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b,m=7*G.qlen,s=x=>Math.max(4,Math.round(m*(1+x*.5)+gauss()*m*.11));return[s(d),s(-d)]}};
@@ -2340,10 +2383,12 @@ const FR=(()=>{
     return S.po.rounds.map((rd,k)=>`<div class="frround"><h4>${S.po.names[k]}</h4>${rd.map(m=>`<div class="frgame${m.a===S.my||m.b===S.my?' me':''}"><span>${ab(m.a)} <small>#${S.po.seed.indexOf(m.a)+1}</small></span><b>${m.done?`${m.sa}–${m.sb}`:'vs'}</b><span>${ab(m.b)} <small>#${S.po.seed.indexOf(m.b)+1}</small></span></div>`).join('')}</div>`).join('');
   }
   // season awards from the games you played: MVP, Offensive and Defensive Player of the Year, Goalie of the Year
-  function awards(){const ps=Object.values(S.ps||{});if(!ps.length)return[];
+  function awards(){const ps=Object.values(S.ps||{});if(!ps.length)return[];if(typeof AWCFG!=='undefined')return AWCFG(ps);
     const best=(f,ok)=>{const c=ps.filter(ok||(()=>true)).sort((a,b)=>f(b)-f(a))[0];return c&&f(c)>0?c:null},sk=p=>p.role!=='G',dr=p=>/D/.test(p.role);
     const line=p=>[p.g&&`${p.g} G`,p.a&&`${p.a} A`,p.sv&&`${p.sv} saves`,p.gb&&`${p.gb} GB`,p.hit&&`${p.hit} hits`].filter(Boolean).join(', ')+` in ${p.gp} game${p.gp>1?'s':''}`;
     return[['MVP',best(p=>p.g*3+p.a*2+p.sv*.25+p.gb*.5+p.hit*.5+p.sh*.2)],['Offensive Player of the Year',best(p=>p.g*3+p.a*2+p.sh*.2,sk)],['Defensive Player of the Year',best(p=>p.hit+p.gb*.6,p=>sk(p)&&dr(p))||best(p=>p.hit+p.gb*.6,sk)],['Goalie of the Year',best(p=>p.sv,p=>p.role==='G')]].filter(x=>x[1]).map(([t,p])=>({t,p,line:line(p)}))}
+  function leadersHtml(){if(typeof PCOLS==='undefined')return'';const ps=Object.values(S.ps||{});if(!ps.length)return'';
+    const li=PCOLS.map(([k,l])=>{const t=ps.filter(r=>r[k]>0).sort((a,b)=>b[k]-a[k]).slice(0,3);return t.length?`<li><b>${l}</b> · ${t.map(r=>`${esc(r.name)} (${esc(r.club)}) ${r[k]}`).join(', ')}</li>`:''}).join('');return li?`<h4>Season leaders</h4><ul class="frres">${li}</ul>`:''}
   function awardsHtml(){const a=awards();if(!a.length)return'';const me=CLUBS[S.my].abbr;
     return`<h4>${S.phase==='done'?'Season awards':'Award race'}</h4><ul class="frres">${a.map(x=>`<li class="${x.p.club===me?'me':''}"><b>${x.t}</b> · #${x.p.num} ${esc(x.p.name)}${x.p.star?' ★':''} (${esc(x.p.club)}) · ${esc(x.line)}</li>`).join('')}</ul><p class="frnote">Counted from the games you played.</p>`}
   function chipRow(label,key,items,cur,locked){return`<div class="frset"><span class="frlbl">${label}</span><div class="frchips">${items.map((it,i)=>`<button class="chip plain" type="button" aria-pressed="${it.v===cur}" ${locked?'disabled':''} data-fs="${key}:${it.v}">${it.t}</button>`).join('')}</div></div>`}
@@ -2371,7 +2416,7 @@ const FR=(()=>{
       if(S.po)h+=`<h4>CCL playoffs</h4>${S.conf!=null?`<p class="frnote">${esc(nm(S.conf))} won the regular season and are the No. 1 seed.</p>`:''}${bracket()}`;
       const last=S.res[S.res.length-1];
       if(last&&S.phase==='season')h+=`<h4>Last week</h4><ul class="frres">${last.map(g=>`<li class="${g.a===S.my||g.b===S.my?'me':''}">${esc(ab(g.a))} ${g.sa} – ${g.sb} ${esc(ab(g.b))}</li>`).join('')}</ul>`;
-      h+=awardsHtml();
+      h+=awardsHtml()+leadersHtml();
       h+=`</div></div><div class="frbtns"><button class="btn" type="button" data-fr="reset">${armReset>Date.now()?'Tap again to erase this season':'Start a new season'}</button></div>`;
     }
     el.innerHTML=h;
@@ -2388,7 +2433,7 @@ const FR=(()=>{
   // called from endGame: records the result and shows the franchise card
   function gameOver(){
     if(!G.fr||!S)return false;G.fr=false;
-    if(G.pst){S.ps=S.ps||{};for(const r of Object.values(G.pst)){const k=CLUBS[G.clubs[r.team]].abbr,id=k+'|'+r.num+'|'+r.name,e=S.ps[id]||(S.ps[id]={club:k,num:r.num,name:r.name,role:r.role,star:r.star,gp:0,g:0,a:0,sh:0,gb:0,hit:0,sv:0});e.gp++;for(const f of ['g','a','sh','gb','hit','sv'])e[f]+=r[f]||0}}
+    if(G.pst){S.ps=S.ps||{};for(const r of Object.values(G.pst)){const k=CLUBS[G.clubs[r.team]].abbr,id=k+'|'+r.num+'|'+r.name,e=S.ps[id]||(S.ps[id]={club:k,num:r.num,name:r.name,role:r.role,star:r.star,gp:0,g:0,a:0,sh:0,gb:0,hit:0,sv:0});e.gp++;for(const f in r)if(typeof r[f]==='number'&&f!=='num'&&f!=='team')e[f]=(e[f]||0)+r[f]}}
     const msg=report(G.score[0],G.score[1]),w=G.score[0]===G.score[1]?-1:G.score[0]>G.score[1]?0:1;
     card(w<0?'Final: tie':`${club(w).name} win`,`${scoreLine()}. ${msg}${typeof potg==='function'?' '+potg():''}`,[{label:'Back to franchise',fn:()=>{toDemo();renderMenu();render();setTimeout(()=>$('fr').scrollIntoView({block:'start',behavior:'smooth'}),50)}}]);
     if(S.phase==='done'&&S.champ===S.my)setTimeout(()=>BIGCELE('CCL Champions',`${nm(S.my)} win the CCL`),600);
