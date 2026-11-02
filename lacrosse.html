@@ -284,7 +284,7 @@ function histOf(p,lag){const h=p.hist,t=GT-lag;for(let i=h.length-1;i>=0;i--)if(
 function inputVec(){let ix=(K.right-K.left)+joy.x,iy=(K.down-K.up)+joy.y;if(VCAM){const d=dirOf(0),wx=-iy*d;iy=ix*d;ix=wx}const m=hyp(ix,iy);if(m>1){ix/=m;iy/=m}return{x:ix,y:iy,m:Math.min(1,m)}}
 const angTo=(a,b)=>Math.atan2(Math.sin(b-a),Math.cos(b-a));
 function turnTo(p,a,dt,rate){p.face+=angTo(p.face,a)*Math.min(1,rate*dt)}
-function userMove(p,dt){const v=inputVec(),k=1.9/SPEEDS[G.speed].k;if(v.m>.12){accelTo(p,v.x*maxSpd(p)*v.m,v.y*maxSpd(p)*v.m,dt,p.acc*k);turnTo(p,Math.atan2(v.y,v.x),dt,14/SPEEDS[G.speed].k)}else accelTo(p,0,0,dt,p.acc*k*.8)}
+function userMove(p,dt,vv){const v=vv||inputVec(),k=1.9/SPEEDS[G.speed].k;if(v.m>.12){accelTo(p,v.x*maxSpd(p)*v.m,v.y*maxSpd(p)*v.m,dt,p.acc*k);turnTo(p,Math.atan2(v.y,v.x),dt,14/SPEEDS[G.speed].k)}else accelTo(p,0,0,dt,p.acc*k*.8)}
 function steerAvoid(c,tx,ty,dt){
   const a0=Math.atan2(ty-c.y,tx-c.x);let best=a0,bs=1e9;
   for(let k=-4;k<=4;k++){const a=a0+k*.3,hx=Math.cos(a),hy=Math.sin(a);let pen=Math.abs(k)*.45;
@@ -929,9 +929,10 @@ function step(dt,rdt){
   updateCtrl(dt);if(ctrl&&ctrl.lungeT>0)lungeStep(dt);updateHolds(0);updateHolds(1);computeSlider(0);computeSlider(1);computeChasers();
   for(const p of P){
     for(const k of ['stun','checkCD','dodgeT','dodgeCD','catchCD','bodyCD','scoopCD','trickT','fakeCD','fakeT','biteT','downT'])if(p[k]>0)p[k]-=dt;
-    if(p===ball.owner){if(p===ctrl){userMove(p,dt);if(p.role==='G'){p.holdT+=dt;if(p.holdT>3.5){const b=bestPass(p);if(b)pass(p,b.p)}}}else carrierAI(p,dt)}
+    if(p===ball.owner){if(p===ctrl){userMove(p,dt);if(p.role==='G'){p.holdT+=dt;if(p.holdT>3.5){const b=bestPass(p);if(b)pass(p,b.p)}}}else if(p===ctrl2&&TWO.on())userMove(p,dt,TWO.vec());else carrierAI(p,dt)}
     else if(p===ctrl&&p.lungeT>0&&p.lungeTo&&inputVec().m<=.12){seek(p,p.lungeTo.x+p.lungeTo.vx*.2,p.lungeTo.y+p.lungeTo.vy*.2,dt,1.3,.2);faceBall(p,dt)}
     else if(p===ctrl){if(inputVec().m<=.12&&ball.state==='air'&&ball.kind==='pass'&&ball.intended===p){meetBall(p,dt)}else{userMove(p,dt);if(inputVec().m<=.12)faceBall(p,dt)}}
+    else if(p===ctrl2&&TWO.on())userMove(p,dt,TWO.vec());
     else offBall(p,dt);
   }
   for(const p of P){p.x+=p.vx*dt;p.y+=p.vy*dt;p.anim=(p.anim||0)+hyp(p.vx,p.vy)*dt*1.1;if(p!==ball.owner){p.x=clamp(p.x,-1.5,FL+1.5);p.y=clamp(p.y,-1.5,FWD+1.5)}
@@ -2059,6 +2060,42 @@ let FRDYN=null;
 AFTER.push(()=>{const st=FRDYN&&FRDYN.state();if(!st||!st.dyn||G.clubs[0]!==st.my)return;for(const p of P){if(p.team!==0)continue;const s=st.dyn.slots[p.role];if(s&&s.name==null)s.name=p.first?`${p.first} ${p.name}`:p.name}});
 // state and March Mayhem titles go in the dynasty trophy case
 {const _b=BIGCELE;BIGCELE=function(t,...a){const k={'State Champions':'state','March Mayhem Champions':'mayhem'}[t];if(k&&FRDYN)FRDYN.addTrophy(k);return _b.call(this,t,...a)}}
+/* ---------- two players on one keyboard: Player 2 runs the away team with the arrow keys ---------- */
+let ctrl2=null;
+const TWO=(()=>{const KEY='two-player';let en=false;try{en=localStorage.getItem(KEY)==='1'}catch(e){}
+  const on=()=>en&&!G.demo&&!G.fr&&!G.tourn&&!G.skills;
+  const K2={up:0,down:0,left:0,right:0},MAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};let shotT0=0,chkT0=0,lastSw=0;
+  const box=menuBox('twobox','',e=>{const b=e.target.closest('[data-two]');if(!b)return;en=b.dataset.two==='2';try{localStorage.setItem(KEY,en?'1':'0')}catch(_){}render()});
+  function render(){box.innerHTML=`<h2>Players <span>${en?'2':'1'}</span></h2><div class="xchips"><button class="chip plain" type="button" aria-pressed="${!en}" data-two="1">1 player vs the CPU</button><button class="chip plain" type="button" aria-pressed="${en}" data-two="2">2 players, same keyboard</button></div>
+    <p class="frnote">${en?`Player 1 is the first school you pick: WASD, Space, E, Q. Player 2 is the second school: arrow keys to run, <b>/</b> to shoot (hold to shoot harder) or check (tap for a stick check, hold for a body check), <b>.</b> to pass, <b>,</b> to dodge or switch. Needs a keyboard. Franchise, tournaments and skills challenges stay one player.`:'Play against the computer.'}</p>`}
+  function vec(){let ix=K2.right-K2.left,iy=K2.down-K2.up;if(VCAM){const d=dirOf(0),wx=-iy*d;iy=ix*d;ix=wx}const m=hyp(ix,iy);if(m>1){ix/=m;iy/=m}return{x:ix,y:iy,m:Math.min(1,m)}}
+  function nearest(){let best=null,bd=1e9;for(const p of P)if(p.team===1&&p.role!=='G'){const d=dist(p,ball);if(d<bd){bd=d;best=p}}return best}
+  function check(held){const me=ctrl2;if(!me||me.checkCD>0)return;me.checkCD=.6;const c=ball.owner;
+    if(!c||c.team!==0||dist(me,c)>(held?3.6:2.6)){floatText(me,'No one to check','#cfd8d2');return}
+    if(held){bodyHit(me,c);return}
+    if(c.dodgeT<=0&&Math.random()<(me.role==='D'?.34:.26))dislodge(c,'check');else{sfx('check');floatText(me,'Whiff');me.stun=.15}}
+  addEventListener('keydown',e=>{if(!on())return;const k=MAP[e.code];
+    if(k){K2[k]=1;e.preventDefault();e.stopImmediatePropagation();return}
+    if(e.code==='Slash'||e.code==='Period'||e.code==='Comma'){e.preventDefault();e.stopImmediatePropagation();if(e.repeat)return;
+      if(G.phase==='fo'){if(e.code==='Slash'&&G.whistled&&G.cpuRt>G.foW)G.cpuRt=G.foW;return}
+      if(G.phase!=='live'||!ctrl2)return;const has=ball.owner===ctrl2;
+      if(e.code==='Slash'){if(has)shotT0=performance.now();else chkT0=performance.now()}
+      else if(e.code==='Period'){if(has){const b=bestPass(ctrl2);if(b)pass(ctrl2,b.p,.6)}}
+      else{if(has)dodge(ctrl2);else{const n=nearest();if(n&&n!==ctrl2){ctrl2=n;lastSw=GT;floatText(n,'Switch','#4ea1ff')}}}}},true);
+  addEventListener('keyup',e=>{const k=MAP[e.code];if(k){K2[k]=0;if(on()){e.preventDefault();e.stopImmediatePropagation()}return}
+    if(e.code==='Slash'&&on()){e.preventDefault();e.stopImmediatePropagation();const now=performance.now();
+      if(shotT0&&ctrl2&&ball.owner===ctrl2&&G.phase==='live'&&ctrl2.role!=='G')shoot(ctrl2,Math.min(1,(now-shotT0)/900));
+      else if(chkT0&&ctrl2&&G.phase==='live')check((now-chkT0)/1000>=.3);shotT0=0;chkT0=0}},true);
+  // who Player 2 controls: the ball carrier, the one a pass is going to, or the player nearest the ball
+  const _uc=updateCtrl;updateCtrl=function(dt){_uc.apply(this,arguments);if(!on()){ctrl2=null;return}const o=ball.owner;
+    if(o&&o.team===1){ctrl2=o;return}if(ball.state==='air'&&ball.kind==='pass'&&ball.intended&&ball.intended.team===1){ctrl2=ball.intended;return}
+    if(!ctrl2||ctrl2.role==='G'||ctrl2.team!==1)ctrl2=nearest();else if(GT-lastSw>1.2){const n=nearest();if(n&&n!==ctrl2&&dist(ctrl2,ball)-dist(n,ball)>8)ctrl2=n}};
+  // a fair fight: no computer accuracy bonus for the away team, and the away side's faceoff timing comes from Player 2
+  const _am=accMul;accMul=function(c){return on()?1:_am(c)};
+  const _sf=setupFaceoff;setupFaceoff=function(){const r=_sf.apply(this,arguments);if(on())G.cpuRt=2.5;return r};
+  const _d=draw;draw=function(){_d.apply(this,arguments);if(on()&&ctrl2)try{groundRing(ctrl2.x,ctrl2.y,1.1,'#4ea1ff',null);nameTag(ctrl2,'#4ea1ff')}catch(e){}};
+  {const _ng=newGame;newGame=function(){ctrl2=null;return _ng.apply(this,arguments)}}
+  render();return{on,vec}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'lacrosse',otPts:1,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b;return[frPois(9+d*10),frPois(9-d*10)]}};

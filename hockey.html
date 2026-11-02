@@ -309,7 +309,7 @@ function smoothKeys(rdt){const k=Math.min(1,rdt*10);KS.x+=((K.right-K.left)-KS.x
 function turnTo(p,a,dt,rate){const d=Math.atan2(Math.sin(a-p.face),Math.cos(a-p.face)),m=rate*dt;p.face+=Math.abs(d)<=m?d:Math.sign(d)*m}
 function inputVec(){let ix=KS.x+joy.x,iy=KS.y+joy.y;if(VCAM){const d=dirOf(0),wx=-iy*d;iy=ix*d;ix=wx}const m=hyp(ix,iy);if(m>1){ix/=m;iy/=m}return{x:ix,y:iy,m:Math.min(1,m)}}
 // skating: carve the velocity around toward the stick direction instead of braking and restarting; a hard reverse is a hockey stop
-function userMove(p,dt){const v=inputVec(),k=SPEEDS[G.speed].k,sk=Math.sqrt(k);
+function userMove(p,dt,vv){const v=vv||inputVec(),k=SPEEDS[G.speed].k,sk=Math.sqrt(k);
   if(v.m>.12){const want=Math.atan2(v.y,v.x),ms=maxSpd(p)*v.m,sp=hyp(p.vx,p.vy);
     if(sp>2.5){const cur=Math.atan2(p.vy,p.vx),d=Math.atan2(Math.sin(want-cur),Math.cos(want-cur));
       if(Math.abs(d)<2.2){const rate=(3.6+3.4*(1-Math.min(1,sp/ms)))/sk,r=clamp(d,-rate*dt,rate*dt),na=cur+r,keep=sp*(1-Math.abs(r)*.08);p.vx=Math.cos(na)*keep;p.vy=Math.sin(na)*keep}
@@ -1008,9 +1008,10 @@ function step(dt,rdt){
     if(!p.active)continue;
     for(const k of ['stun','pokeCD','hitCD','dekeT','dekeCD','pickCD','stopT','saveT'])if(p[k]>0)p[k]-=dt;
     if(p.role!=='G'){const sp=hyp(p.vx,p.vy);p.stam=clamp(p.stam-dt*(sp>18?1/45:1/110),0,1)}
-    if(p===puck.owner){if(p===ctrl)userMove(p,dt);else carrierAI(p,dt)}
+    if(p===puck.owner){if(p===ctrl)userMove(p,dt);else if(p===ctrl2&&TWO.on())userMove(p,dt,TWO.vec());else carrierAI(p,dt)}
     else if(p===ctrl&&p.lungeT>0){}
     else if(p===ctrl){if(inputVec().m<=.12&&puck.passTo===p&&!puck.owner){const k=Math.min(.6,dist(p,puck)/60);seek(p,puck.x+puck.vx*k,puck.y+puck.vy*k,dt,1,2);faceP(p)}else userMove(p,dt)}
+    else if(p===ctrl2&&TWO.on())userMove(p,dt,TWO.vec());
     else offBall(p,dt);
   }
   for(const t of [0,1])for(const r of SK){const b=G.lines[t].bench[r];b.stam=Math.min(1,b.stam+dt/40)}
@@ -2184,6 +2185,42 @@ let FRDYN=null;
 AFTER.push(()=>{const st=FRDYN&&FRDYN.state();if(!st||!st.dyn||G.clubs[0]!==st.my)return;for(const p of P){if(p.team!==0)continue;const s=st.dyn.slots[p.role];if(s&&s.name==null)s.name=p.first?`${p.first} ${p.name}`:p.name}});
 // state and March Mayhem titles go in the dynasty trophy case
 {const _b=BIGCELE;BIGCELE=function(t,...a){const k={'State Champions':'state','March Mayhem Champions':'mayhem'}[t];if(k&&FRDYN)FRDYN.addTrophy(k);return _b.call(this,t,...a)}}
+/* ---------- two players on one keyboard: Player 2 runs the away team with the arrow keys ---------- */
+let ctrl2=null;
+const TWO=(()=>{const KEY='two-player';let en=false;try{en=localStorage.getItem(KEY)==='1'}catch(e){}
+  const on=()=>en&&!G.demo&&!G.fr&&!G.tourn&&!G.skills;
+  const K2={up:0,down:0,left:0,right:0},MAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};let shotT0=0,lastSw=0;
+  const box=menuBox('twobox','',e=>{const b=e.target.closest('[data-two]');if(!b)return;en=b.dataset.two==='2';try{localStorage.setItem(KEY,en?'1':'0')}catch(_){}render()});
+  function render(){box.innerHTML=`<h2>Players <span>${en?'2':'1'}</span></h2><div class="xchips"><button class="chip plain" type="button" aria-pressed="${!en}" data-two="1">1 player vs the CPU</button><button class="chip plain" type="button" aria-pressed="${en}" data-two="2">2 players, same keyboard</button></div>
+    <p class="frnote">${en?`Player 1 is the first school you pick: WASD, Space, E, Q. Player 2 is the second school: arrow keys to skate, <b>/</b> to shoot (hold for a slap shot) or hit, <b>.</b> to pass or poke check, <b>,</b> to deke or switch. Needs a keyboard. Franchise, tournaments and skills challenges stay one player.`:'Play against the computer.'}</p>`}
+  function vec(){let ix=K2.right-K2.left,iy=K2.down-K2.up;if(VCAM){const d=dirOf(0),wx=-iy*d;iy=ix*d;ix=wx}const m=hyp(ix,iy);if(m>1){ix/=m;iy/=m}return{x:ix,y:iy,m:Math.min(1,m)}}
+  function nearest(){const tgt=puck.owner||puck;let best=null,bd=1e9;for(const p of P)if(p.active&&p.team===1&&p.role!=='G'){const d=dist(p,tgt);if(d<bd){bd=d;best=p}}return best}
+  function poke(){const c=puck.owner,me=ctrl2;if(!me||me.pokeCD>0)return;me.pokeCD=.7;
+    if(c&&c.team===0&&c.role!=='G'&&dist(me,c)<me.reach+3.2){if(c.dekeT<=0&&Math.random()<.32){knockLoose(c,me,'poke');callout('Poke check','Puck is loose','#4ea1ff');say(`${me.name} pokes it away!`,1)}else{sfx('poke');floatText(me,'Whiff')}}else{sfx('poke');floatText(me,'Whiff')}}
+  function hit(){const me=ctrl2;if(!me||me.hitCD>0)return;const c=puck.owner;let tgt=null;
+    if(c&&c.team===0&&c.role!=='G'&&dist(me,c)<10.5)tgt=c;else{let bd=9;for(const o of P)if(o.active&&o.team===0&&o.role!=='G'){const d=dist(o,me);if(d<bd){bd=d;tgt=o}}}
+    if(tgt){const dx=tgt.x-me.x,dy=tgt.y-me.y,d=hyp(dx,dy)||1;me.vx+=dx/d*10;me.vy+=dy/d*10;if(d<6)bodyHit(me,tgt);else floatText(me,'Lining him up','#4ea1ff')}}
+  addEventListener('keydown',e=>{if(!on())return;const k=MAP[e.code];
+    if(k){K2[k]=1;e.preventDefault();e.stopImmediatePropagation();return}
+    if(e.code==='Slash'||e.code==='Period'||e.code==='Comma'){e.preventDefault();e.stopImmediatePropagation();if(e.repeat)return;
+      if(G.phase==='fo'){if(e.code==='Slash'&&G.whistled&&G.cpuRt>G.foW)G.cpuRt=G.foW;return}
+      if(G.phase!=='live'||!ctrl2)return;const has=puck.owner===ctrl2;
+      if(e.code==='Slash'){if(has)shotT0=performance.now();else hit()}
+      else if(e.code==='Period'){if(has){const b=bestPass(ctrl2);if(b)pass(ctrl2,b.p,.6)}else poke()}
+      else{if(has)deke(ctrl2);else{const n=nearest();if(n&&n!==ctrl2){ctrl2=n;lastSw=GT;floatText(n,'Switch','#4ea1ff')}}}}},true);
+  addEventListener('keyup',e=>{const k=MAP[e.code];if(k){K2[k]=0;if(on()){e.preventDefault();e.stopImmediatePropagation()}return}
+    if(e.code==='Slash'&&on()){e.preventDefault();e.stopImmediatePropagation();if(shotT0&&ctrl2&&puck.owner===ctrl2&&G.phase==='live'){const pw=Math.min(1,(performance.now()-shotT0)/900);shoot(ctrl2,pw,pw>.55)}shotT0=0}},true);
+  // who Player 2 controls: the puck carrier, the one a pass is going to, or the skater nearest the puck
+  const _uc=updateCtrl;updateCtrl=function(dt){_uc.apply(this,arguments);if(!on()){ctrl2=null;return}
+    if(G.so){ctrl2=G.so.turn===1?find(1,'C'):null;return}const o=puck.owner;
+    if(o&&o.team===1&&o.role!=='G'){ctrl2=o;return}if(!o&&puck.passTo&&puck.passTo.team===1&&GT-puck.passT<1.5){ctrl2=puck.passTo;return}
+    if(!ctrl2||!ctrl2.active||ctrl2.role==='G'||ctrl2.team!==1)ctrl2=nearest();else if(GT-lastSw>1.2){const n=nearest();if(n&&n!==ctrl2&&dist(ctrl2,puck)-dist(n,puck)>18)ctrl2=n}};
+  // a fair fight: no computer accuracy bonus for the away team, and the away side's faceoff timing comes from Player 2
+  const _am=accMul;accMul=function(c){return on()?1:_am(c)};
+  const _sf=setupFaceoff;setupFaceoff=function(){const r=_sf.apply(this,arguments);if(on())G.cpuRt=2.5;return r};
+  const _d=draw;draw=function(){_d.apply(this,arguments);if(on()&&ctrl2&&ctrl2.active)try{iceRing(ctrl2.x,ctrl2.y,2.6,'#4ea1ff',null);const b=proj(ctrl2.x,ctrl2.y,6);ctx.fillStyle='#4ea1ff';ctx.font='800 13px system-ui,sans-serif';ctx.textAlign='center';ctx.fillText('P2',b.x,b.y)}catch(e){}};
+  {const _ng=newGame;newGame=function(){ctrl2=null;return _ng.apply(this,arguments)}}
+  render();return{on,vec}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'hockey',otPts:1,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b;return[frPois(2.9+d*4),frPois(2.9-d*4)]}};
