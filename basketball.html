@@ -248,6 +248,7 @@ const K={up:0,down:0,left:0,right:0},KS={x:0,y:0},joy={x:0,y:0};
 const diff=()=>DIFFS[G.diff];
 const club=t=>CLUBS[G.clubs[t]];
 const isUserTeam=t=>!G.demo&&!G.auto&&t===0;
+let ctrl2=null;
 const dirOf=t=>t===0?1:-1;
 const atkRim=t=>({x:t===0?RIMX[1]:RIMX[0],y:MY});
 const ownRim=t=>({x:t===0?RIMX[0]:RIMX[1],y:MY});
@@ -323,7 +324,7 @@ function turnTo(p,a,dt,rate){const d=Math.atan2(Math.sin(a-p.face),Math.cos(a-p.
 function smoothKeys(rdt){const k=Math.min(1,rdt*14);KS.x+=((K.right-K.left)-KS.x)*k;KS.y+=((K.down-K.up)-KS.y)*k;if(!(K.right-K.left)&&Math.abs(KS.x)<.01)KS.x=0;if(!(K.down-K.up)&&Math.abs(KS.y)<.01)KS.y=0}
 function inputVec(){let ix=KS.x+joy.x,iy=KS.y+joy.y;if(VCAM){const wx=-iy;iy=ix;ix=wx}const m=hyp(ix,iy);if(m>1){ix/=m;iy/=m}return{x:ix,y:iy,m:Math.min(1,m)}}
 const hasInput=()=>inputVec().m>.12;
-function userMove(p,dt){const v=inputVec(),k=Math.sqrt(SPEEDS[G.speed].k);if(v.m>.12){accelTo(p,v.x*maxSpd(p)*v.m,v.y*maxSpd(p)*v.m,dt,p.acc*1.35/k);turnTo(p,Math.atan2(v.y,v.x),dt,12/k)}else accelTo(p,0,0,dt,p.acc*1.2/k)}
+function userMove(p,dt,vv){const v=vv||inputVec(),k=Math.sqrt(SPEEDS[G.speed].k);if(v.m>.12){accelTo(p,v.x*maxSpd(p)*v.m,v.y*maxSpd(p)*v.m,dt,p.acc*1.35/k);turnTo(p,Math.atan2(v.y,v.x),dt,12/k)}else accelTo(p,0,0,dt,p.acc*1.2/k)}
 function steerAvoid(c,tx,ty,dt,mul=1){
   const a0=Math.atan2(ty-c.y,tx-c.x);let best=a0,bs=1e9;
   for(let k=-4;k<=4;k++){const a=a0+k*.3,hx=Math.cos(a),hy=Math.sin(a);let pen=Math.abs(k)*.5;
@@ -694,7 +695,7 @@ function tryStealOn(d,h,user){
   const dd=dist(d,h);if(dd>4.4){if(user)floatText(d,'Too far','#c9d1dd');return false}
   const front=Math.cos(h.face)*(d.x-h.x)/(dd||1)+Math.sin(h.face)*(d.y-h.y)/(dd||1);
   let pc=(user?.12+d.stl*.18:.035+d.stl*.06)*(h.xT>0?.15:1)*(front<-.3?.55:1)*(1.1-h.hand*.3);
-  if(h===ctrl)pc*=.65;
+  if(h===ctrl||h===ctrl2)pc*=.65;
   if(!user&&!G.demo&&!G.auto&&d.team===1)pc*=diff().stl;
   if(Math.random()<pc){const a=Math.atan2(d.y-h.y,d.x-h.x);if(Math.random()<.5){steal(d,h,'strip')}else{loose(Math.cos(a)*8+rnd(3),Math.sin(a)*8+rnd(3),3,d.team);ball.lastTouch=d;ball.rimHit=false;floatText(d,'Poked loose','#3ddc84');say(pick([`Poked loose!`,`${d.name} knocks it free!`]),1)}return true}
   if(Math.random()<(user?.12:.05)){foulCall(d,h,false);return true}
@@ -802,7 +803,7 @@ function pct(p){return`${Math.round(p.ft*100)} percent`}
 function ftStep(dt){
   const f=G.ft;f.t+=dt;const sh=f.sh;
   if(f.state==='set'&&f.t>.9){f.state='ready';f.t=0}
-  if(f.state==='ready'&&!isUserTeam(f.team)&&f.t>.7&&!sh.shot){startShot(sh,false)}
+  if(f.state==='ready'&&!isUserTeam(f.team)&&!(f.team===1&&P2FT())&&f.t>.7&&!sh.shot){startShot(sh,false)}
   if(sh.shot)shotUpdate(sh,dt);
   if(sh.z>0||sh.vz>0){sh.vz-=GRAV*dt;sh.z+=sh.vz*dt;if(sh.z<=0){sh.z=0;sh.vz=0}}
   if(ball.state==='air'||ball.state==='drop'||ball.state==='loose')updateBall(dt);
@@ -898,7 +899,7 @@ function crossover(c){
   const v=inputVec(),o=nearestOpp(c);let a;
   if(c===ctrl&&v.m>.3)a=Math.atan2(v.y,v.x);else{const base=Math.atan2(c.vy||Math.sin(c.face),c.vx||Math.cos(c.face)),s=Math.random()<.5?1:-1;a=base+s*1.1}
   c.vx=c.vx*.5+Math.cos(a)*8;c.vy=c.vy*.5+Math.sin(a)*8;floatText(c,'Crossover','#ff9f1c');sfx('squeak');
-  if(o.o&&o.d<4.2&&o.o.z===0&&Math.random()<(c===ctrl?.32:.1)){o.o.stun=c===ctrl?1.7:.9;c.ankleAt=GT;callout('Ankle breaker',`${c.name} drops ${o.o.name}`,'#ff9f1c');say(pick([`Oh! ${c.name} breaks his ankles!`,`${o.o.name} is on the floor! ${c.name} with the crossover!`]),2);roar(.3,2)}
+  if(o.o&&o.d<4.2&&o.o.z===0&&Math.random()<(c===ctrl||c===ctrl2?.32:.1)){o.o.stun=c===ctrl?1.7:.9;c.ankleAt=GT;callout('Ankle breaker',`${c.name} drops ${o.o.name}`,'#ff9f1c');say(pick([`Oh! ${c.name} breaks his ankles!`,`${o.o.name} is on the floor! ${c.name} with the crossover!`]),2);roar(.3,2)}
 }
 
 /* ---------- user control ---------- */
@@ -1042,8 +1043,9 @@ function live(dt){
     for(const k of ['stun','stlCD','grabCD','xT','xCD','reachT','blockT'])if(p[k]>0)p[k]-=dt;
     if(p.shot){shotUpdate(p,dt);continue}
     if(p.z>0){continue}
-    if(p===ball.owner){if(p===ctrl)userMove(p,dt);else carrierAI(p,dt);if(hyp(p.vx,p.vy)>3&&p===ctrl)turnTo(p,Math.atan2(p.vy,p.vx),dt,10)}
+    if(p===ball.owner){if(p===ctrl)userMove(p,dt);else if(p===ctrl2&&TWO.on())userMove(p,dt,TWO.vec());else carrierAI(p,dt);if(hyp(p.vx,p.vy)>3&&(p===ctrl||p===ctrl2))turnTo(p,Math.atan2(p.vy,p.vx),dt,10)}
     else if(p===ctrl)ctrlMove(p,dt);
+    else if(p===ctrl2&&TWO.on())TWO.move(p,dt);
     else if(ball.state==='loose')reboundAI(p,dt);
     else if(ball.owner&&ball.owner.team!==p.team)defAI(p,dt);
     else if(ball.state==='air'&&ball.kind==='shot'){if(p.team===ball.lastTeam)reboundAI(p,dt);else reboundAI(p,dt)}
@@ -2296,6 +2298,49 @@ let FRDYN=null;
 AFTER.push(()=>{const st=FRDYN&&FRDYN.state();if(!st||!st.dyn||G.clubs[0]!==st.my)return;for(const p of P){if(p.team!==0)continue;const s=st.dyn.slots[p.role];if(s&&s.name==null)s.name=p.first?`${p.first} ${p.name}`:p.name}});
 // state and March Mayhem titles go in the dynasty trophy case
 {const _b=BIGCELE;BIGCELE=function(t,...a){const k={'State Champions':'state','March Mayhem Champions':'mayhem'}[t];if(k&&FRDYN)FRDYN.addTrophy(k);return _b.call(this,t,...a)}}
+/* ---------- two players on one keyboard: Player 2 runs the away team with the arrow keys ---------- */
+function P2FT(){try{return TWO.on()}catch(e){return false}}
+const TWO=(()=>{const KEY='two-player';let en=false;try{en=localStorage.getItem(KEY)==='1'}catch(e){}
+  const on=()=>en&&!G.demo&&!G.auto&&!G.fr&&!G.tourn&&!G.skills;
+  const K2={up:0,down:0,left:0,right:0},MAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};let defT0=0,lastSw=0,jumped=false;
+  const box=menuBox('twobox','',e=>{const b=e.target.closest('[data-two]');if(!b)return;en=b.dataset.two==='2';try{localStorage.setItem(KEY,en?'1':'0')}catch(_){}render()});
+  function render(){box.innerHTML=`<h2>Players <span>${en?'2':'1'}</span></h2><div class="xchips"><button class="chip plain" type="button" aria-pressed="${!en}" data-two="1">1 player vs the CPU</button><button class="chip plain" type="button" aria-pressed="${en}" data-two="2">2 players, same keyboard</button></div>
+    <p class="frnote">${en?`Player 1 is the first school you pick: WASD, Space, E, Q. Player 2 is the second school: arrow keys to move, hold <b>/</b> to shoot and let go at the top (on defense tap <b>/</b> to steal, hold it to jump and block), <b>.</b> to pass, <b>,</b> for a crossover or to switch players. Needs a keyboard. Franchise, tournaments and skills challenges stay one player.`:'Play against the computer.'}</p>`}
+  function vec(){let ix=K2.right-K2.left,iy=K2.down-K2.up;if(VCAM){const wx=-iy;iy=ix;ix=wx}const m=hyp(ix,iy);if(m>1){ix/=m;iy/=m}return{x:ix,y:iy,m:Math.min(1,m)}}
+  function nearest(tg){let best=null,bd=1e9;for(const p of P)if(p.team===1){const d=dist(p,tg||ball);if(d<bd){bd=d;best=p}}return best}
+  function move(p,dt){const v=vec();if(v.m>.12){userMove(p,dt,v);return}
+    if(ball.state==='air'&&ball.kind==='pass'&&ball.passTo===p){seek(p,ball.to.x,ball.to.y,dt,1,1.5);return}
+    if(ball.state==='loose'){const tz=predict();seek(p,tz.x,tz.y,dt,1,1.2);return}
+    if(ball.owner&&ball.owner.team!==p.team){defAI(p,dt);return}
+    accelTo(p,0,0,dt,p.acc*1.2)}
+  const stop=e=>{e.preventDefault();e.stopImmediatePropagation()};
+  addEventListener('keydown',e=>{if(!on()||(e.target.closest&&e.target.closest('.menu')))return;const k=MAP[e.code];
+    if(k){K2[k]=1;stop(e);return}
+    if(e.code!=='Slash'&&e.code!=='Period'&&e.code!=='Comma')return;stop(e);if(e.repeat||G.paused)return;
+    if(G.phase==='tip'){const tp=G.tip;if(e.code==='Slash'&&tp&&!tp.done&&tp.cpu>5)tp.cpu=tp.t<0?-1:tp.t;return}
+    if(G.phase==='ft'){const f=G.ft;if(e.code==='Slash'&&f&&f.team===1&&f.state==='ready'&&!f.sh.shot)startShot(f.sh,true);return}
+    if(G.phase!=='live'||!ctrl2)return;const has=ball.owner===ctrl2;
+    if(e.code==='Slash'){if(has)startShot(ctrl2,true);else if(ball.owner&&ball.owner.team===0){defT0=performance.now();jumped=false}
+      else if(ball.state==='loose'&&hyp(ctrl2.x-ball.x,ctrl2.y-ball.y)<6||ball.state==='air'&&ball.kind==='shot'&&ball.lastTeam===0)jump(ctrl2,13.5)}
+    else if(e.code==='Period'){if(has&&!ctrl2.shot){const b=bestPass(ctrl2);if(b)pass(ctrl2,b.p,.55)}}
+    else{if(has)crossover(ctrl2);else{const n=nearest(ball.owner||ball);if(n&&n!==ctrl2){ctrl2=n;lastSw=GT;floatText(n,'Switch','#4ea1ff')}}}},true);
+  addEventListener('keyup',e=>{const k=MAP[e.code];if(k){K2[k]=0;if(on())stop(e);return}
+    if(e.code!=='Slash'||!on())return;stop(e);
+    const sh=G.phase==='ft'&&G.ft&&G.ft.team===1?G.ft.sh:ctrl2,s=sh&&sh.shot;
+    if(s&&s.user&&s.rel===null&&(s.kind==='jumper'||s.kind==='ft')){s.rel=s.m;return}
+    if(defT0&&!jumped&&ctrl2&&G.phase==='live'&&ball.owner&&ball.owner.team===0)tryStealOn(ctrl2,ball.owner,true);defT0=0},true);
+  addEventListener('blur',()=>{K2.up=K2.down=K2.left=K2.right=0;defT0=0});
+  // holding / on defense jumps to block
+  function holdStep(){if(defT0&&!jumped&&ctrl2&&(performance.now()-defT0)/1000>=.2){jumped=true;jump(ctrl2,13.5);ctrl2.blockT=.7}}
+  // who Player 2 controls: the ball handler, the one a pass is going to, or the player nearest the ball
+  const _uc=updateCtrl;updateCtrl=function(dt){_uc.apply(this,arguments);if(!on()){ctrl2=null;return}holdStep();const o=ball.owner;
+    if(o&&o.team===1){ctrl2=o;return}if(ball.state==='air'&&ball.kind==='pass'&&ball.passTo&&ball.passTo.team===1){ctrl2=ball.passTo;return}
+    const tg=o||ball;if(!ctrl2||ctrl2.team!==1)ctrl2=nearest(tg);else if(GT-lastSw>1.2&&!ctrl2.shot){const n=nearest(tg);if(n&&n!==ctrl2&&dist(ctrl2,tg)-dist(n,tg)>8){ctrl2=n;lastSw=GT}}};
+  // Player 2 does his own jump ball timing
+  const _st=setupTip;setupTip=function(){const r=_st.apply(this,arguments);if(on()&&G.tip)G.tip.cpu=99;return r};
+  const _d=draw;draw=function(){_d.apply(this,arguments);if(on()&&ctrl2&&G.phase!=='replay')try{floorRing(ctrl2.x,ctrl2.y,1.7,'#4ea1ff',null);nameTag(ctrl2,'#4ea1ff')}catch(e){}};
+  {const _ng=newGame;newGame=function(){ctrl2=null;K2.up=K2.down=K2.left=K2.right=0;return _ng.apply(this,arguments)}}
+  render();return{on,vec,move}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'basketball',otPts:2,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b,m=7*G.qlen,s=x=>Math.max(4,Math.round(m*(1+x*.5)+gauss()*m*.11));return[s(d),s(-d)]}};

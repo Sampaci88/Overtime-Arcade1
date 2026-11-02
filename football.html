@@ -287,6 +287,7 @@ const K={up:0,down:0,left:0,right:0},KS={d:0,r:0},joy={x:0,y:0};let tackleHold=n
 const diff=()=>DIFFS[G.diff];
 const R=role=>P.find(p=>p.role===role);
 const isUserP=p=>!G.demo&&p&&p.team===0;
+let ctrl2=null;
 const carrier=()=>ball&&ball.state==='held'?ball.carrier:null;
 const club=t=>CLUBS[G.clubs[t]];
 
@@ -390,8 +391,8 @@ function smoothKeys(rdt){const k=Math.min(1,rdt*14),d=K.down-K.up,r=K.right-K.le
 function turnTo(p,a,dt,rate){const d=Math.atan2(Math.sin(a-p.face),Math.cos(a-p.face)),m=rate*dt;p.face+=Math.abs(d)<=m?d:Math.sign(d)*m}
 function inputVec(){let ix=KS.d+joy.y,iy=KS.r+joy.x;if(VCAM){ix=KS.r+joy.x;iy=-(KS.d+joy.y)}const m=hyp(ix,iy);if(m>1){ix/=m;iy/=m}return{x:ix,y:iy,m:Math.min(1,m)}}
 const hasInput=()=>inputVec().m>.12;
-function userMove(p,dt){
-  const v=inputVec(),k=(p.stun>0?.3:1)*(p===carrier()?.95:1);
+function userMove(p,dt,vv){
+  const v=vv||inputVec(),k=(p.stun>0?.3:1)*(p===carrier()?.95:1);
   if(v.m>.12){accelTo(p,v.x*p.spd*k*v.m,v.y*p.spd*k*v.m,dt,p.acc*1.1/Math.sqrt(SPEEDS[G.speed].k));return}
   if(p===carrier()&&!(p.role==='QB'&&!G.qbRun))return; // ball carrier keeps his momentum
   decel(p,dt);
@@ -492,6 +493,7 @@ function qbThink(q,dt){
     return;
   }
   const ds=dropSpot(pl);
+  if(q.team===1&&P2ON()){const v=TWO.vec();if(v.m>.12)userMove(q,dt,v);else if(T<pl.dropT+(pl.pa?.3:0))seek(q,ds.x,ds.y,dt,.75,.6);else decel(q,dt);return}
   if(isUserP(q)){if(hasInput())userMove(q,dt);else if(T<pl.dropT+(pl.pa?.3:0))seek(q,ds.x,ds.y,dt,.75,.6);else decel(q,dt);return}
   cpuQB(q,dt,ds);
 }
@@ -687,9 +689,10 @@ function live(dt){
     timers(p,dt);
     if(p.eng)continue;
     if(G.pend&&(p===c||p===G.pend.d)){const k=Math.max(0,1-dt*3);p.vx*=k;p.vy*=k;continue}
-    if(p===c&&!(p.role==='QB'&&!G.qbRun&&p.side==='O')){if(p===ctrl)userMove(p,dt);else carrierAI(p,dt)}
+    if(p===c&&!(p.role==='QB'&&!G.qbRun&&p.side==='O')){if(p===ctrl)userMove(p,dt);else if(p===ctrl2&&P2ON())userMove(p,dt,TWO.vec());else carrierAI(p,dt)}
     else if(p===ctrl&&p.lungeT>0&&p.lungeTo&&!hasInput())seek(p,p.lungeTo.x+p.lungeTo.vx*.25,p.lungeTo.y+p.lungeTo.vy*.25,dt,1.3,.2);
     else if(p===ctrl&&p.role!=='QB'&&!(ball.state==='air'&&ball.intended===p&&!hasInput()))userMove(p,dt);
+    else if(p===ctrl2&&P2ON()&&p.side==='D'&&TWO.ctl(p,dt)){}
     else if(p.side==='O')oThink(p,dt);else dThink(p,dt);
   }
   engUpdate(dt);
@@ -916,12 +919,12 @@ function fgOption(){const d=fgDist();return !G.tryMode&&d<=62&&(G.down===4||((G.
 function startCall(){
   G.phase='call';G.oCall=null;G.dCall=null;P=[];
   ball={state:'spot',x:G.ballX,y:10+G.ballOn,h:.3};
-  if(G.demo||G.poss===1){
+  if(G.demo||G.poss===1&&!P2ON()){
     if(G.down===4||(fgOption()&&G.clock<=10&&(G.q===2||G.q>=4))){const ch=G.down===4?cpuFourth():'fg';if(ch==='punt'){doPunt();return}if(ch==='fg'){doFG();return}}
     G.oCall=cpuOffCall();
   }
   if(G.demo){G.dCall=cpuDefCall();toPresnap();return}
-  if(G.poss===0)G.dCall=cpuDefCall();
+  if(G.poss===0&&!P2ON())G.dCall=cpuDefCall();
   renderPanel();
 }
 function chooseO(id){
@@ -2285,6 +2288,67 @@ let FRDYN=null;
 AFTER.push(()=>{const st=FRDYN&&FRDYN.state();if(!st||!st.dyn||G.clubs[0]!==st.my)return;for(const p of P){if(p.team!==0)continue;const s=st.dyn.slots[p.role];if(s&&s.name==null)s.name=p.first?`${p.first} ${p.name}`:p.name}});
 // state and March Mayhem titles go in the dynasty trophy case
 {const _b=BIGCELE;BIGCELE=function(t,...a){const k={'State Champions':'state','March Mayhem Champions':'mayhem'}[t];if(k&&FRDYN)FRDYN.addTrophy(k);return _b.call(this,t,...a)}}
+/* ---------- two players on one keyboard: Player 2 runs the away team with the arrow keys ---------- */
+function P2ON(){try{return TWO.on()}catch(e){return false}}
+const TWO=(()=>{const KEY='two-player';let en=false;try{en=localStorage.getItem(KEY)==='1'}catch(e){}
+  const on=()=>en&&!G.demo&&!G.fr&&!G.tourn&&!G.skills;
+  const K2={up:0,down:0,left:0,right:0},MAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};let tkT0=0,tgt=0;
+  const box=menuBox('twobox','',e=>{const b=e.target.closest('[data-two]');if(!b)return;en=b.dataset.two==='2';try{localStorage.setItem(KEY,en?'1':'0')}catch(_){}render()});
+  function render(){box.innerHTML=`<h2>Players <span>${en?'2':'1'}</span></h2><div class="xchips"><button class="chip plain" type="button" aria-pressed="${!en}" data-two="1">1 player vs the CPU</button><button class="chip plain" type="button" aria-pressed="${en}" data-two="2">2 players, same keyboard</button></div>
+    <p class="frnote">${en?`Player 1 is the first school you pick, with the usual keys. Player 2 is the second school: arrow keys to move. On offense, <b>/</b> snaps the ball, then <b>,</b> picks a receiver and <b>/</b> throws to him (<b>.</b> lobs it). With the ball in your hands, <b>/</b> jukes and <b>.</b> is a stiff arm. On defense, tap <b>/</b> to tackle, hold it for a big hit, and <b>,</b> switches players. Each player picks a play on their own turn, so the other one should look away. Needs a keyboard. Franchise, tournaments and skills challenges stay one player.`:'Play against the computer.'}</p>`}
+  function vec(){const d=K2.down-K2.up,r=K2.right-K2.left;let ix=d,iy=r;if(VCAM){ix=r;iy=-d}const m=hyp(ix,iy);if(m>1){ix/=m;iy/=m}return{x:ix,y:iy,m:Math.min(1,m)}}
+  const rcvs=()=>RCV.map(R).filter(r=>r&&r.team===1&&r.job==='route');
+  const pocket=()=>{const q=R('QB');return G.poss===1&&q&&ball.state==='held'&&ball.carrier===q&&!G.qbRun&&!G.thrown&&G.oCall&&G.oCall.type==='pass'};
+  function nearestD(){const c=carrier()||ball;let best=null,bd=1e9;for(const p of P)if(p.team===1&&p.side==='D'&&p!==ctrl2){const d=dist(p,c);if(d<bd){bd=d;best=p}}return best}
+  function pickDef(){return P.find(p=>p.team===1&&p.side==='D'&&p.pos==='LB')||P.find(p=>p.team===1&&p.side==='D')||null}
+  // P2's own movement on defense; with no keys held he plays his assignment
+  function ctl(p,dt){const v=vec();if(p.lungeT>0&&p.lungeTo&&v.m<=.12){seek(p,p.lungeTo.x+p.lungeTo.vx*.25,p.lungeTo.y+p.lungeTo.vy*.25,dt,1.3,.2);return true}
+    if(v.m>.12&&!p.eng){userMove(p,dt,v);return true}return false}
+  function tackle(kind){const me=ctrl2,c=carrier();if(!me||!c||c.team===1||me.stun>0||G.pend||me.blocked)return;
+    const s=ctrl;ctrl=me;try{defTackle(kind)}finally{ctrl=s}}
+  const stop=e=>{e.preventDefault();e.stopImmediatePropagation()};
+  addEventListener('keydown',e=>{if(!on())return;const k=MAP[e.code];
+    if(k){K2[k]=1;stop(e);return}
+    if(e.code!=='Slash'&&e.code!=='Period'&&e.code!=='Comma')return;stop(e);if(e.repeat||G.paused)return;
+    if(G.phase==='presnap'&&G.poss===1){if(e.code==='Slash')snap();return}
+    if(G.phase!=='live')return;
+    if(G.poss===1){
+      if(pocket()){const rs=rcvs();if(!rs.length)return;tgt=tgt%rs.length;
+        if(e.code==='Comma'){tgt=(tgt+1)%rs.length;floatText(rs[tgt],'Target','#4ea1ff');return}
+        const r=rs[tgt],q=R('QB');if(T<.3)return;throwTo(q,r,e.code==='Period'||r.y-q.y>26);return}
+      const c=carrier();if(c&&c.team===1&&c===ctrl2){if(e.code==='Slash'){const v=vec();juke(c,v.x>=0?1:-1)}else if(e.code==='Period')stiff(c)}return}
+    if(!ctrl2)return;
+    if(e.code==='Comma'){const n=nearestD();if(n){ctrl2=n;floatText(n,'Switch','#4ea1ff')}return}
+    if(e.code==='Slash'){if(ctrl2.blocked){ctrl2.shed-=.35;return}tkT0=performance.now()}},true);
+  addEventListener('keyup',e=>{const k=MAP[e.code];if(k){K2[k]=0;if(on())stop(e);return}
+    if(e.code!=='Slash'||!on())return;stop(e);if(tkT0&&G.phase==='live'&&G.poss===0)tackle((performance.now()-tkT0)/1000>=HARDHOLD?'hard':'wrap');tkT0=0},true);
+  addEventListener('blur',()=>{K2.up=K2.down=K2.left=K2.right=0;tkT0=0});
+  // who Player 2 controls
+  function pick2(){if(!on()){ctrl2=null;return}if(ctrl2&&!P.includes(ctrl2))ctrl2=null;const c=carrier();
+    if(c&&c.team===1&&G.phase==='live'){ctrl2=c;return}
+    if(ball&&ball.state==='air'&&!ball.snap&&ball.intended&&ball.intended.team===1){ctrl2=ball.intended;return}
+    if(G.poss===1){ctrl2=R('QB');return}
+    if(!ctrl2||ctrl2.team!==1||ctrl2.side!=='D')ctrl2=pickDef()}
+  const _uc=updateCtrl;updateCtrl=function(){_uc.apply(this,arguments);pick2()};
+  const _tp=toPresnap;toPresnap=function(){_tp.apply(this,arguments);pick2();tgt=0;if(on()&&G.poss===1&&!G.demo){G.snapT=12;renderPanel()}};
+  const _lv=live;live=function(dt){_lv(dt);if(on()&&ctrl2&&ctrl2.lungeT>0&&G.phase==='live'&&P.includes(ctrl2)){const s=ctrl;ctrl=ctrl2;try{lungeStep(dt)}finally{ctrl=s}}};
+  // each side calls its own play, defense first, so neither sees the other's call
+  const _co=chooseO;chooseO=function(id){if(!on()||id==='punt'||id==='fg')return _co(id);G.oCall=OPLAYS.find(p=>p.id===id);if(G.dCall)toPresnap();else renderPanel()};
+  const _cd=chooseD;chooseD=function(id){if(!on())return _cd(id);G.dCall=DPLAYS.find(p=>p.id===id);if(G.oCall)toPresnap();else renderPanel()};
+  const who=t=>`Player ${t+1} · ${esc(club(t).name)}`;
+  const _rp=renderPanel;renderPanel=function(){
+    if(!on()||(G.phase!=='call'&&G.phase!=='presnap')){_rp.apply(this,arguments);return}
+    const el=$('call'),o=G.poss,d=1-o;let h='';
+    if(G.phase==='presnap'){h=o===1?`<h3>${who(1)}: ${esc(G.oCall.name)}</h3><p>Player 2 presses <b>/</b> to snap the ball. ${who(0)} is on defense: Q switches players, Space tackles.</p>`:`<h3>${who(0)}: ${esc(G.oCall.name)}</h3><p>Press Space to snap. ${who(1)} is on defense: <b>,</b> switches players, <b>/</b> tackles.</p><div class="row"><button class="btn primary" data-act="snap" type="button">Snap ball</button></div>`;el.innerHTML=h;return}
+    if(!G.dCall){h=`<h3>${who(d)}: call your defense</h3><p>${esc(ddText())} · ${esc(spotText())}. ${esc(club(o).name)} have the ball. Player ${o+1}, look away!</p><div class="plays">${DPLAYS.map(p=>playBtn('d',p.id,p.name,p.desc)).join('')}</div>`}
+    else{h=`<h3>${who(o)}: call your play</h3><p>${esc(ddText())} · ${esc(spotText())}. Defense is set. Player ${d+1}, look away!</p>`;
+      if(G.down===4||fgOption()){h+=`<h4>Special teams</h4><div class="plays">`;if(G.down===4&&G.q!==5)h+=playBtn('o','punt','Punt','About 40 net yards','kick');if(fgOption()){const fd=fgDist();h+=playBtn('o','fg','Field goal',`${fd} yards · about ${Math.round(fgProb(fd)*100)}%`,'kick')}h+=`</div>`}
+      h+=`<h4>Run</h4><div class="plays">${OPLAYS.filter(p=>p.type==='run').map(p=>playBtn('o',p.id,p.name,p.desc)).join('')}</div><h4>Pass</h4><div class="plays">${OPLAYS.filter(p=>p.type==='pass').map(p=>playBtn('o',p.id,p.name,p.desc)).join('')}</div>`}
+    el.innerHTML=h};
+  const _rs=drawRoutesScene;drawRoutesScene=function(){_rs.apply(this,arguments);if(!on()||!ctrl2||!P.includes(ctrl2))return;try{if(ctrl2!==carrier())groundRing(ctrl2.x,ctrl2.y,1.2,'#4ea1ff');if(G.phase==='live'&&pocket()){const rs=rcvs();if(rs.length)groundRing(rs[tgt%rs.length].x,rs[tgt%rs.length].y,1.5,'#4ea1ff',[2,2])}}catch(e){}};
+  const _dt=drawTags;drawTags=function(){_dt.apply(this,arguments);if(!on()||!ctrl2||!P.includes(ctrl2)||G.phase==='replay')return;const q=toScr(PE(ctrl2,2.9)),s=`P2 #${ctrl2.num} ${ctrl2.name.toUpperCase()}`;ctx.font='600 15px Teko, "Arial Narrow", sans-serif';const w=ctx.measureText(s).width+10;ctx.fillStyle='rgba(8,12,10,.82)';ctx.fillRect(q.x-w/2,q.y-17,w,16);ctx.fillStyle='#4ea1ff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s,q.x,q.y-8)};
+  {const _ng=newGame;newGame=function(){ctrl2=null;K2.up=K2.down=K2.left=K2.right=0;return _ng.apply(this,arguments)}}
+  render();return{on,vec,ctl}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'football',otPts:3,strength:i=>.38+(RATE[i].ovr-74)/18*.24,sim:(a,b)=>{const d=a-b;return[7*frPois(2.4+d*5)+3*frPois(1.2),7*frPois(2.4-d*5)+3*frPois(1.2)]}};
