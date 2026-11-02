@@ -2150,7 +2150,7 @@ const SKILLS=(()=>{const KEY='skills-best-'+CELESPORT,GOAL={hockey:8,lacrosse:8,
   setInterval(()=>{if(!$('menu').hidden&&G.skills)G.skills=false;const w=G.warm;if(G.skills===true&&w){clk.hidden=false;clk.innerHTML=`${Math.max(0,Math.ceil(60-w.t))}s · <span>${w.goals||0}</span> ${UNITS}`}else clk.hidden=true},200);
   render();return{finish,start}})();
 /* ---------- achievements: badges shared by all five games ---------- */
-const ACH=(()=>{const KEY='overtime-achievements',L=[['first','First W','Win a game'],['legend','Legend Slayer','Beat the CPU on Legend'],['shutout','Shutout','Win without giving up a score'],['blowout','Statement Win','Win by a big margin'],['hat','Hat Trick','One of your players scores 3 in a game'],['trick','Highlight Reel','Score with a trick shot or skill move'],['clutch','Ice in the Veins','Win it in overtime or score at the buzzer'],['ccl','CCL Champions','Win the CCL in franchise mode'],['state','State Champs','Win the state tournament'],['mayhem','Mayhem Champs','Win March Mayhem'],['rival','Founders Cup','Win the rivalry game'],['skills','Skills Star','Ace a skills challenge'],['weather','All Weather','Win in rain, snow or wind'],['night','Big Night','Win on Senior Night or Homecoming'],['five','Five-Sport Star','Win a game in all five sports']];
+const ACH=(()=>{const KEY='overtime-achievements',L=[['first','First W','Win a game'],['daily','Daily Grinder','Beat a Daily Challenge'],['daily3','On a Roll','Beat the Daily Challenge 3 days in a row'],['created','Made in STC','Play a game with your created player'],['legend','Legend Slayer','Beat the CPU on Legend'],['shutout','Shutout','Win without giving up a score'],['blowout','Statement Win','Win by a big margin'],['hat','Hat Trick','One of your players scores 3 in a game'],['trick','Highlight Reel','Score with a trick shot or skill move'],['clutch','Ice in the Veins','Win it in overtime or score at the buzzer'],['ccl','CCL Champions','Win the CCL in franchise mode'],['state','State Champs','Win the state tournament'],['mayhem','Mayhem Champs','Win March Mayhem'],['rival','Founders Cup','Win the rivalry game'],['skills','Skills Star','Ace a skills challenge'],['weather','All Weather','Win in rain, snow or wind'],['night','Big Night','Win on Senior Night or Homecoming'],['five','Five-Sport Star','Win a game in all five sports']];
   let D=null;try{D=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}D=D||{got:{},sports:{}};const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}};
   const box=menuBox('achbox','');
   function render(){const n=Object.keys(D.got).length;box.innerHTML=`<h2>Achievements <span>${n} of ${L.length}</span></h2><div class="achgrid">${L.map(([id,nm,ds])=>`<div class="ach${D.got[id]?' got':''}"><b>${nm}</b>${ds}</div>`).join('')}</div><p class="frnote">Shared by all five games on this device.</p>`}
@@ -2274,6 +2274,75 @@ html.phone.two2.port #phonehint{display:block;bottom:calc(330px + env(safe-area-
     if(on&&!root.classList.contains('port')&&root.style.getPropertyValue('--pr')!=='196px'){root.style.setProperty('--pl','196px');root.style.setProperty('--pr','196px');try{resize()}catch(e){}}
     if(!on)return;const L=labels(),s=L.join('|');if(s!==last){last=s;btns.forEach((b,i)=>{b.textContent=L[i]||'·';if(L[i])b.removeAttribute('data-off');else b.setAttribute('data-off','')})}},200);
   return{}})();
+/* ---------- Create-a-Player: build your own St. Charles player (name, number, spot, skills) ---------- */
+const CDCFG={
+  hockey:{per:'per',last:3,pname:'3rd period',secs:[100,200],base:[1,3],def:[1,2],off:['shot'],pas:['hands'],dfn:['reach'],traits:true,restart:()=>setupFaceoff()},
+  lacrosse:{per:'q',last:4,pname:'4th quarter',secs:[80,160],base:[5,9],def:[1,3],off:['hands'],pas:['hands'],dfn:['reach'],traits:true,restart:()=>setupFaceoff()},
+  basketball:{per:'q',last:4,pname:'4th quarter',secs:[50,110],base:[38,52],def:[3,8],off:['r3','mid','ins','ft'],pas:['pass','hand'],dfn:['stl','blk','reb'],restart:()=>setupTip()},
+  soccer:{per:'q',last:2,pname:'2nd half',secs:[240,420],base:[0,2],def:[1,1],off:['ctl'],pas:['ctl'],dfn:['reach'],restart:()=>setupKickoff(1)},
+  football:{per:'q',last:4,pname:'4th quarter',secs:[100,150],base:[10,21],def:[3,8],off:['str'],pas:[],dfn:['tkl'],restart:()=>{G.poss=0;G.ballOn=25+Math.floor(Math.random()*12);G.down=1;G.togo=10;G.ballX=MID;startCall()}}}[CELESPORT];
+const CAP=(()=>{const KEY='cap-'+CELESPORT,SK=[['spd','Speed'],['off','Scoring'],['pas','Passing'],['dfn','Defense']],BUD=30;
+  const STCI=CLUBS.findIndex(c=>c.abbr==='STC');let slots=[];try{slots=RCFG.slots(STCI)}catch(e){}
+  let D=null;try{D=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+  const blank=()=>({name:'',num:7,slot:(slots.find(s=>!/^G/.test(s.key)&&s.key!=='QB')||slots[0]||{key:''}).key,spd:5,off:5,pas:5,dfn:5,trait:''});
+  let W=D?Object.assign(blank(),D):blank();
+  const used=()=>SK.reduce((a,[k])=>a+W[k],0),ovr=c=>Math.max(60,Math.min(102,Math.round(60+SK.reduce((a,[k])=>a+c[k],0)*1.4)));
+  const save=()=>{try{if(D)localStorage.setItem(KEY,JSON.stringify(D));else localStorage.removeItem(KEY)}catch(e){}};
+  const live=()=>D&&D.name?D:null,hit=(ci,k)=>{const c=live();return!!c&&ci===STCI&&k===c.slot};
+  // the roster lookups hand back your player in his spot on St. Charles
+  {const n0=RO.n,u0=RO.u,r0=RO.r;RO.n=function(ci,k,def){return hit(ci,k)?live().name:n0.apply(this,arguments)};
+    RO.u=function(ci,k,def){return hit(ci,k)?live().num:u0.apply(this,arguments)};
+    if(r0)RO.r=function(ci,k){return hit(ci,k)?ovr(live()):r0.apply(this,arguments)}}
+  if(typeof starOf==='function'){const s0=starOf;starOf=function(ci,k,role,rat){if(hit(ci,k)&&live().trait)return live().trait;return s0.apply(this,arguments)}}
+  // and his skills change how he plays
+  function boost(p){const c=live();if(!c||!p||p._cap)return;const full=p.first?p.first+' '+p.name:p.name;if(full!==c.name&&p.name!==c.name)return;
+    const t=p.team,ci=G.clubs&&G.clubs[t];if(ci!==STCI)return;p._cap=1;p.spd*=1+(c.spd-5)*.025;
+    for(const[k,key]of[['off','off'],['pas','pas'],['dfn','dfn']])for(const f of CDCFG[key]||[])if(typeof p[f]==='number'){const v=c[k]-5;p[f]=p[f]<=1?Math.min(.98,Math.max(.05,p[f]+v*.02)):p[f]*(1+v*.03)}}
+  if(CELESPORT==='football'){const _sp=setupPlay;setupPlay=function(){const r=_sp.apply(this,arguments);try{for(const p of P)boost(p)}catch(e){}return r}}
+  else{const _bt=buildTeams;buildTeams=function(){const r=_bt.apply(this,arguments);try{for(const p of P)boost(p)}catch(e){}return r}}
+  const box=menuBox('capbox','',click);
+  box.addEventListener('input',e=>{const i=e.target;if(i.id==='capName')W.name=i.value.replace(/[^A-Za-z0-9 .'\-]/g,'').slice(0,24);else if(i.id==='capNum')W.num=Math.max(0,Math.min(99,parseInt(i.value,10)||0));else if(i.id==='capSlot')W.slot=i.value;else if(i.id==='capTrait')W.trait=i.value;foot()});
+  box.addEventListener('change',e=>{if(e.target.id==='capSlot')W.slot=e.target.value;if(e.target.id==='capTrait')W.trait=e.target.value});
+  function click(e){const b=e.target.closest('[data-cap]');if(!b)return;const a=b.dataset.cap;
+    if(a==='save'){W.name=W.name.replace(/\s+/g,' ').trim();if(!W.name){toast('Give your player a name first');return}D=Object.assign({},W);save();render();toast(`${D.name} joins St. Charles · ${ovr(D)} overall`);try{if(G.demo)buildTeams()}catch(_){}return}
+    if(a==='del'){D=null;W=blank();save();render();toast('Created player removed');return}
+    const k=a.slice(0,-1),up=a.endsWith('+');if(up&&used()>=BUD)return;W[k]=Math.max(1,Math.min(10,W[k]+(up?1:-1)));render()}
+  function foot(){const f=box.querySelector('#capFoot');if(f)f.textContent=`Points left: ${BUD-used()} · Overall: ${ovr(W)}`}
+  function render(){const c=live(),traits=CDCFG.traits&&typeof STARS==='object'?Object.values(STARS):[];
+    box.innerHTML=`<h2>Create a player <span>${c?esc(c.name)+' · '+ovr(c):'none yet'}</span></h2>
+    <p class="frnote">Make yourself (or anyone) and put him on St. Charles. Spend ${BUD} skill points; the more you spend, the higher his overall.</p>
+    <div class="capf"><label>Name<input id="capName" maxlength="24" value="${esc(W.name)}" placeholder="First Last" autocomplete="off"></label>
+    <label>Number<input id="capNum" type="number" inputmode="numeric" min="0" max="99" value="${W.num}"></label>
+    <label>Spot (takes this player's place)<select id="capSlot">${slots.map(s=>{let who='';try{const nm=(live()&&live().slot===s.key)?'':RO.n(STCI,s.key,s.name);who=nm?' · now '+nm:''}catch(e){}return`<option value="${esc(s.key)}"${s.key===W.slot?' selected':''}>${esc(s.label+who)}</option>`}).join('')}</select></label>
+    ${traits.length?`<label>Superstar trait<select id="capTrait"><option value="">None</option>${traits.map(t=>`<option${t===W.trait?' selected':''}>${esc(t)}</option>`).join('')}</select></label>`:''}</div>
+    <div class="capsk">${SK.map(([k,l])=>`<div class="capr"><span>${l}</span><button type="button" class="chip plain" data-cap="${k}-" aria-label="Less ${l}">−</button><b>${W[k]}</b><button type="button" class="chip plain" data-cap="${k}+" aria-label="More ${l}">+</button><i style="--w:${W[k]*10}%"></i></div>`).join('')}</div>
+    <p class="frnote" id="capFoot"></p><div class="xchips"><button type="button" class="chip" data-cap="save">Save player</button>${c?'<button type="button" class="chip plain" data-cap="del">Remove</button>':''}</div>`;foot()}
+  {const css=document.createElement('style');css.textContent=`.capf{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:8px 0}.capf label{display:grid;gap:4px;font-size:13px;opacity:.9}.capf input,.capf select{min-height:36px;padding:0 8px;border-radius:6px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.25);color:inherit;font:inherit;min-width:0}
+.capsk{display:grid;gap:6px;margin:6px 0}.capr{display:grid;grid-template-columns:80px 36px 28px 36px 1fr;align-items:center;gap:6px;font-size:14px}.capr b{text-align:center}.capr .chip{min-width:36px;padding:0;justify-content:center}.capr i{height:8px;border-radius:4px;background:linear-gradient(90deg,#ffc23d var(--w),rgba(255,255,255,.12) var(--w))}`;document.head.appendChild(css)}
+  render();return{live,ovr}})();
+/* ---------- Daily Challenge: a new late-game spot every day, the same for everyone ---------- */
+const DAILY=(()=>{const KEY='daily-'+CELESPORT,day=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+  let S={};try{S=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){S={}}const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+  function today(){const d=day();let h=2166136261;for(const ch of d+CELESPORT)h=Math.imul(h^ch.charCodeAt(0),16777619)>>>0;const r=seeded(h),C=CDCFG,ri=(a,b)=>a+Math.floor(r()*(b-a+1));
+    const stc=CLUBS.findIndex(c=>c.abbr==='STC'),opps=CCL.map((c,i)=>i).filter(i=>i!==stc),opp=opps[Math.floor(r()*opps.length)];
+    const a=ri(C.base[0],C.base[1]),b=a+ri(C.def[0],C.def[1]),secs=ri(C.secs[0],C.secs[1]);
+    return{d,stc,opp,a,b,secs,text:`${CLUBS[opp].name} lead St. Charles ${b}–${a} with ${Math.floor(secs/60)}:${String(secs%60).padStart(2,'0')} left in the ${C.pname}. Come back and win it.`}}
+  const box=menuBox('dailybox','',e=>{const b=e.target.closest('[data-daily]');if(!b)return;go()});
+  function render(){const t=today(),done=S.last===t.d;
+    box.innerHTML=`<h2>Daily Challenge <span>${t.d}</span></h2><p>${esc(t.text)}</p><div class="xchips"><button type="button" class="chip" data-daily="go">${done?'Play it again':'Play today’s challenge'}</button></div>
+    <p class="frnote">${done?'You beat today’s challenge. ':''}Streak: ${S.streak||0} day${(S.streak||0)===1?'':'s'} · Best: ${S.best||0}. A new one shows up every day, and it’s the same for everyone, so compare with your friends.</p>`}
+  function go(){const t=today();G.skills=false;G.tourn=null;G.tvenue=null;try{if(TWO.on())toast('Daily Challenge is one player vs the CPU')}catch(e){}G.clubs=[t.stc,t.opp];try{renderMenu()}catch(e){}setTimeout(()=>{G.daily=t;$('start').click()},40)}
+  // when warmups end, jump straight to the late-game spot
+  function apply(){const t=G.daily;if(!t||t.applied||G.demo)return;t.applied=true;setTimeout(()=>{try{G[CDCFG.per]=CDCFG.last;G.score=[t.a,t.b];G.clock=t.secs;if(typeof hideCard==='function')hideCard();CDCFG.restart();toast('Daily Challenge: '+t.text);say(`Here's your challenge. St. Charles trail by ${t.b-t.a} with ${Math.floor(t.secs/60)} minutes to go.`,3)}catch(e){}},60)}
+  // as soon as warmups are over (however they end), jump to the late-game spot
+  setInterval(()=>{const t=G.daily;if(t&&!t.applied&&!G.demo&&$('menu').hidden&&G.phase!=='warm'&&G.phase!=='replay')apply()},120);
+  {const _ng=newGame;newGame=function(demo){if(demo||(G.daily&&G.daily.applied))G.daily=null;return _ng.apply(this,arguments)}}
+  AFTER.push(()=>{const t=G.daily;if(!t||!t.applied)return;G.daily=null;const won=userWon();
+    if(won){if(S.last!==t.d){const y=new Date(Date.now()-864e5),yd=y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');S.streak=S.last===yd?(S.streak||0)+1:1;S.best=Math.max(S.best||0,S.streak);S.last=t.d;save()}
+      try{ACH.give('daily');if((S.streak||0)>=3)ACH.give('daily3')}catch(e){}setTimeout(()=>toast(`Daily Challenge complete! Streak: ${S.streak} day${S.streak===1?'':'s'}`),900)}
+    else setTimeout(()=>toast('Daily Challenge not done yet. Try again!'),900);render()});
+  AFTER.push(()=>{try{const c=CAP.live();if(c&&G.clubs.includes(CLUBS.findIndex(x=>x.abbr==='STC')))ACH.give('created')}catch(e){}});
+  render();setInterval(()=>{if(!$('menu').hidden&&box.dataset.d!==day()){box.dataset.d=day();render()}},5000);return{today}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'hockey',otPts:1,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b;return[frPois(2.9+d*4),frPois(2.9-d*4)]}};

@@ -43,3 +43,56 @@ Midfield 3: 61 Bob White (94)
 Attack 1: 72 Grant Bender (87
 Attack 2: 84 Sam Grilli (89)
 Attack 3: 27 Madden Bobo (95)
+
+# Football: a blank line keeps the name the game uses now (or the one you set in the game's Rosters panel).
+# Fill one in to make it stick for everyone, for example:  Quarterback: 12 Your Name (90)
+# Now in the game: Quarterback #12 Ellison, Running back #28 Gaskins, Receiver (X) #11 Nix, Receiver (Z) #17 Yarbrough, Slot receiver #13 Benning, Tight end #87 Easley, Left tackle #71 Kemp, Left guard #66 Holt, Center #62 Fairley, Right guard #75 McCray, Right tackle #78 Hatcher, Left end #91 Lusk, Left tackle (D) #97 Varner, Right tackle (D) #93 Stallworth, Right end #94 Toler, Will linebacker #54 Ingram, Mike linebacker #50 Jamison, Sam linebacker #58 Oakes, Left corner #24 Upshaw, Right corner #21 Tatum, Free safety #32 Overton, Strong safety #29 Fontenot
+[Football]
+Quarterback:
+Running back:
+Receiver (X):
+Receiver (Z):
+Slot receiver:
+Tight end:
+Left tackle:
+Left guard:
+Center:
+Right guard:
+Right tackle:
+Left end:
+Left tackle (D):
+Right tackle (D):
+Right end:
+Will linebacker:
+Mike linebacker:
+Sam linebacker:
+Left corner:
+Right corner:
+Free safety:
+Strong safety:
+
+# Basketball: a blank line keeps the name the game uses now (or the one you set in the game's Rosters panel).
+# Fill one in to make it stick for everyone, for example:  Point guard: 4 Your Name (90)
+# Now in the game: Point guard #4 Caleb Adeyemi, Shooting guard #0 Kofi Harlan, Small forward #20 Nikola Holloway, Power forward #44 Elijah Corbin, Center #32 Mateo Prescott
+[Basketball]
+Point guard:
+Shooting guard:
+Small forward:
+Power forward:
+Center:
+
+# Soccer: a blank line keeps the name the game uses now (or the one you set in the game's Rosters panel).
+# Fill one in to make it stick for everyone, for example:  Goalkeeper: 1 Your Name (90)
+# Now in the game: Goalkeeper #1 Morrow, Left back #3 Kilbride, Center back (L) #4 Quist, Center back (R) #5 Holloway, Right back #2 Torres, Left mid #11 Ivers, Center mid (L) #6 Bancroft, Center mid (R) #8 Tolliver, Right mid #7 Underhill, Striker (L) #9 Keane, Striker (R) #10 Oduya
+[Soccer]
+Goalkeeper:
+Left back:
+Center back (L):
+Center back (R):
+Right back:
+Left mid:
+Center mid (L):
+Center mid (R):
+Right mid:
+Striker (L):
+Striker (R):
