@@ -2217,7 +2217,7 @@ const SKILLS=(()=>{const KEY='skills-best-'+CELESPORT,GOAL={hockey:8,lacrosse:8,
   setInterval(()=>{if(!$('menu').hidden&&G.skills)G.skills=false;const w=G.warm;if(G.skills===true&&w){clk.hidden=false;clk.innerHTML=`${Math.max(0,Math.ceil(60-w.t))}s · <span>${w.goals||0}</span> ${UNITS}`}else clk.hidden=true},200);
   render();return{finish,start}})();
 /* ---------- achievements: badges shared by all five games ---------- */
-const ACH=(()=>{const KEY='overtime-achievements',L=[['first','First W','Win a game'],['daily','Daily Grinder','Beat a Daily Challenge'],['daily3','On a Roll','Beat the Daily Challenge 3 days in a row'],['created','Made in STC','Play a game with your created player'],['legend','Legend Slayer','Beat the CPU on Legend'],['shutout','Shutout','Win without giving up a score'],['blowout','Statement Win','Win by a big margin'],['hat','Hat Trick','One of your players scores 3 in a game'],['trick','Highlight Reel','Score with a trick shot or skill move'],['clutch','Ice in the Veins','Win it in overtime or score at the buzzer'],['ccl','CCL Champions','Win the CCL in franchise mode'],['state','State Champs','Win the state tournament'],['mayhem','Mayhem Champs','Win March Mayhem'],['rival','Founders Cup','Win the rivalry game'],['skills','Skills Star','Ace a skills challenge'],['weather','All Weather','Win in rain, snow or wind'],['night','Big Night','Win on Senior Night or Homecoming'],['five','Five-Sport Star','Win a game in all five sports']];
+const ACH=(()=>{const KEY='overtime-achievements',L=[['first','First W','Win a game'],['timeout','Drew It Up','Win a game after calling a timeout'],['daily','Daily Grinder','Beat a Daily Challenge'],['daily3','On a Roll','Beat the Daily Challenge 3 days in a row'],['created','Made in STC','Play a game with your created player'],['legend','Legend Slayer','Beat the CPU on Legend'],['shutout','Shutout','Win without giving up a score'],['blowout','Statement Win','Win by a big margin'],['hat','Hat Trick','One of your players scores 3 in a game'],['trick','Highlight Reel','Score with a trick shot or skill move'],['clutch','Ice in the Veins','Win it in overtime or score at the buzzer'],['ccl','CCL Champions','Win the CCL in franchise mode'],['state','State Champs','Win the state tournament'],['mayhem','Mayhem Champs','Win March Mayhem'],['rival','Founders Cup','Win the rivalry game'],['skills','Skills Star','Ace a skills challenge'],['weather','All Weather','Win in rain, snow or wind'],['night','Big Night','Win on Senior Night or Homecoming'],['five','Five-Sport Star','Win a game in all five sports']];
   let D=null;try{D=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}D=D||{got:{},sports:{}};const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}};
   const box=menuBox('achbox','');
   function render(){const n=Object.keys(D.got).length;box.innerHTML=`<h2>Achievements <span>${n} of ${L.length}</span></h2><div class="achgrid">${L.map(([id,nm,ds])=>`<div class="ach${D.got[id]?' got':''}"><b>${nm}</b>${ds}</div>`).join('')}</div><p class="frnote">Shared by all five games on this device.</p>`}
@@ -2493,6 +2493,142 @@ const DAILY=(()=>{const KEY='daily-'+CELESPORT,day=()=>{const d=new Date();retur
     else setTimeout(()=>toast('Daily Challenge not done yet. Try again!'),900);render()});
   AFTER.push(()=>{try{const c=CAP.live();if(c&&G.clubs.includes(CLUBS.findIndex(x=>x.abbr==='STC')))ACH.give('created')}catch(e){}});
   render();setInterval(()=>{if(!$('menu').hidden&&box.dataset.d!==day()){box.dataset.d=day();render()}},5000);return{today}})();
+/* ---------- shared helpers for the last batch ---------- */
+const X9={STCI:CLUBS.findIndex(c=>c.abbr==='STC'),PER:CELESPORT==='hockey'?'per':'q',LAST:{hockey:3,soccer:2}[CELESPORT]||4,
+  pname(n){if(CELESPORT==='hockey')return['1st period','2nd period','3rd period'][n-1]||'overtime';if(CELESPORT==='soccer')return['first half','second half'][n-1]||'extra time';return['1st quarter','2nd quarter','3rd quarter','4th quarter'][n-1]||'overtime'},
+  mmss(s){s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},
+  playing(){return!G.demo&&!G.skills&&$('menu').hidden&&G.phase!=='warm'&&G.phase!=='final'},
+  fr(){try{return JSON.parse(localStorage.getItem('ccl-'+CELESPORT)||'null')}catch(e){return null}},
+  statText(r){if(!r)return'';if(CELESPORT==='basketball')return`${r.pts||0} points${r.reb?`, ${r.reb} rebounds`:''}`;
+    if(CELESPORT==='football'){const y=Math.max(r.pyds||0,r.ryds||0,r.recy||0);return r.td?`${r.td} touchdown${r.td>1?'s':''}${y?` and ${Math.round(y)} yards`:''}`:y?`${Math.round(y)} yards`:r.tkl?`${r.tkl} tackles`:''}
+    if(r.sv&&!r.g)return`${r.sv} saves`;return r.g||r.a?`${r.g||0} goal${r.g===1?'':'s'} and ${r.a||0} assist${r.a===1?'':'s'}`:''},
+  top(team){const rs=Object.values(G.pst||{}).filter(r=>r.team===team);let b=null,bs=0;for(const r of rs){const s=pscore(r);if(s>bs){bs=s;b=r}}return b}};
+/* ---------- timeouts: two per game (three in basketball and football); each one calls a play for the next stretch ---------- */
+const TMO=(()=>{const N=CELESPORT==='basketball'||CELESPORT==='football'?3:2,DUR=45,buffs=[];
+  function addBuff(team,mul,only,label){const b={team,mul,only,t:DUR,ps:[],label};buffs.push(b);applyAll();return b}
+  function applyAll(){for(const b of buffs)for(const p of P)if(p.team===b.team&&(!b.only||p===b.only||(b.only.name===p.name&&b.only.num===p.num))&&!b.ps.includes(p)){p.spd*=b.mul;b.ps.push(p)}}
+  function drop(b){for(const p of b.ps)p.spd/=b.mul;buffs.splice(buffs.indexOf(b),1)}
+  function clear(){while(buffs.length)drop(buffs[0])}
+  const _st=step;step=function(dt,rdt){_st.apply(this,arguments);try{if(G.phase==='live'&&!G.paused)for(const b of buffs.slice()){b.t-=dt;if(b.t<=0)drop(b)}runCheck()}catch(e){}};
+  if(CELESPORT==='football'){const _sp=setupPlay;setupPlay=function(){const r=_sp.apply(this,arguments);try{applyAll()}catch(e){}return r}}
+  AFTER.push(()=>{try{if(G.usedTO&&userWon())ACH.give('timeout')}catch(e){}});
+  const _ng=newGame;newGame=function(){clear();G.to=[N,N];G.usedTO=0;run=[0,0];last=[0,0];return _ng.apply(this,arguments)};
+  const btn=document.createElement('button');btn.type='button';btn.id='tobtn';btn.className=$('pause').className;btn.hidden=true;$('pause').insertAdjacentElement('afterend',btn);
+  let pbtn=null;
+  function can(){return X9.playing()&&G.to&&G.to[0]>0&&!G.paused&&$('card').hidden&&!(CELESPORT==='football'&&G.phase==='live')&&G.phase!=='replay'&&G.phase!=='goal'&&G.phase!=='break'}
+  function sync(){const show=!$('pause').hidden&&!G.demo&&!G.skills;btn.hidden=!show;const n=G.to?G.to[0]:N;btn.textContent=`Timeout (${n})`;btn.disabled=!can();
+    if(!pbtn){const bx=document.querySelector('#phonebar .btns');if(bx){pbtn=document.createElement('button');pbtn.type='button';pbtn.addEventListener('click',call);bx.appendChild(pbtn)}}if(pbtn){pbtn.textContent=`T.O. ${n}`;pbtn.disabled=!can()}}
+  setInterval(sync,300);btn.addEventListener('click',call);
+  addEventListener('keydown',e=>{if(e.code==='KeyT'&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!(e.target&&e.target.closest&&e.target.closest('input,select,textarea')))call()});
+  function star(){let b=null,bs=-1;for(const p of P){if(p.team!==0||p.role==='G'||p.pos==='OL')continue;const r=Object.values(G.pst||{}).find(q=>q.team===p.team&&q.num===p.num&&q.name===p.name),s=(p.rat||75)+(r?pscore(r)*3:0);if(s>bs){bs=s;b=p}}return b}
+  function call(){if(!can())return;G.to[0]--;G.usedTO=1;if(!G.paused)togglePause();try{sfx('whistle')}catch(e){}
+    const me=club(0).name,s=star(),opts=[{label:'Push the pace',fn:()=>go(()=>{addBuff(0,1.07,null);say(`${me} want to push the pace. Everybody is flying.`,2)})},
+      {label:'Lock it down',fn:()=>go(()=>{addBuff(1,.94,null);say(`${me} are going to clamp down on defense.`,2)})}];
+    if(s)opts.push({label:`Ride ${s.name}`,fn:()=>go(()=>{addBuff(0,1.12,s);say(`The plan is simple: get it to ${s.name}.`,2)})});
+    if(CELESPORT==='football')G.pendRun=0;
+    say(`Timeout, ${me}. ${G.to[0]} left.`,2);logSafe(`Timeout ${club(0).abbr} (${G.to[0]} left).`);
+    card(`Timeout · ${me}`,`${CELESPORT==='football'?'The clock is stopped. ':''}Call a play for the next ${DUR} seconds of play. You have ${G.to[0]} timeout${G.to[0]===1?'':'s'} left.`,opts)}
+  function go(f){hideCard();if(G.paused)togglePause();try{f()}catch(e){}toast('Play called. It lasts about 45 seconds of game time')}
+  function logSafe(s){try{logIt(s)}catch(e){}}
+  // the computer burns a timeout to stop a run
+  let run=[0,0],last=[0,0];const RUN={hockey:2,lacrosse:3,soccer:2,basketball:4,football:2}[CELESPORT]||3;
+  function runCheck(){if(!G.score||G.demo)return;for(const t of [0,1])if(G.score[t]>last[t]){run[t]++;run[1-t]=0}last=G.score.slice();
+    let two=false;try{two=TWO.on()}catch(e){}
+    if(!two&&run[0]>=RUN&&G.to&&G.to[1]>0&&X9.playing()&&G.phase!=='goal'){run[0]=0;G.to[1]--;addBuff(1,1.05,null);try{callout(`${club(1).abbr} timeout`,'They have to stop this run','#ffd23f')}catch(e){}say(`${club(1).name} call timeout. They have to stop this run.`,2)}}
+  return{buffs,clear}})();
+/* ---------- injuries in franchise mode: a player can miss a game or two, and his backup steps in ---------- */
+const INJ=(()=>{const KEY='inj-'+CELESPORT;let I=null;try{I=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+  const save=()=>{try{if(I)localStorage.setItem(KEY,JSON.stringify(I));else localStorage.removeItem(KEY)}catch(e){}};
+  let slots=[];try{slots=RCFG.slots(X9.STCI).filter(s=>!/^G\d?$/.test(s.key))}catch(e){}
+  const on=()=>I&&I.left>0&&G.fr,hit=(ci,k)=>on()&&ci===X9.STCI&&k===I.slot;
+  {const n0=RO.n,u0=RO.u,r0=RO.r;RO.n=function(ci,k,def){return hit(ci,k)?I.backup:n0.apply(this,arguments)};RO.u=function(ci,k,def){return hit(ci,k)?I.bnum:u0.apply(this,arguments)};if(r0)RO.r=function(ci,k){return hit(ci,k)?70:r0.apply(this,arguments)}}
+  let frGame=false;{const _ng=newGame;newGame=function(demo){frGame=!demo&&!!G.fr;const r=_ng.apply(this,arguments);if(on()&&!demo)setTimeout(()=>{toast(`Injury report: ${I.name} is out. ${I.backup} starts`);say(`${club(0).name} are without ${I.name} tonight. ${I.backup} gets the start.`,1)},2500);return r}}
+  AFTER.push(()=>{if(!frGame)return;frGame=false;
+    if(I&&I.left>0){I.left--;if(I.left<=0){const n=I.name;I=null;save();setTimeout(()=>toast(`${n} is healthy and back for the next game`),1800)}else save();render();return}
+    if(Math.random()<.12&&slots.length){const s=slots[Math.floor(Math.random()*slots.length)],name=RO.n(X9.STCI,s.key,s.name)||s.name;
+      const sur=typeof SURN!=='undefined'?SURN[Math.floor(Math.random()*SURN.length)]:'Backup',bn=CELESPORT==='basketball'?'Chris '+sur:sur;
+      I={slot:s.key,name,backup:bn,bnum:40+Math.floor(Math.random()*50),left:Math.random()<.35?2:1};save();render();
+      setTimeout(()=>toast(`Injury: ${name} will miss ${I.left===1?'the next game':'the next 2 games'}`),1800)}});
+  const box=menuBox('injbox','');function render(){box.innerHTML=`<h2>Injury report <span>${I&&I.left>0?'1 out':'all healthy'}</span></h2><p class="frnote">${I&&I.left>0?`${esc(I.name)} is out for ${I.left===1?'the next franchise game':'the next '+I.left+' franchise games'}. ${esc(I.backup)} starts in his place.`:'Everyone is healthy. In franchise mode a player can get hurt and miss a game or two.'}</p>`}
+  render();return{get:()=>I}})();
+/* ---------- the student section: signs that react to the game, and chants on screen ---------- */
+const SIGNS=(()=>{let list=[],next=performance.now()+9000;
+  function lines(){const s=G.score||[0,0],me=club(0).abbr==='STC'?0:club(1).abbr==='STC'?1:-1;if(me<0)return null;const d=s[me]-s[1-me],opp=club(1-me);
+    const L=['GO CARDS!','CARDINAL NATION','DEFENSE!','LOUD HOUSE','BIRDS UP','WE WANT A W','STC ALL DAY'];
+    if(d>0)L.push('SCOREBOARD','THIS IS OUR HOUSE','KEEP IT ROLLING');if(d<0)L.push('WE BELIEVE','COMEBACK TIME','NEVER DOUBT');if(d===0)L.push('NEXT ONE WINS IT');
+    if(opp.abbr==='SFD')L.push('BEAT DESALES','FOUNDERS CUP IS OURS');if(G.daily)L.push('DAILY CHALLENGE');return L}
+  function show(texts,secs){const now=performance.now();list=texts.map((t,i)=>({t,at:now,end:now+secs*1000,x:texts.length===1?.5:.36+i*.26,rot:(Math.random()-.5)*.1,ph:Math.random()*6}))}
+  {const _sc=studentChant;studentChant=function(big){const r=_sc.apply(this,arguments);try{if(X9.playing()&&(club(0).abbr==='STC'||club(1).abbr==='STC'))show([big?'♪ LET’S GO CARDS ♪':'♪ C-A-R-D-S ♪'],4.5)}catch(e){}return r}}
+  const _d=draw;draw=function(){_d.apply(this,arguments);try{
+    const now=performance.now();if(!X9.playing()||G.rp||G.paused||cw<560){return}
+    if(now>next&&G.phase==='live'){next=now+16000+Math.random()*12000;const L=lines();if(L){const a=L.splice(Math.floor(Math.random()*L.length),1)[0],b=L[Math.floor(Math.random()*L.length)];show([a,b],6)}}
+    list=list.filter(s=>now<s.end);const stc=CLUBS[X9.STCI];
+    for(const s of list){const k=Math.min(1,(now-s.at)/500,(s.end-now)/500);ctx.save();ctx.globalAlpha=Math.max(0,k)*.95;ctx.font='900 15px "Arial Narrow",system-ui,sans-serif';
+      const w=ctx.measureText(s.t).width+20,h=26,x=cw*s.x,y=118+Math.sin(now/700+s.ph)*2;ctx.translate(x,y);ctx.rotate(s.rot);
+      ctx.fillStyle='#fbfaf4';ctx.fillRect(-w/2,-h/2,w,h);ctx.strokeStyle=stc.c;ctx.lineWidth=3;ctx.strokeRect(-w/2,-h/2,w,h);ctx.fillStyle=stc.c;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s.t,0,1);ctx.restore()}}catch(e){}};
+  return{show}})();
+/* ---------- more from the booth: the announcers talk about the score, the clock, the hot hand and the season ---------- */
+const BOOTH=(()=>{let next=performance.now()+20000;
+  function line(){const s=G.score,A=club(0),B=club(1),per=G[X9.PER],tl=X9.mmss(G.clock),pn=X9.pname(per),d=s[0]-s[1],out=[];
+    out.push(d===0?`All square at ${s[0]} with ${tl} left in the ${pn}.`:`${d>0?A.name:B.name} lead ${Math.max(...s)} to ${Math.min(...s)}, ${tl} to go in the ${pn}.`);
+    for(const t of [0,1]){const r=X9.top(t),st=X9.statText(r);if(r&&st)out.push(pick([`${r.name} has been the story for ${club(t).name}: ${st}.`,`What a night for ${r.name}. ${st} so far.`,`Number ${r.num}, ${r.name}, is up to ${st}.`]))}
+    const close=CELESPORT==='basketball'?5:CELESPORT==='football'?8:1;if(per>=X9.LAST&&Math.abs(d)<=close&&G.clock<150)out.push(pick(['This one is going right down to the wire!','Nobody is sitting down in here. What a finish we have!','Every possession matters now.']));
+    const big=CELESPORT==='basketball'?18:CELESPORT==='football'?21:CELESPORT==='lacrosse'?6:3;if(Math.abs(d)>=big)out.push(`${d>0?A.name:B.name} are rolling tonight.`);
+    if(A.abbr==='SFD'||B.abbr==='SFD')if(A.abbr==='STC'||B.abbr==='STC')out.push(pick(['St. Charles and DeSales. You can feel the rivalry in this building.','The Founders Cup is on the line, and both student sections know it.']));
+    if(G.stats&&G.stats.shots){const sh=G.stats.shots;if(sh[0]+sh[1]>6)out.push(`Shots are ${sh[0]} to ${sh[1]} in favor of ${sh[0]>=sh[1]?A.name:B.name}.`)}
+    try{if(WX.on())out.push(pick(['The conditions are a real factor tonight.','You have to give credit to both teams playing in this weather.']))}catch(e){}
+    if(G.fr){const S=X9.fr();if(S&&S.rec&&S.rec[S.my]){const r=S.rec[S.my];out.push(`${CLUBS[S.my].name} came into tonight ${r.w} and ${r.l}${r.t?` and ${r.t}`:''} in league play.`)}}
+    try{const I=INJ.get();if(G.fr&&I&&I.left>0)out.push(`${club(0).name} are playing without ${I.name} tonight, and ${I.backup} is filling in.`)}catch(e){}
+    try{const c=CAP.live();if(c&&(A.abbr==='STC'||B.abbr==='STC'))out.push(`Keep an eye on ${c.name}, number ${c.num}. He can change a game.`)}catch(e){}
+    try{if(TMO.buffs.length)out.push('You can see the timeout worked. They came out with a plan.')}catch(e){}
+    return pick(out)}
+  setInterval(()=>{try{if(!X9.playing()||G.paused||G.phase!=='live'||G.auto)return;const now=performance.now();if(now<next||(G.comm&&G.comm.t<3))return;next=now+26000+Math.random()*16000;const l=line();if(l)say(l,0)}catch(e){}},1000);
+  return{line}})();
+/* ---------- season recap: your franchise season in one place, read by the booth ---------- */
+const RECAP=(()=>{const box=menuBox('recapbox','',e=>{if(e.target.closest('[data-recap]'))play()});
+  function data(){const S=X9.fr();if(!S||!S.res||!S.res.length)return null;const my=S.my,games=[];
+    for(const wk of S.res)for(const g of wk)if(g.a===my||g.b===my){const us=g.a===my,f=us?g.sa:g.sb,a=us?g.sb:g.sa;games.push({opp:CLUBS[us?g.b:g.a].name,f,a})}
+    const rec=S.rec[my],best=games.filter(g=>g.f>g.a).sort((x,y)=>(y.f-y.a)-(x.f-x.a))[0],ab=CLUBS[my].abbr;
+    const ps=Object.entries(S.ps||{}).filter(([k])=>k.startsWith(ab+'|')).map(([,v])=>v).sort((x,y)=>pscore(y)-pscore(x)).slice(0,3);
+    return{S,my,games,rec,best,ps,name:CLUBS[my].name}}
+  function render(){const d=data();if(!d){box.innerHTML='<h2>Season <span>recap</span></h2><p class="frnote">Play franchise games and your season recap builds here: record, results, best win and your top players.</p>';return}
+    const st=r=>PCOLS.filter(([k])=>r[k]).map(([k,l])=>`${Math.round(r[k])} ${l}`).join(', ');
+    box.innerHTML=`<h2>Season recap <span>${esc(d.name)} ${d.rec.w}-${d.rec.l}${d.rec.t?'-'+d.rec.t:''}</span></h2>
+      ${d.S.champ!=null?`<p><b>${d.S.champ===d.my?'CCL champions!':esc(CLUBS[d.S.champ].name)+' won the CCL.'}</b></p>`:''}
+      ${d.best?`<p>Best win: ${esc(d.best.opp)}, ${d.best.f}–${d.best.a}</p>`:''}
+      ${d.ps.length?`<p>Top players: ${d.ps.map(r=>`#${r.num} ${esc(r.name)} (${esc(st(r))})`).join(' · ')}</p>`:''}
+      <ul class="frres">${d.games.slice(-8).map(g=>`<li>${g.f>g.a?'W':g.f<g.a?'L':'T'} ${g.f}–${g.a} vs ${esc(g.opp)}</li>`).join('')}</ul>
+      <div class="xchips"><button type="button" class="chip" data-recap="1">Hear the season recap</button></div>`}
+  function play(){const d=data();if(!d)return;const L=[`Here's your season recap for the ${d.name}.`,`They went ${d.rec.w} and ${d.rec.l}${d.rec.t?` and ${d.rec.t}`:''}.`];
+    if(d.best)L.push(`The best win of the year: ${d.best.f} to ${d.best.a} over ${d.best.opp}.`);
+    if(d.ps[0])L.push(`The player of the year so far: number ${d.ps[0].num}, ${d.ps[0].name}.`);if(d.ps[1])L.push(`Right behind him, ${d.ps[1].name}.`);
+    if(d.S.champ===d.my)L.push(`And they finished it off as CCL champions! What a season!`);else L.push(`What a ride. On to the next one.`);
+    L.forEach((s,i)=>setTimeout(()=>{try{speak(s,3,i%2)}catch(e){try{say(s,3)}catch(_){}}},i*4200));toast('Turn your sound on to hear the recap')}
+  render();setInterval(()=>{if(!$('menu').hidden)render()},4000);AFTER.push(()=>setTimeout(render,500));return{render}})();
+/* ---------- make your own team: name it, pick colors, and play them ---------- */
+const MYTEAMS=(()=>{const KEY='custom-teams';let L=[];try{L=JSON.parse(localStorage.getItem(KEY)||'[]')||[]}catch(e){L=[]}const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(L))}catch(e){}};
+  const box=menuBox('mtbox','',click);
+  function render(){box.innerHTML=`<h2>Make a team <span>${L.length} saved</span></h2><p class="frnote">Name any school, pick its colors, and play them. Saved teams work in all five games.</p>
+    <div class="capf"><label>School name<input id="mtName" maxlength="28" placeholder="Upper Arlington Golden Bears" autocomplete="off"></label><label>Short name<input id="mtAbbr" maxlength="4" placeholder="UA" autocomplete="off"></label>
+    <label>Main color<input id="mtC" type="color" value="#1d3c8f"></label><label>Second color<input id="mtT" type="color" value="#f2c14e"></label></div>
+    <div class="xchips"><button type="button" class="chip" data-mt="new">Save and play them</button></div>
+    ${L.length?`<div class="xchips">${L.map((t,i)=>`<button type="button" class="chip plain" data-mt="${i}"><span class="dot" style="--j:${esc(t.c)};--t:${esc(t.t)}"></span>Play ${esc(t.name)}</button>`).join('')}</div><div class="xchips"><button type="button" class="chip plain" data-mt="clear">Delete saved teams</button></div>`:''}`}
+  function click(e){const b=e.target.closest('[data-mt]');if(!b)return;const a=b.dataset.mt;
+    if(a==='clear'){L=[];save();render();return}
+    let t;if(a==='new'){const name=($('mtName').value||'').replace(/[<>]/g,'').trim().slice(0,28),abbr=($('mtAbbr').value||'').replace(/[^A-Za-z]/g,'').toUpperCase().slice(0,4);
+      if(!name||abbr.length<2){toast('Give the team a name and a 2 to 4 letter short name');return}if(CLUBS.some((c,i)=>i!==4&&c.abbr===abbr)){toast('That short name is taken. Try another');return}
+      t={name,abbr,c:$('mtC').value,t:$('mtT').value};L=[t,...L.filter(x=>x.abbr!==abbr)].slice(0,8);save();render()}else t=L[+a];if(!t)return;
+    G.skills=false;G.tourn=null;G.tvenue=null;try{setGuest(t)}catch(err){}G.clubs=[X9.STCI,4];try{renderMenu()}catch(err){}setTimeout(()=>{$('start').click()},40)}
+  render();return{}})();
+/* ---------- leaderboard: the best marks on this device across all five games ---------- */
+const BOARD=(()=>{const box=menuBox('lbbox','');const SP=[['hockey','Hockey'],['lacrosse','Lacrosse'],['football','Football'],['basketball','Basketball'],['soccer','Soccer']];
+  const J=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}};
+  function render(){const rows=SP.map(([s,l])=>{const r=J('records-'+s)||{},d=J('daily-'+s)||{},sk=+(localStorage.getItem('skills-best-'+s)||0);
+      return`<tr><td>${l}</td><td>${r.margin?esc(r.margin.txt):'–'}</td><td>${r.streak?r.streak.v:'–'}</td><td>${sk||'–'}</td><td>${d.best||'–'}</td></tr>`}).join('');
+    box.innerHTML=`<h2>Leaderboard <span>this device</span></h2><table class="pbox lbt"><thead><tr><th>Game</th><th>Biggest win</th><th>Win streak</th><th>Skills best</th><th>Daily streak</th></tr></thead><tbody>${rows}</tbody></table>
+    <p class="frnote">These are the best marks played on this phone or computer. Show your friends, or have them play on yours.</p>`}
+  {const css=document.createElement('style');css.textContent='.lbt{width:100%;font-size:13px;border-collapse:collapse}.lbt td,.lbt th{padding:3px 4px;text-align:left}';document.head.appendChild(css)}
+  render();setInterval(()=>{if(!$('menu').hidden)render()},5000);return{render}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'football',otPts:3,strength:i=>.38+(RATE[i].ovr-74)/18*.24,sim:(a,b)=>{const d=a-b;return[7*frPois(2.4+d*5)+3*frPois(1.2),7*frPois(2.4-d*5)+3*frPois(1.2)]}};
