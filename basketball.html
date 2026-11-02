@@ -1509,7 +1509,7 @@ function warmStep(rdt,dt){const w=G.warm;w.t+=rdt;w.rdt=rdt;WU.step(w.t,rdt);WP.
   if(w.noise>=.98&&!w.shook){w.shook=1;roar(1,6);callout('The place is rocking!','The student section is going crazy','#ff5a3c');say(pick([`Listen to this crowd! It is absolutely electric in here and we haven't even started!`,`The student section is going nuts! What an atmosphere for a CCL rivalry!`,`I can barely hear myself think! This building is shaking!`]),3)}
   if(w.shook&&w.noise<.7)w.shook=0;
   if(w.said<WARM_AT.length&&w.t>=WARM_AT[w.said]){const L=warmLines(),l=L[w.said++];if(l[0]===1)say(l[1],3);else{G.comm={s:l[1],t:0,prio:1,who:2};speak(l[1],2,2)}}
-  if(!w.endAt&&w.shots>=(w.maxShots||(w.maxShots=4+Math.floor(Math.random()*3))))w.endAt=w.t+2.5;if(w.t>=WARM_DUR||(w.endAt&&w.t>=w.endAt))endWarmup()}
+  if(G.skills){if(w.t>=60)SKILLS.finish(w)}else{if(!w.endAt&&w.shots>=(w.maxShots||(w.maxShots=4+Math.floor(Math.random()*3))))w.endAt=w.t+2.5;if(w.t>=WARM_DUR||(w.endAt&&w.t>=w.endAt))endWarmup()}}
 // the crowd feeds off warmups: every make and every Q fires up the student section until the building shakes
 function warmCheer(made,big,line){const w=G.warm;if(!w)return;if(made){w.goals++;w.noise=Math.min(1,w.noise+(big?.32:.2));roar(Math.min(1,.65+w.noise*.35),3.5);if(line&&Math.random()<.5)say(line,1)}else roar(.22,1.2)}
 function warmHype(){const w=G.warm;if(!w||w.hypeT>0)return;studentChant(w.noise>.6);w.hypeT=1.8;w.noise=Math.min(1,w.noise+.25);const u=WP.u;if(u)u.hypeT=1.4;roar(Math.min(1,.55+w.noise*.45),3);callout(pick(['Make some noise!','Get loud!','On your feet!',`Let's go!`]),`${u&&u.name?u.name:club(0).name} fires up the student section`,'#ffc23d')}
@@ -2025,7 +2025,7 @@ const THEME=(()=>{const KEY='game-theme',NAMES={regular:'Regular season',senior:
   // louder all night, and the students chant more often
   const _roar=roar;roar=function(l,secs){return _roar.call(this,on()?Math.min(1,l*1.15):l,secs)};
   setInterval(()=>{if(!on()||!AC||!soundOn||G.paused||G.phase!=='live')return;if(performance.now()>CHANT.until+6000&&Math.random()<.35)studentChant(false)},4000);
-  let was='';setInterval(()=>{box.hidden=!$('menu').hidden?false:true;const ph=G.demo?'demo':G.phase;if(on()&&ph==='warm'&&was!=='warm')banner();was=ph},300);
+  let was='';setInterval(()=>{box.hidden=!$('menu').hidden?false:true;const ph=G.demo?'demo':G.phase;if(on()&&!G.skills&&ph==='warm'&&was!=='warm')banner();was=ph},300);
   render();return{get id(){return id},on}})();
 /* ---------- highlight reel: every moment the game replays is saved, and after the final horn you can watch them back to back ---------- */
 const HLREEL=(()=>{let clips=[],busy=false,lastCard=null;
@@ -2161,6 +2161,87 @@ if(FRCFG.sport==='basketball')TOURNS.push(makeTourney({key:'mayhem',title:'March
 // leaving a game clears the tournament flags; a saved game keeps them
 setInterval(()=>{if(!$('menu').hidden){G.tourn=null;G.tvenue=null}},500);
 try{SAVECFG.keys.push('tourn','tvenue','venue')}catch(e){}
+/* ---------- after the final horn: one list of things to check (rivalry, achievements, records) ---------- */
+const AFTER=[];{const _eg=endGame;endGame=function(){const r=_eg.apply(this,arguments);if(!G.demo)for(const f of AFTER)try{f()}catch(e){}return r}}
+const userWon=()=>G.score[0]>G.score[1]||(G.score[0]===G.score[1]&&G.pkWin===0);
+function menuBox(id,html,onClick){const b=document.createElement('section');b.className='fr';b.id=id;b.hidden=true;$('fr').before(b);b.innerHTML=html;if(onClick)b.addEventListener('click',onClick);
+  setInterval(()=>{const m=$('menu').hidden;if(b.hidden!==m)b.hidden=m},300);return b}
+{const css=document.createElement('style');css.textContent=`.xchips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.achgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px}.ach{padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:rgba(255,255,255,.03);font-size:13px;line-height:1.3}.ach b{display:block;font-family:var(--display);font-size:16px;text-transform:uppercase;letter-spacing:.03em}.ach.got{border-color:#ffc23d;background:rgba(255,194,61,.12)}.ach.got b{color:#ffc23d}.ach:not(.got){opacity:.6}
+.achpop{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:250;padding:10px 16px;border-radius:10px;background:#1b1607;border:1px solid #ffc23d;color:#fff;font:600 15px/1.3 system-ui,sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.5)}.achpop b{color:#ffc23d}
+.skclock{position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:28;padding:6px 14px;border-radius:8px;background:rgba(8,10,14,.85);color:#fff;font:800 20px/1 var(--display);letter-spacing:.05em;font-variant-numeric:tabular-nums;pointer-events:none}.skclock span{color:#ffc23d}`;document.head.appendChild(css)}
+/* ---------- uniforms: St. Charles can wear home red, away white, the blackout or the throwback ---------- */
+const UNI=(()=>{const KEY='stc-uniform',si=CCL.findIndex(c=>c.abbr==='STC');if(si<0)return{id:'home'};const base={c:CLUBS[si].c,t:CLUBS[si].t};
+  const SETS={home:{name:'Home red',c:base.c,t:base.t},away:{name:'Away white',c:'#f2f2ee',t:base.c},black:{name:'Blackout',c:'#16181c',t:base.c},throw:{name:'Throwback',c:'#7a1414',t:'#f2c14e'}};
+  let id='home';try{id=localStorage.getItem(KEY)||'home'}catch(e){}if(!SETS[id])id='home';
+  function apply(){const s=SETS[id];CLUBS[si].c=s.c;CLUBS[si].t=s.t;for(const k in _crowdCache)delete _crowdCache[k]}
+  const box=menuBox('unibox','',e=>{const b=e.target.closest('[data-uni]');if(!b)return;id=b.dataset.uni;try{localStorage.setItem(KEY,id)}catch(_){}apply();render()});
+  function render(){box.innerHTML=`<h2>St. Charles <span>uniforms</span></h2><div class="xchips">${Object.keys(SETS).map(k=>`<button class="chip" type="button" aria-pressed="${k===id}" data-uni="${k}"><span class="dot" style="--j:${SETS[k].c};--t:${SETS[k].t}"></span>${SETS[k].name}</button>`).join('')}</div><p class="frnote">St. Charles wear this in every game until you change it.</p>`}
+  apply();render();return{get id(){return id}}})();
+/* ---------- rivalry: St. Charles and DeSales play for the Founders Cup, with the all-time series kept ---------- */
+const RIVAL=(()=>{const KEY='rivalry-'+CELESPORT,CUP='The Founders Cup';let rec=null;try{rec=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}rec=rec||{stc:0,sfd:0,tie:0};
+  const ab=i=>CLUBS[i]&&CLUBS[i].abbr,on=()=>!G.demo&&!G.skills&&G.clubs[0]!==G.clubs[1]&&G.clubs.every(i=>ab(i)==='STC'||ab(i)==='SFD');
+  const series=()=>`Series: St. Charles ${rec.stc}, DeSales ${rec.sfd}${rec.tie?`, ${rec.tie} tied`:''}`;
+  const _roar=roar;roar=function(l,secs){return _roar.call(this,on()?Math.min(1,l*1.15):l,secs)};
+  let was='';setInterval(()=>{const ph=G.demo?'demo':G.phase;if(on()&&ph==='warm'&&was!=='warm'){const st=$('stage')||$('pitch')||$('fieldbox');let el=$('rvban');
+      if(!el&&st){el=document.createElement('div');el.id='rvban';el.className='thban';st.appendChild(el)}
+      if(el){el.style.setProperty('--tc','linear-gradient(90deg,#b31b1b 50%,#4b2a7b 50%)');el.style.background='linear-gradient(90deg,#b31b1b 50%,#4b2a7b 50%)';el.innerHTML=`<b>Rivalry game</b>${CUP} · ${series()}`;el.hidden=false;setTimeout(()=>{el.hidden=true},6500)}
+      setTimeout(()=>{if(typeof say==='function')say(`It's rivalry week! St. Charles and DeSales, with ${CUP} on the line. ${series()}.`,2)},2400);try{studentChant(true)}catch(e){}}was=ph},300);
+  AFTER.push(()=>{if(!on())return;const si=G.clubs.findIndex(i=>ab(i)==='STC'),a=G.score[si],b=G.score[1-si];const w=a>b?'stc':b>a?'sfd':G.pkWin!=null?(G.pkWin===si?'stc':'sfd'):'tie';rec[w]++;try{localStorage.setItem(KEY,JSON.stringify(rec))}catch(e){}
+    if(userWon())setTimeout(()=>{if(!$('bigcele')||$('bigcele').hidden)BIGCELE(CUP,`${club(0).name} win the rivalry · ${series()}`)},900)});
+  return{on,series}})();
+/* ---------- weather (outdoor sports): rain makes the ball slick, snow slows everyone down, wind carries passes and shots ---------- */
+const WX=(()=>{if(!['lacrosse','soccer','football'].includes(CELESPORT))return{id:'clear',on:()=>false};
+  const KEY='weather',NAMES={clear:'Clear',rain:'Rain',snow:'Snow',wind:'Wind'},NOTE={clear:'A clear night.',rain:'Rain: a slick ball, so more drops and loose touches.',snow:'Snow: everyone is a step slower.',wind:'Wind: long passes and shots drift with it.'};
+  let id='clear',wx=0,wy=0;try{id=localStorage.getItem(KEY)||'clear'}catch(e){}if(!NAMES[id])id='clear';
+  const on=()=>id!=='clear'&&!G.demo;
+  const box=menuBox('wxbox','',e=>{const b=e.target.closest('[data-wx]');if(!b)return;id=b.dataset.wx;try{localStorage.setItem(KEY,id)}catch(_){}render()});
+  function render(){box.innerHTML=`<h2>Game <span>weather</span></h2><div class="xchips">${Object.keys(NAMES).map(k=>`<button class="chip plain" type="button" aria-pressed="${k===id}" data-wx="${k}">${NAMES[k]}</button>`).join('')}</div><p class="frnote">${NOTE[id]}</p>`}
+  function adjust(p){if(!on()||!p)return p;if(id==='snow'){p.spd*=.94;if(p.acc)p.acc*=.9}if(id==='rain'){if(p.hands!=null)p.hands-=.05;if(p.ctl!=null)p.ctl-=.05;if(p.str!=null)p.str-=.03}return p}
+  if(CELESPORT==='football'){const _m=mkP;mkP=function(){return adjust(_m.apply(this,arguments))}}else{const _m=mk;mk=function(){return adjust(_m.apply(this,arguments))}}
+  if(typeof launch==='function'){const _l=launch;launch=function(c,to,...rest){if(on()&&id==='wind'&&to&&c){const d=hyp(to.x-c.x,to.y-c.y);to={x:to.x+wx*d*.05,y:to.y+wy*d*.05}}return _l.call(this,c,to,...rest)}}
+  // what you see: rain streaks, snowflakes or blowing streaks over the field
+  const parts=[];let lastT=performance.now();
+  function paint(){const now=performance.now(),dt=Math.min(.05,(now-lastT)/1000);lastT=now;const W=cw,H=ch;if(!W||!H)return;
+    const n=id==='rain'?150:id==='snow'?110:30;while(parts.length<n)parts.push({x:Math.random()*W,y:Math.random()*H,v:.6+Math.random()*.6,s:Math.random()});parts.length=n;
+    ctx.save();if(id==='rain'){ctx.fillStyle='rgba(10,20,35,.14)';ctx.fillRect(0,0,W,H);ctx.strokeStyle='rgba(200,220,255,.38)';ctx.lineWidth=1.2;ctx.beginPath();
+      for(const p of parts){p.y+=H*1.6*p.v*dt;p.x+=W*.12*p.v*dt;if(p.y>H){p.y=-10;p.x=Math.random()*W}if(p.x>W)p.x-=W;ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-3,p.y-14*p.v)}ctx.stroke()}
+    else if(id==='snow'){ctx.fillStyle='rgba(255,255,255,.07)';ctx.fillRect(0,0,W,H);ctx.fillStyle='rgba(255,255,255,.85)';ctx.beginPath();
+      for(const p of parts){p.y+=H*.12*p.v*dt;p.x+=Math.sin(now/900+p.s*6)*12*dt;if(p.y>H){p.y=-6;p.x=Math.random()*W}const r=1+p.s*2;ctx.moveTo(p.x+r,p.y);ctx.arc(p.x,p.y,r,0,Math.PI*2)}ctx.fill()}
+    else{ctx.strokeStyle='rgba(235,240,245,.18)';ctx.lineWidth=1;ctx.beginPath();const sx=wx>=0?1:-1;
+      for(const p of parts){p.x+=sx*W*.9*p.v*dt;if(p.x>W+40)p.x=-40;if(p.x<-40)p.x=W+40;ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-sx*40*p.v,p.y)}ctx.stroke()}
+    ctx.restore()}
+  const _d=draw;draw=function(){_d.apply(this,arguments);if(on())try{paint()}catch(e){}};
+  let was='';setInterval(()=>{const ph=G.demo?'demo':G.phase;if(on()&&ph==='warm'&&was!=='warm'){const a=Math.random()*Math.PI*2;wx=Math.cos(a);wy=Math.sin(a)*.6;
+      setTimeout(()=>{if(typeof say==='function')say(id==='rain'?`It's raining at ${venueName()}. Watch for a slick ball tonight.`:id==='snow'?`Snow is falling at ${venueName()}! Footing will be tricky.`:`The wind is really blowing at ${venueName()}. It will push long passes and shots around.`,1)},4200)}was=ph},300);
+  render();return{get id(){return id},on}})();
+/* ---------- skills challenge: 60 seconds to score as many as you can, best score saved ---------- */
+const SKILLS=(()=>{const KEY='skills-best-'+CELESPORT,GOAL={hockey:8,lacrosse:8,soccer:7,basketball:10,football:5}[CELESPORT]||8,
+    NAME=CELESPORT==='football'?'Field goal challenge':CELESPORT==='basketball'?'Shootaround challenge':'Shooting challenge',UNITS=CELESPORT==='football'?'field goals':CELESPORT==='basketball'?'baskets':'goals';
+  let best=0;try{best=+(localStorage.getItem(KEY)||0)}catch(e){}
+  const box=menuBox('skbox','',e=>{if(e.target.closest('[data-sk]')){audio();start()}});
+  function render(){box.innerHTML=`<h2>Skills <span>challenge</span></h2><p>${NAME}: 60 seconds on the clock to make as many ${UNITS} as you can. Make ${GOAL} to ace it.</p><p class="frstatus">Your best: <b>${best}</b></p><div class="frbtns"><button class="go" type="button" data-sk="go">Start the ${NAME.toLowerCase()}</button></div>`}
+  function start(){G.skills=true;G.fr=false;G.tourn=null;G.tvenue=null;startGame()}
+  function finish(w){if(G.skills!==true)return;G.skills='done';const n=w.goals||0,nb=n>best;if(nb){best=n;try{localStorage.setItem(KEY,String(best))}catch(e){}}G.phase='final';
+    try{speechSynthesis.cancel()}catch(e){}card(NAME,`${n} ${UNITS} in 60 seconds. ${nb?'New best!':`Your best: ${best}.`}${n>=GOAL?' You aced it!':''}`,[{label:'Try again',fn:()=>{hideCard();start()}},{label:'Menu',fn:()=>toDemo()}]);
+    if(nb)roar(.8,3);if(n>=GOAL)ACH.give('skills');render()}
+  const _ew=endWarmup;endWarmup=function(){if(G.skills===true&&G.warm){finish(G.warm);return}return _ew.apply(this,arguments)};
+  const clk=document.createElement('div');clk.className='skclock';clk.hidden=true;($('stage')||$('pitch')||$('fieldbox')).appendChild(clk);
+  setInterval(()=>{if(!$('menu').hidden&&G.skills)G.skills=false;const w=G.warm;if(G.skills===true&&w){clk.hidden=false;clk.innerHTML=`${Math.max(0,Math.ceil(60-w.t))}s · <span>${w.goals||0}</span> ${UNITS}`}else clk.hidden=true},200);
+  render();return{finish,start}})();
+/* ---------- achievements: badges shared by all five games ---------- */
+const ACH=(()=>{const KEY='overtime-achievements',L=[['first','First W','Win a game'],['legend','Legend Slayer','Beat the CPU on Legend'],['shutout','Shutout','Win without giving up a score'],['blowout','Statement Win','Win by a big margin'],['hat','Hat Trick','One of your players scores 3 in a game'],['trick','Highlight Reel','Score with a trick shot or skill move'],['clutch','Ice in the Veins','Win it in overtime or score at the buzzer'],['ccl','CCL Champions','Win the CCL in franchise mode'],['state','State Champs','Win the state tournament'],['mayhem','Mayhem Champs','Win March Mayhem'],['rival','Founders Cup','Win the rivalry game'],['skills','Skills Star','Ace a skills challenge'],['weather','All Weather','Win in rain, snow or wind'],['night','Big Night','Win on Senior Night or Homecoming'],['five','Five-Sport Star','Win a game in all five sports']];
+  let D=null;try{D=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}D=D||{got:{},sports:{}};const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}};
+  const box=menuBox('achbox','');
+  function render(){const n=Object.keys(D.got).length;box.innerHTML=`<h2>Achievements <span>${n} of ${L.length}</span></h2><div class="achgrid">${L.map(([id,nm,ds])=>`<div class="ach${D.got[id]?' got':''}"><b>${nm}</b>${ds}</div>`).join('')}</div><p class="frnote">Shared by all five games on this device.</p>`}
+  let pop=null;function give(id){const a=L.find(x=>x[0]===id);if(!a||D.got[id])return;D.got[id]=Date.now();save();render();
+    if(!pop){pop=document.createElement('div');pop.className='achpop';document.body.appendChild(pop)}pop.innerHTML=`Achievement unlocked · <b>${a[1]}</b>`;pop.hidden=false;clearTimeout(give.t);give.t=setTimeout(()=>{pop.hidden=true},4500)}
+  const _c=callout;callout=function(t,...a){try{const s=String(t).toUpperCase();if(!G.demo){if(/(BEHIND THE BACK|DIVE SHOT|AIR GAIT|BETWEEN-THE-LEGS|BICYCLE KICK) GOAL|ANKLE BREAKER BUCKET/.test(s)&&G.score[0]>0)give('trick');if(/GAME WINNER|AT THE BUZZER|OVERTIME SCORE/.test(s)&&G.score[0]>=G.score[1])give('clutch')}}catch(e){}return _c.call(this,t,...a)};
+  const _b=BIGCELE;BIGCELE=function(t,...a){const m={'CCL Champions':'ccl','State Champions':'state','March Mayhem Champions':'mayhem','The Founders Cup':'rival'}[t];if(m)give(m);return _b.call(this,t,...a)};
+  const BIG={hockey:4,lacrosse:6,soccer:3,football:21,basketball:20}[CELESPORT]||5;
+  AFTER.push(()=>{if(G.skills)return;if(Object.values(G.pst||{}).some(r=>r.team===0&&r.g>=3))give('hat');if(!userWon())return;give('first');if(G.diff===3)give('legend');if(G.score[1]===0)give('shutout');if(G.score[0]-G.score[1]>=BIG)give('blowout');
+    if(WX.on())give('weather');if(THEME.on())give('night');D.sports[CELESPORT]=1;save();if(['hockey','lacrosse','football','basketball','soccer'].every(s=>D.sports[s]))give('five')});
+  render();return{give}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'basketball',otPts:2,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b,m=7*G.qlen,s=x=>Math.max(4,Math.round(m*(1+x*.5)+gauss()*m*.11));return[s(d),s(-d)]}};
