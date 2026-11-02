@@ -2216,13 +2216,14 @@ AFTER.push(()=>{const st=FRDYN&&FRDYN.state();if(!st||!st.dyn||G.clubs[0]!==st.m
 // state and March Mayhem titles go in the dynasty trophy case
 {const _b=BIGCELE;BIGCELE=function(t,...a){const k={'State Champions':'state','March Mayhem Champions':'mayhem'}[t];if(k&&FRDYN)FRDYN.addTrophy(k);return _b.call(this,t,...a)}}
 /* ---------- two players on one keyboard: Player 2 runs the away team with the arrow keys ---------- */
+const J2={x:0,y:0};
 const TWO=(()=>{const KEY='two-player';let en=false;try{en=localStorage.getItem(KEY)==='1'}catch(e){}
   const on=()=>en&&!G.demo&&!G.fr&&!G.tourn&&!G.skills;
   const K2={up:0,down:0,left:0,right:0},MAP={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};let shotT0=0,tkT0=0,lastSw=0;
   const box=menuBox('twobox','',e=>{const b=e.target.closest('[data-two]');if(!b)return;en=b.dataset.two==='2';try{localStorage.setItem(KEY,en?'1':'0')}catch(_){}render()});
-  function render(){box.innerHTML=`<h2>Players <span>${en?'2':'1'}</span></h2><div class="xchips"><button class="chip plain" type="button" aria-pressed="${!en}" data-two="1">1 player vs the CPU</button><button class="chip plain" type="button" aria-pressed="${en}" data-two="2">2 players, same keyboard</button></div>
-    <p class="frnote">${en?`Player 1 is the first school you pick: WASD, Space, E, Q. Player 2 is the second school: arrow keys to run, hold <b>/</b> to shoot (longer is harder) or to tackle (tap for a standing tackle, hold for a slide), <b>.</b> to pass, <b>,</b> for a skill move or to switch players. Needs a keyboard. Franchise, tournaments and skills challenges stay one player.`:'Play against the computer.'}</p>`}
-  function vec(){let ix=K2.right-K2.left,iy=K2.down-K2.up;if(VCAM){const d=dirOf(0),wx=-iy*d;iy=ix*d;ix=wx}const m=hyp(ix,iy);if(m>1){ix/=m;iy/=m}return{x:ix,y:iy,m:Math.min(1,m)}}
+  function render(){box.innerHTML=`<h2>Players <span>${en?'2':'1'}</span></h2><div class="xchips"><button class="chip plain" type="button" aria-pressed="${!en}" data-two="1">1 player vs the CPU</button><button class="chip plain" type="button" aria-pressed="${en}" data-two="2">2 players, same device</button></div>
+    <p class="frnote">${en?`Player 1 is the first school you pick: WASD, Space, E, Q. Player 2 is the second school: arrow keys to run, hold <b>/</b> to shoot (longer is harder) or to tackle (tap for a standing tackle, hold for a slide), <b>.</b> to pass, <b>,</b> for a skill move or to switch players. On a phone or tablet, Player 2 gets a blue joystick and buttons on the right side (hold it sideways). Franchise, tournaments and skills challenges stay one player.`:'Play against the computer.'}</p>`}
+  function vec(){let ix=K2.right-K2.left+J2.x,iy=K2.down-K2.up+J2.y;if(VCAM){const d=dirOf(0),wx=-iy*d;iy=ix*d;ix=wx}const m=hyp(ix,iy);if(m>1){ix/=m;iy/=m}return{x:ix,y:iy,m:Math.min(1,m)}}
   function nearest(tg){let best=null,bd=1e9;for(const p of P)if(p.team===1&&p.role!=='G'){const d=dist(p,tg||ball);if(d<bd){bd=d;best=p}}return best}
   // set pieces (throw-ins, free kicks, corners, goal kicks) are taken for Player 2 by the computer
   const setp=p=>!!G.setPiece&&ball.owner===p;
@@ -2254,6 +2255,58 @@ const TWO=(()=>{const KEY='two-player';let en=false;try{en=localStorage.getItem(
   const _d=draw;draw=function(){_d.apply(this,arguments);if(on()&&ctrl2&&G.phase!=='replay')try{groundRing(ctrl2.x,ctrl2.y,1.1,'#4ea1ff',null);nameTag(ctrl2,'#4ea1ff')}catch(e){}};
   {const _ng=newGame;newGame=function(){ctrl2=null;K2.up=K2.down=K2.left=K2.right=0;return _ng.apply(this,arguments)}}
   render();return{on,vec,move,setp}})();
+/* ---------- two players on one phone or tablet: when two-player is on, Player 2 gets a joystick and buttons on the right, Player 1 keeps the left ---------- */
+const PAD2=(()=>{const root=document.documentElement;
+  const css=document.createElement('style');css.textContent=`
+#pad2{display:none}
+html.phone.two2 #pad2{display:block;position:fixed;inset:auto 0 0 0;z-index:61;pointer-events:none}
+html.phone.two2 #pad2 .joy2,html.phone.two2 #pad2 .p2b{pointer-events:auto}
+#pad2 .joy2{position:fixed;width:124px;height:124px;border-radius:50%;background:rgba(18,30,52,.6);border:2px solid rgba(78,161,255,.6);touch-action:none;right:calc(30px + env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px))}
+#pad2 .knob2{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:rgba(78,161,255,.45);border:2px solid rgba(160,205,255,.85)}
+#pad2 .p2b{position:fixed;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px;max-width:184px;right:calc(8px + env(safe-area-inset-right,0px));bottom:calc(170px + env(safe-area-inset-bottom,0px))}
+#pad2 .p2b button{width:56px;height:56px;border-radius:50%;border:2px solid rgba(78,161,255,.7);background:rgba(18,30,52,.92);color:#fff;font:700 12px/1.05 system-ui,sans-serif;text-transform:uppercase;touch-action:none;-webkit-user-select:none;user-select:none;padding:0}
+#pad2 .p2b button.main{width:68px;height:68px;background:#4ea1ff;border-color:#4ea1ff;color:#06121f;font-size:13px}
+#pad2 .p2b button[data-off]{opacity:.35}
+#pad2 .tag2{position:fixed;right:calc(40px + env(safe-area-inset-right,0px));bottom:calc(158px + env(safe-area-inset-bottom,0px));color:#9cc8ff;font:800 12px system-ui,sans-serif;letter-spacing:.08em;display:none}
+html.phone.two2 #pad .nums,html.phone.two2 #pad #rcvRow{display:none!important}
+html.phone.two2 #pad .joy{left:calc(30px + env(safe-area-inset-left,0px))!important;bottom:calc(30px + env(safe-area-inset-bottom,0px))!important;width:124px!important;height:124px!important}
+html.phone.two2 #pad .pbtns{left:calc(8px + env(safe-area-inset-left,0px))!important;right:auto!important;bottom:calc(170px + env(safe-area-inset-bottom,0px))!important;max-width:184px!important}
+html.phone.two2 #pad .pbtns .prow{justify-content:flex-start!important;max-width:184px!important}
+html.phone.two2 #pad .pbtns button{width:56px!important;height:56px!important;font-size:12px!important}
+html.phone.two2 #pad .pbtns #bAct,html.phone.two2 #pad .pbtns .act{width:68px!important;height:68px!important;font-size:13px!important}
+html.phone.two2 #pad .pbtns{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-end}
+html.phone.two2.port #phonehint{display:block;bottom:calc(330px + env(safe-area-inset-bottom,0px))}
+`;document.head.appendChild(css);
+  const el=document.createElement('div');el.id='pad2';el.setAttribute('aria-label','Player 2 controls');
+  el.innerHTML='<div class="joy2"><div class="knob2"></div></div><div class="p2b"><button type="button" data-k="Comma">Switch</button><button type="button" data-k="Period">Pass</button><button type="button" class="main" data-k="Slash">Shoot</button></div>';
+  document.body.appendChild(el);
+  const joy=el.querySelector('.joy2'),knob=el.querySelector('.knob2');let jid=null;
+  function jmove(e){const r=joy.getBoundingClientRect(),R0=r.width/2;let x=(e.clientX-r.left-R0)/R0,y=(e.clientY-r.top-R0)/R0;const m=Math.hypot(x,y);if(m>1){x/=m;y/=m}J2.x=Math.abs(x)<.12?0:x;J2.y=Math.abs(y)<.12?0:y;knob.style.transform=`translate(${x*36}px,${y*36}px)`}
+  function jend(){jid=null;J2.x=J2.y=0;knob.style.transform=''}
+  joy.addEventListener('pointerdown',e=>{e.preventDefault();jid=e.pointerId;try{joy.setPointerCapture(jid)}catch(_){}jmove(e)});
+  joy.addEventListener('pointermove',e=>{if(e.pointerId===jid)jmove(e)});
+  for(const t of ['pointerup','pointercancel','lostpointercapture'])joy.addEventListener(t,e=>{if(e.pointerId===jid)jend()});
+  const key=(type,code)=>{try{dispatchEvent(new KeyboardEvent(type,{code,key:code==='Slash'?'/':code==='Period'?'.':',',bubbles:true,cancelable:true}))}catch(_){}};
+  for(const b of el.querySelectorAll('button[data-k]')){let down=false;
+    b.addEventListener('pointerdown',e=>{e.preventDefault();if(down)return;down=true;try{b.setPointerCapture(e.pointerId)}catch(_){}key('keydown',b.dataset.k)});
+    const up=()=>{if(!down)return;down=false;key('keyup',b.dataset.k)};b.addEventListener('pointerup',up);b.addEventListener('pointercancel',up);b.addEventListener('lostpointercapture',up);
+    b.addEventListener('contextmenu',e=>e.preventDefault())}
+  // the button names follow what Player 2 can do right now
+  function has(){try{if(!ctrl2)return false;if(CELESPORT==='hockey')return puck.owner===ctrl2;if(CELESPORT==='football')return carrier()===ctrl2;return ball.owner===ctrl2}catch(e){return false}}
+  function labels(){const h=has();switch(CELESPORT){
+    case'hockey':return h?['Deke','Pass','Shoot']:['Switch','Poke','Hit'];
+    case'lacrosse':return h?['Dodge','Pass','Shoot']:['Switch','','Check'];
+    case'basketball':return h?['Cross','Pass','Shoot']:['Switch','','Steal'];
+    case'soccer':return h?['Skill','Pass','Shoot']:['Switch','','Tackle'];
+    case'football':{if(G.poss===1){if(G.phase==='presnap')return['','','Snap'];const q=typeof R==='function'?R('QB'):null;if(q&&carrier()===q&&!G.qbRun&&!G.thrown&&G.oCall&&G.oCall.type==='pass')return['Target','Lob','Throw'];return h?['','Stiff arm','Juke']:['','','']}return['Switch','','Tackle']}}
+    return['Switch','Pass','Shoot']}
+  const btns=[...el.querySelectorAll('button[data-k]')];let last='',was=null;
+  setInterval(()=>{let on=false;try{on=root.classList.contains('phone')&&TWO.on()}catch(e){}
+    root.classList.toggle('two2',on);
+    if(on!==was){was=on;if(on&&!root.classList.contains('port')){root.style.setProperty('--pl','196px');root.style.setProperty('--pr','196px')}try{resize()}catch(e){}if(!on)jend()}
+    if(on&&!root.classList.contains('port')&&root.style.getPropertyValue('--pr')!=='196px'){root.style.setProperty('--pl','196px');root.style.setProperty('--pr','196px');try{resize()}catch(e){}}
+    if(!on)return;const L=labels(),s=L.join('|');if(s!==last){last=s;btns.forEach((b,i)=>{b.textContent=L[i]||'·';if(L[i])b.removeAttribute('data-off');else b.setAttribute('data-off','')})}},200);
+  return{}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'soccer',otPts:1,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,ties:true,pts:true,pk:true,sim:(a,b)=>{const d=a-b;return[frPois(1.5+d*3),frPois(1.5-d*3)]}};
