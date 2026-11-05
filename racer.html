@@ -190,11 +190,12 @@ const VMAX=52,BOOST=74;
 function at(s){const P=TR.P,i=clamp(Math.floor(s),0,P.length-2),f=clamp(s-i,0,1),a=P[i],b=P[i+1];
   return{x:lerp(a.x,b.x,f),y:lerp(a.y,b.y,f),z:lerp(a.z,b.z,f),f:a.f.clone().lerp(b.f,f).normalize(),r:a.r.clone().lerp(b.r,f).normalize(),u:a.u.clone().lerp(b.u,f).normalize(),k:a.k,w:a.w,gap:a.gap,flag:a.flag,i}}
 function place(){const q=at(C.s);const p=new T3.Vector3(q.x,q.y,q.z).addScaledVector(q.r,C.d);C.p.copy(p);
-  const fw=q.f.clone().applyAxisAngle(q.u,-C.psi);const M=new T3.Matrix4().makeBasis(fw.clone().cross(q.u).negate(),q.u,fw);carMesh.quaternion.setFromRotationMatrix(M);carMesh.position.copy(p);C.fw=fw;C.up=q.u}
-function respawn(toStart){const i=toStart||!G.lastCp?4:G.lastCp;C.s=i+.5;C.d=0;C.psi=0;C.v=toStart?0:Math.max(22,Math.min(C.v,30));C.air=false;C.fall=0;place();if(!toStart){G.resets++;note('Back to the checkpoint')}}
+  const fw=q.f.clone().applyAxisAngle(q.u,-C.psi);const M=new T3.Matrix4().makeBasis(fw.clone().cross(q.u).negate(),q.u,fw);carMesh.quaternion.setFromRotationMatrix(M);if(!SIM)carMesh.rotateZ(-(C.st||0)*.07);carMesh.position.copy(p);C.fw=fw;C.up=q.u}
+function respawn(toStart){const i=toStart||!G.lastCp?4:G.lastCp;C.st=0;C.s=i+.5;C.d=0;C.psi=0;C.v=toStart?0:Math.max(22,Math.min(C.v,30));C.air=false;C.fall=0;place();if(!toStart){G.resets++;note('Back to the checkpoint')}}
 function launch(extraUp){C.air=true;const q=at(C.s);C.vel.copy(C.fw.clone().multiplyScalar(C.v*Math.cos(C.psi)+0)).addScaledVector(q.r,0);C.vel.copy(C.fw).multiplyScalar(C.v);C.vel.y+=extraUp||0;C.airT=0}
 function step(dt){const P=TR.P;let steer=(keys.right-keys.left),thr=keys.up,brk=keys.down,drift=keys.drift;
   if(G.phase!=='race'){thr=0;brk=0;steer=0}
+  {const tgt=steer,rate=Math.abs(tgt)>Math.abs(C.st||0)&&Math.sign(tgt)===Math.sign(C.st||tgt)?7:11;C.st=(C.st||0)+(tgt-(C.st||0))*Math.min(1,dt*rate);if(Math.abs(C.st)<.002)C.st=0;steer=C.st}
   if(!C.air){const q=at(C.s);
     // speed
     const vmax=C.boostT>0?BOOST:VMAX;if(thr)C.v+=(C.v<vmax?24*(1-C.v/vmax*.85):-30)*dt;else C.v-=C.v*.25*dt;
@@ -297,7 +298,7 @@ let last=0;function frame(now){const dt=Math.min(.033,(now-(last||now))/1000);la
     // chase camera
     const fw=C.air?C.vel.clone().setY(0).normalize():(C.fw||new T3.Vector3(0,0,1)),up=C.air?new T3.Vector3(0,1,0):(C.up||new T3.Vector3(0,1,0));
     const want=C.p.clone().addScaledVector(fw,-9.5).addScaledVector(up,4.2),lookAt=C.p.clone().addScaledVector(fw,6).addScaledVector(up,1.2);
-    camPos.lerp(want,1-Math.pow(.0015,dt));camLook.lerp(lookAt,1-Math.pow(.0005,dt));if(camPos.distanceToSquared(C.p)>2500){camPos.copy(want);camLook.copy(lookAt)}cam.position.copy(camPos);cam.lookAt(camLook);
+    camPos.lerp(want,1-Math.pow(.004,dt));camLook.lerp(lookAt,1-Math.pow(.0025,dt));if(camPos.distanceToSquared(C.p)>2500){camPos.copy(want);camLook.copy(lookAt)}cam.position.copy(camPos);cam.lookAt(camLook);
     const fovT=68+Math.min(14,Math.max(0,C.v-30)*.4);cam.fov+=(fovT-cam.fov)*Math.min(1,dt*3);cam.updateProjectionMatrix()}
   renderer.render(scene,cam);requestAnimationFrame(frame)}
 let noteT=0;function note(s){if(SIM)return;$('hNote').textContent=s;clearTimeout(noteT);noteT=setTimeout(()=>{$('hNote').textContent=''},1800)}
