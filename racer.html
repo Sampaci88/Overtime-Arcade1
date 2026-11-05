@@ -178,13 +178,13 @@ function buildWorld(tr,themeName){scene.remove(world);world.traverse(o=>{if(o.ge
   world.add(carMesh=makeCar(0xd0293a,1));world.add(ghostMesh=makeCar(0x9cc8ff,.35));ghostMesh.visible=false;RACE.meshes()}
 function makeCar(color,op,cpu){const g=new T3.Group(),tp=op<1;const mb=new T3.MeshPhongMaterial({color,flatShading:true,transparent:tp,opacity:op,shininess:30}),mc=new T3.MeshPhongMaterial({color:0x22262c,flatShading:true,transparent:tp,opacity:op}),mg=new T3.MeshPhongMaterial({color:0x9cd4ff,flatShading:true,transparent:tp,opacity:tp?op:.85});
   const body=new T3.Mesh(new T3.BoxGeometry(2.1,.7,4.2),mb);body.position.y=.65;g.add(body);const nose=new T3.Mesh(new T3.BoxGeometry(1.9,.4,1),mb);nose.position.set(0,.55,2.4);g.add(nose);
-  // an open-top racer: a low windshield and Joe in the seat
+  // an open-top racer: a low windshield and the driver in the seat
   const ws=new T3.Mesh(new T3.BoxGeometry(1.7,.45,.12),mg);ws.position.set(0,1.18,.75);ws.rotation.x=-.35;g.add(ws);const wing=new T3.Mesh(new T3.BoxGeometry(2.2,.12,.6),mc);wing.position.set(0,1.35,-2);g.add(wing);
   for(const[x,z]of[[-1.1,1.4],[1.1,1.4],[-1.1,-1.4],[1.1,-1.4]]){const w=new T3.Mesh(new T3.CylinderGeometry(.45,.45,.4,8),mc);w.rotation.z=Math.PI/2;w.position.set(x,.45,z);g.add(w)}
   if(cpu){const hm=new T3.Mesh(new T3.IcosahedronGeometry(.42,1),new T3.MeshPhongMaterial({color:0xf4f4ee,flatShading:true}));hm.position.set(0,1.45,-.35);g.add(hm);const vz=new T3.Mesh(new T3.BoxGeometry(.6,.18,.1),new T3.MeshPhongMaterial({color:0x111111}));vz.position.set(0,1.48,.03);g.add(vz);return g}
-  g.userData.joe=makeJoe(tp,op);g.userData.joe.position.set(0,1,-.35);g.add(g.userData.joe);return g}
+  g.userData.drv=makeDriver(tp,op);g.userData.drv.position.set(0,1,-.35);g.add(g.userData.drv);return g}
 // the driver: white feathers, red comb, yellow beak, and wings that flap when he's in the air
-function makeJoe(tp,op){const j=new T3.Group(),M=c=>new T3.MeshPhongMaterial({color:c,flatShading:true,transparent:tp,opacity:op,emissive:c,emissiveIntensity:.28});j.scale.setScalar(1.15);
+function makeDriver(tp,op){const j=new T3.Group(),M=c=>new T3.MeshPhongMaterial({color:c,flatShading:true,transparent:tp,opacity:op,emissive:c,emissiveIntensity:.28});j.scale.setScalar(1.15);
   const body=new T3.Mesh(new T3.IcosahedronGeometry(.62,0),M(0xf7f4ec));body.scale.set(1,1.05,1.15);body.position.y=.45;j.add(body);
   const tail=new T3.Mesh(new T3.ConeGeometry(.3,.6,5),M(0xece6d8));tail.position.set(0,.75,-.65);tail.rotation.x=-.9;j.add(tail);
   const head=new T3.Group();head.position.set(0,1.18,.32);j.add(head);
@@ -305,7 +305,7 @@ let last=0;function frame(now){const dt=Math.min(.033,(now-(last||now))/1000);la
   if(G&&TR){if(G.phase==='count'){G.cd-=dt;$('hMid').textContent=G.cd>0?String(Math.ceil(G.cd)):'GO!';if(G.cd<=0){G.phase='race';G.t=0;setTimeout(()=>{if(G.phase==='race')$('hMid').textContent=''},600)}}
     if(G.phase==='race'||G.phase==='count'){const sub=3;for(let k=0;k<sub;k++)step(dt/sub);if(G.phase==='race'){G.t+=dt;G.recT+=dt;if(G.recT>=.1){G.recT=0;if(G.rec.length<3000)G.rec.push([+C.p.x.toFixed(1),+C.p.y.toFixed(1),+C.p.z.toFixed(1),+(Math.atan2(C.fw?C.fw.x:0,C.fw?C.fw.z:1)).toFixed(2)])}}}
     // ghost of your best run
-    {const J=carMesh.userData.joe;if(J){const t=now/1000,sp=Math.abs(C.v),flap=C.air?Math.sin(t*22)*.9+.6:Math.sin(t*3)*.05+(C.boostT>0?.35:0);for(const w of J.userData.wings)w.w.rotation.z=-w.sd*flap;
+    {const J=carMesh.userData.drv;if(J){const t=now/1000,sp=Math.abs(C.v),flap=C.air?Math.sin(t*22)*.9+.6:Math.sin(t*3)*.05+(C.boostT>0?.35:0);for(const w of J.userData.wings)w.w.rotation.z=-w.sd*flap;
   J.userData.head.position.y=1.18+Math.sin(t*(4+sp*.25))*.04*(1+sp/30);J.userData.head.rotation.y=(keys.left-keys.right)*.25;J.rotation.z=(keys.left-keys.right)*.08}}
   if(G.phase==='race')RACE.step(dt);RACE.draw();$('hPos').textContent=RACE.on()&&G.phase!=='menu'?`${['1ST','2ND','3RD','4TH'][RACE.place()-1]} / 4`:'';
   const gh=RACE.on()?null:G.best&&G.best.ghost;if(gh&&gh.length&&G.phase==='race'){const k=G.t/.1,i=Math.floor(k),a=gh[Math.min(i,gh.length-1)],b=gh[Math.min(i+1,gh.length-1)],f=k-i;ghostMesh.visible=i<gh.length;ghostMesh.position.set(lerp(a[0],b[0],f),lerp(a[1],b[1],f),lerp(a[2],b[2],f));ghostMesh.rotation.set(0,a[3],0)}else ghostMesh.visible=false;
