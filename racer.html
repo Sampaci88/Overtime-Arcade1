@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Apex Rush</title>
+<title>Apex Rush with Joe the Chicken</title>
 <meta name="theme-color" content="#0e1214">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -65,7 +65,7 @@ html.touch.playing .hud .spd{bottom:140px}
 <body>
 <div class="wrap">
   <div class="top"><a href="./">← All games</a><div class="btns"><button class="btn" id="bTracks" type="button">Tracks</button><button class="btn" id="bRestart" type="button">Reset (R)</button><button class="btn" id="bSound" type="button">Sound: on</button></div></div>
-  <h1>Apex Rush</h1>
+  <h1>Apex Rush <span style="font-size:.45em;color:var(--fg);letter-spacing:.04em">with Joe the Chicken</span></h1>
   <div id="stage">
     <div class="hud"><div class="tl"><div class="big" id="hTime">0:00.00</div><div class="sm" id="hCp"></div><div class="sm" id="hBest"></div></div>
       <div class="tr"><div class="sm" id="hTrack"></div><div class="sm" id="hMedals"></div></div><div class="note" id="hNote"></div><div class="mid" id="hMid"></div><div class="spd"><span id="hSpd">0</span><small>KM/H</small></div></div>
@@ -178,8 +178,22 @@ function buildWorld(tr,themeName){scene.remove(world);world.traverse(o=>{if(o.ge
   world.add(carMesh=makeCar(0xd0293a,1));world.add(ghostMesh=makeCar(0x9cc8ff,.35));ghostMesh.visible=false}
 function makeCar(color,op){const g=new T3.Group(),tp=op<1;const mb=new T3.MeshPhongMaterial({color,flatShading:true,transparent:tp,opacity:op,shininess:30}),mc=new T3.MeshPhongMaterial({color:0x22262c,flatShading:true,transparent:tp,opacity:op}),mg=new T3.MeshPhongMaterial({color:0x9cd4ff,flatShading:true,transparent:tp,opacity:tp?op:.85});
   const body=new T3.Mesh(new T3.BoxGeometry(2.1,.7,4.2),mb);body.position.y=.65;g.add(body);const nose=new T3.Mesh(new T3.BoxGeometry(1.9,.4,1),mb);nose.position.set(0,.55,2.4);g.add(nose);
-  const cab=new T3.Mesh(new T3.BoxGeometry(1.6,.6,1.9),mg);cab.position.set(0,1.25,-.3);g.add(cab);const wing=new T3.Mesh(new T3.BoxGeometry(2.2,.12,.6),mc);wing.position.set(0,1.35,-2);g.add(wing);
-  for(const[x,z]of[[-1.1,1.4],[1.1,1.4],[-1.1,-1.4],[1.1,-1.4]]){const w=new T3.Mesh(new T3.CylinderGeometry(.45,.45,.4,8),mc);w.rotation.z=Math.PI/2;w.position.set(x,.45,z);g.add(w)}return g}
+  // an open-top racer: a low windshield and Joe in the seat
+  const ws=new T3.Mesh(new T3.BoxGeometry(1.7,.45,.12),mg);ws.position.set(0,1.18,.75);ws.rotation.x=-.35;g.add(ws);const wing=new T3.Mesh(new T3.BoxGeometry(2.2,.12,.6),mc);wing.position.set(0,1.35,-2);g.add(wing);
+  for(const[x,z]of[[-1.1,1.4],[1.1,1.4],[-1.1,-1.4],[1.1,-1.4]]){const w=new T3.Mesh(new T3.CylinderGeometry(.45,.45,.4,8),mc);w.rotation.z=Math.PI/2;w.position.set(x,.45,z);g.add(w)}
+  g.userData.joe=makeJoe(tp,op);g.userData.joe.position.set(0,1,-.35);g.add(g.userData.joe);return g}
+// Joe the chicken: white feathers, red comb, yellow beak, and wings that flap when he's in the air
+function makeJoe(tp,op){const j=new T3.Group(),M=c=>new T3.MeshPhongMaterial({color:c,flatShading:true,transparent:tp,opacity:op,emissive:c,emissiveIntensity:.28});j.scale.setScalar(1.15);
+  const body=new T3.Mesh(new T3.IcosahedronGeometry(.62,0),M(0xf7f4ec));body.scale.set(1,1.05,1.15);body.position.y=.45;j.add(body);
+  const tail=new T3.Mesh(new T3.ConeGeometry(.3,.6,5),M(0xece6d8));tail.position.set(0,.75,-.65);tail.rotation.x=-.9;j.add(tail);
+  const head=new T3.Group();head.position.set(0,1.18,.32);j.add(head);
+  head.add(new T3.Mesh(new T3.IcosahedronGeometry(.34,0),M(0xfbf9f3)));
+  const comb=M(0xd8232f);for(const[z,h]of[[-.08,.2],[.06,.26],[.2,.18]]){const c=new T3.Mesh(new T3.BoxGeometry(.1,h,.14),comb);c.position.set(0,.3+h/2-.05,z);head.add(c)}
+  const beak=new T3.Mesh(new T3.ConeGeometry(.11,.3,4),M(0xf2b632));beak.rotation.x=Math.PI/2;beak.position.set(0,-.03,.42);head.add(beak);
+  const wat=new T3.Mesh(new T3.BoxGeometry(.08,.16,.08),comb);wat.position.set(0,-.2,.3);head.add(wat);
+  for(const x of[-.17,.17]){const e=new T3.Mesh(new T3.BoxGeometry(.07,.08,.07),M(0x111111));e.position.set(x,.07,.27);head.add(e)}
+  const wings=[];for(const sd of[-1,1]){const w=new T3.Group();w.position.set(sd*.55,.55,0);const f=new T3.Mesh(new T3.BoxGeometry(.12,.5,.75),M(0xe9e3d4));f.position.set(sd*.06,-.1,-.05);w.add(f);j.add(w);wings.push({w,sd})}
+  j.userData={head,wings};return j}
 /* ---------- the car ---------- */
 let SIM=false;
 const C={s:0,d:0,psi:0,v:0,air:false,p:new T3.Vector3(),vel:new T3.Vector3(),yaw:0,fall:0,boostT:0};
@@ -190,14 +204,14 @@ function at(s){const P=TR.P,i=clamp(Math.floor(s),0,P.length-2),f=clamp(s-i,0,1)
 function place(){const q=at(C.s);const p=new T3.Vector3(q.x,q.y,q.z).addScaledVector(q.r,C.d);C.p.copy(p);
   const fw=q.f.clone().applyAxisAngle(q.u,-C.psi);const M=new T3.Matrix4().makeBasis(fw.clone().cross(q.u).negate(),q.u,fw);carMesh.quaternion.setFromRotationMatrix(M);carMesh.position.copy(p);C.fw=fw;C.up=q.u}
 function respawn(toStart){const i=toStart||!G.lastCp?4:G.lastCp;C.s=i+.5;C.d=0;C.psi=0;C.v=toStart?0:Math.max(22,Math.min(C.v,30));C.air=false;C.fall=0;place();if(!toStart){G.resets++;note('Back to the checkpoint')}}
-function launch(extraUp){C.air=true;const q=at(C.s);C.vel.copy(C.fw.clone().multiplyScalar(C.v*Math.cos(C.psi)+0)).addScaledVector(q.r,0);C.vel.copy(C.fw).multiplyScalar(C.v);C.vel.y+=extraUp||0;C.airT=0}
+function launch(extraUp){C.air=true;if((extraUp||0)>1.5)squawk();const q=at(C.s);C.vel.copy(C.fw.clone().multiplyScalar(C.v*Math.cos(C.psi)+0)).addScaledVector(q.r,0);C.vel.copy(C.fw).multiplyScalar(C.v);C.vel.y+=extraUp||0;C.airT=0}
 function step(dt){const P=TR.P;let steer=(keys.right-keys.left),thr=keys.up,brk=keys.down,drift=keys.drift;
   if(G.phase!=='race'){thr=0;brk=0;steer=0}
   if(!C.air){const q=at(C.s);
     // speed
     const vmax=C.boostT>0?BOOST:VMAX;if(thr)C.v+=(C.v<vmax?24*(1-C.v/vmax*.85):-30)*dt;else C.v-=C.v*.25*dt;
     if(brk)C.v-=(C.v>0?42:14)*dt;C.v=clamp(C.v,-12,BOOST);C.v-=q.f.y*20*dt;
-    if(q.flag){if(C.boostT<=0)boostSfx();C.boostT=1.4}if(C.boostT>0){C.boostT-=dt;C.v=Math.min(BOOST,C.v+46*dt)}
+    if(q.flag){if(C.boostT<=0){boostSfx();cluck(3)}C.boostT=1.4}if(C.boostT>0){C.boostT-=dt;C.v=Math.min(BOOST,C.v+46*dt)}
     // steering: the track bends under you; drifting turns harder and slides
     const sp=Math.abs(C.v),rate=steer*2.5*(drift?1.35:1)*(C.v<0?-1:1)*Math.min(1,sp/5);
     C.psi+=(rate+q.k*C.v*Math.cos(C.psi)*.7)*dt;if(!drift)C.psi*=1-dt*2.2;else C.v-=C.v*.15*dt;C.psi=clamp(C.psi,-1.1,1.1);
@@ -215,7 +229,7 @@ function step(dt){const P=TR.P;let steer=(keys.right-keys.left),thr=keys.up,brk=
     if(C.p.y<TR.minY-26){respawn()}
     const look=C.vel.clone();look.y*=.3;if(look.lengthSq()>1){const m=new T3.Matrix4().lookAt(new T3.Vector3(),look.normalize().negate(),new T3.Vector3(0,1,0));carMesh.quaternion.setFromRotationMatrix(m)}}
   // checkpoints and the finish
-  for(const g of gates)if(!g.hit&&!C.air&&C.s>=g.i&&C.s<g.i+25){g.hit=true;G.lastCp=g.i;G.cpTimes.push(G.t);if(SIM)continue;g.g.children.forEach(m=>m.material.color&&m.material.color.set(0x2fbf71));chime();const sp=G.best&&G.best.cps?G.best.cps[G.cpTimes.length-1]:null;note(sp!=null?`${G.t-sp>=0?'+':'−'}${Math.abs(G.t-sp).toFixed(2)} vs best`:'Checkpoint')}
+  for(const g of gates)if(!g.hit&&!C.air&&C.s>=g.i&&C.s<g.i+25){g.hit=true;G.lastCp=g.i;G.cpTimes.push(G.t);if(SIM)continue;g.g.children.forEach(m=>m.material.color&&m.material.color.set(0x2fbf71));chime();cluck(2);const sp=G.best&&G.best.cps?G.best.cps[G.cpTimes.length-1]:null;note(sp!=null?`${G.t-sp>=0?'+':'−'}${Math.abs(G.t-sp).toFixed(2)} vs best`:'Checkpoint')}
   if(!C.air&&C.s>=P.length-8&&gates.every(g=>g.hit)&&G.phase==='race')finish();
   else if(!C.air&&C.s>=P.length-8&&G.phase==='race'&&!G.missNote){G.missNote=true;note('You missed a checkpoint! Press R')}}
 /* ---------- the run ---------- */
@@ -246,6 +260,8 @@ function tone(f,d,type,vol,at){if(!AC||!soundOn||SIM)return;const t=AC.currentTi
 function chime(){tone(880,.15,'triangle',.14);tone(1320,.25,'triangle',.12,.1)}
 function fanfare(){[523,659,784,1046].forEach((f,i)=>tone(f,.35,'triangle',.12,i*.13))}
 function thud(){tone(90,.12,'sine',.18)}
+function cluck(n){if(!AC||!soundOn||SIM)return;for(let i=0;i<(n||2);i++){const t=AC.currentTime+i*.13,o=AC.createOscillator(),g=AC.createGain();o.type='square';o.frequency.setValueAtTime(620,t);o.frequency.exponentialRampToValueAtTime(380,t+.07);g.gain.setValueAtTime(.05,t);g.gain.exponentialRampToValueAtTime(.001,t+.09);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+.1)}}
+function squawk(){if(!AC||!soundOn||SIM)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type='sawtooth';o.frequency.setValueAtTime(700,t);o.frequency.linearRampToValueAtTime(1150,t+.12);o.frequency.exponentialRampToValueAtTime(520,t+.35);g.gain.setValueAtTime(.06,t);g.gain.exponentialRampToValueAtTime(.001,t+.38);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+.4)}
 function scrape(){tone(220,.08,'square',.04);tone(160,.1,'sawtooth',.03,.04)}
 function boostSfx(){if(!AC||!soundOn||SIM)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type='sawtooth';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(900,t+.5);g.gain.setValueAtTime(.06,t);g.gain.exponentialRampToValueAtTime(.001,t+.6);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+.62)}
 function engine(on){if(!AC)return;try{if(on&&soundOn&&!eng){const o=AC.createOscillator(),o2=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain();o.type='sawtooth';o2.type='square';f.type='lowpass';f.frequency.value=600;g.gain.value=.035;o.connect(f);o2.connect(f);f.connect(g).connect(AC.destination);o.start();o2.start();eng={o,o2,g,f}}
@@ -258,7 +274,9 @@ let last=0;function frame(now){const dt=Math.min(.033,(now-(last||now))/1000);la
   if(G&&TR){if(G.phase==='count'){G.cd-=dt;$('hMid').textContent=G.cd>0?String(Math.ceil(G.cd)):'GO!';if(G.cd<=0){G.phase='race';G.t=0;setTimeout(()=>{if(G.phase==='race')$('hMid').textContent=''},600)}}
     if(G.phase==='race'||G.phase==='count'){const sub=3;for(let k=0;k<sub;k++)step(dt/sub);if(G.phase==='race'){G.t+=dt;G.recT+=dt;if(G.recT>=.1){G.recT=0;if(G.rec.length<3000)G.rec.push([+C.p.x.toFixed(1),+C.p.y.toFixed(1),+C.p.z.toFixed(1),+(Math.atan2(C.fw?C.fw.x:0,C.fw?C.fw.z:1)).toFixed(2)])}}}
     // ghost of your best run
-    const gh=G.best&&G.best.ghost;if(gh&&gh.length&&G.phase==='race'){const k=G.t/.1,i=Math.floor(k),a=gh[Math.min(i,gh.length-1)],b=gh[Math.min(i+1,gh.length-1)],f=k-i;ghostMesh.visible=i<gh.length;ghostMesh.position.set(lerp(a[0],b[0],f),lerp(a[1],b[1],f),lerp(a[2],b[2],f));ghostMesh.rotation.set(0,a[3],0)}else ghostMesh.visible=false;
+    {const J=carMesh.userData.joe;if(J){const t=now/1000,sp=Math.abs(C.v),flap=C.air?Math.sin(t*22)*.9+.6:Math.sin(t*3)*.05+(C.boostT>0?.35:0);for(const w of J.userData.wings)w.w.rotation.z=-w.sd*flap;
+  J.userData.head.position.y=1.18+Math.sin(t*(4+sp*.25))*.04*(1+sp/30);J.userData.head.rotation.y=(keys.left-keys.right)*.25;J.rotation.z=(keys.left-keys.right)*.08}}
+  const gh=G.best&&G.best.ghost;if(gh&&gh.length&&G.phase==='race'){const k=G.t/.1,i=Math.floor(k),a=gh[Math.min(i,gh.length-1)],b=gh[Math.min(i+1,gh.length-1)],f=k-i;ghostMesh.visible=i<gh.length;ghostMesh.position.set(lerp(a[0],b[0],f),lerp(a[1],b[1],f),lerp(a[2],b[2],f));ghostMesh.rotation.set(0,a[3],0)}else ghostMesh.visible=false;
     $('hTime').textContent=fmt(G.t);$('hSpd').textContent=String(Math.round(Math.abs(C.v)*3.6));$('hCp').textContent=`Checkpoints ${gates.filter(g=>g.hit).length}/${gates.length}`;
     if(eng){const r=Math.abs(C.v)/VMAX;eng.o.frequency.value=55+r*140;eng.o2.frequency.value=27+r*70;eng.f.frequency.value=400+r*900}
     // chase camera
@@ -273,7 +291,7 @@ function showCard(h){$('ovc').innerHTML=h;$('ov').hidden=false;root.classList.re
 function hideCard(){$('ov').hidden=true}
 function menu(){let M={};try{M=JSON.parse(localStorage.getItem('apex-medals')||'{}')}catch(e){}
   const best=c=>{try{const b=JSON.parse(localStorage.getItem('apex-best-'+c)||'null');return b?fmt(b.t):'—'}catch(e){return'—'}};
-  showCard(`<h2>Apex Rush</h2><p>Pick a track. Beat the gold time on all ten.</p><div class="trks">${TRACKS.map((t,i)=>`<button class="trk" type="button" data-t="${i}"><b>${i+1}. ${t[0]}</b><small><span class="medal m-${M[t[2]]||'n'}"></span>Best ${best(t[2])}</small></button>`).join('')}</div>
+  showCard(`<h2>Apex Rush</h2><p>Joe the Chicken is behind the wheel. Pick a track and beat the gold time on all ten.</p><div class="trks">${TRACKS.map((t,i)=>`<button class="trk" type="button" data-t="${i}"><b>${i+1}. ${t[0]}</b><small><span class="medal m-${M[t[2]]||'n'}"></span>Best ${best(t[2])}</small></button>`).join('')}</div>
     <div class="row"><button class="go" type="button" data-a="random">Random track</button><input id="code" maxlength="12" placeholder="Track code" aria-label="Track code" autocomplete="off"><button class="btn" type="button" data-a="code">Race this code</button></div>
     <div class="keys"><span><kbd>W</kbd> gas</span><span><kbd>A</kbd><kbd>D</kbd> steer</span><span><kbd>Space</kbd> drift</span><span><kbd>R</kbd> reset</span><span><kbd>Enter</kbd> last checkpoint</span></div>`)}
 let curIdx=-1;
