@@ -328,7 +328,7 @@ footer .by b{color:var(--cardinal)}
 </script>
 <script>
 // the offline copy, and no "Get the app" section once it is already installed
-if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+if('serviceWorker' in navigator)addEventListener('load',()=>{let had=!!navigator.serviceWorker.controller,done=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&!done){done=true;location.reload()}});navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{})});
 if(navigator.standalone||matchMedia('(display-mode: standalone)').matches)document.getElementById('getapp').hidden=true;
 </script>
 <script>
