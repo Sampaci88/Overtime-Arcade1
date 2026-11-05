@@ -52,12 +52,12 @@ html.touch.playing .pbar{display:flex}
 </style></head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="./">← All games</a><div class="btns"><button class="btn" id="bPause" type="button">Pause</button><button class="btn" id="bSound" type="button">Sound: on</button></div></div>
+  <div class="top"><a href="./">← All games</a><div class="btns"><button class="btn" id="bReset" type="button">Reset (R)</button><button class="btn" id="bPause" type="button">Pause</button><button class="btn" id="bSound" type="button">Sound: on</button></div></div>
   <h1>Beat the Bell</h1>
   <div id="stage">
     <canvas id="cv" aria-label="Beat the Bell game"></canvas>
     <div class="tc"><div class="joy" id="joy"><div class="knob" id="knob"></div></div><button class="sprint" id="bRun" type="button">RUN</button></div>
-    <div class="pbar"><button type="button" id="pPause">Pause</button><button type="button" id="pQuit">Quit</button></div>
+    <div class="pbar"><button type="button" id="pReset">Reset</button><button type="button" id="pPause">Pause</button><button type="button" id="pQuit">Quit</button></div>
     <div class="ov" id="ov"><div class="card" id="ovc"></div></div>
   </div>
   <div class="info">
@@ -68,7 +68,7 @@ html.touch.playing .pbar{display:flex}
       <li>Grab <b>Cardinal pins</b> for bonus points and <b>snacks</b> to refill your energy.</li>
       <li>Three tardies and it's detention. Make it through all 8 periods to finish the day.</li></ul></section>
     <section><h2>Controls</h2><ul>
-      <li><kbd>WASD</kbd> or arrow keys to walk</li><li>Hold <kbd>Shift</kbd> or <kbd>Space</kbd> to run</li><li><kbd>P</kbd> to pause</li>
+      <li><kbd>WASD</kbd> or arrow keys to walk</li><li>Hold <kbd>Shift</kbd> or <kbd>Space</kbd> to run</li><li><kbd>P</kbd> to pause, <kbd>R</kbd> to reset the period</li>
       <li>On a phone: joystick on the left, RUN on the right. Turn it sideways for a bigger view.</li></ul></section>
     <section><h2>Your best</h2><p id="best">No school days yet.</p></section>
   </div>
@@ -295,18 +295,20 @@ $('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
 function newDay(){G={period:1,score:0,tardies:0,made:0,caught:0,pins:0,coins:0};play()}
 function play(){hideCard();startPeriod();if(TOUCH)root.classList.add('playing');setTimeout(resize,30);chatter(true);paused=false}
 function renderBest(){let b=0;try{b=+(localStorage.getItem('bell-best')||0)}catch(e){}$('best').textContent=b?`Best score: ${b}. Coins you earn here go in the Overtime Arcade shop.`:'No school days yet. Coins you earn here go in the Overtime Arcade shop.'}
+function resetPeriod(){if(!G||G.phase!=='play')return;paused=false;$('bPause').textContent='Pause';$('pPause').textContent='Pause';G.caught=0;G.pins=0;startPeriod();say('Reset',`${ord(G.period)} period, fresh start`)}
+$('bReset').addEventListener('click',resetPeriod);$('pReset').addEventListener('click',resetPeriod);
 function togglePause(){if(!G||G.phase!=='play')return;paused=!paused;$('bPause').textContent=paused?'Resume':'Pause';$('pPause').textContent=paused?'Resume':'Pause'}
 $('bPause').addEventListener('click',togglePause);$('pPause').addEventListener('click',togglePause);
 $('pQuit').addEventListener('click',()=>{if(G)G.phase='menu';chatter(false);paused=false;intro()});
 $('bSound').addEventListener('click',()=>{soundOn=!soundOn;try{localStorage.setItem('bell-sound',soundOn?'on':'off')}catch(e){}$('bSound').textContent='Sound: '+(soundOn?'on':'off');chatter(soundOn&&G&&G.phase==='play')});
 $('bSound').textContent='Sound: '+(soundOn?'on':'off');
 function intro(){showCard(`<h2>Beat the Bell</h2><p class="big">Get to class before the bell. Don't get caught running.</p><p>Grab everything on your list from the halls, then get to your classroom door. Eight periods, three tardies and you're in detention.</p>
-  <div class="keys"><span><kbd>WASD</kbd> walk</span><span><kbd>Shift</kbd> / <kbd>Space</kbd> run</span><span><kbd>P</kbd> pause</span></div><button class="go" type="button" data-a="new">Start the school day</button>`)}
+  <div class="keys"><span><kbd>WASD</kbd> walk</span><span><kbd>Shift</kbd> / <kbd>Space</kbd> run</span><span><kbd>P</kbd> pause</span><span><kbd>R</kbd> reset</span></div><button class="go" type="button" data-a="new">Start the school day</button>`)}
 /* ---------- input ---------- */
 const KM={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right'};
 addEventListener('keydown',e=>{const k=KM[e.code];if(k&&G&&G.phase==='play'){keys[k]=1;e.preventDefault();return}
   if(e.code==='ShiftLeft'||e.code==='ShiftRight'||e.code==='Space'){if(G&&G.phase==='play'){keys.run=1;e.preventDefault()}else if(e.code==='Space'&&!$('ov').hidden){const b=$('ovc').querySelector('.go');if(b&&document.activeElement!==b){e.preventDefault();b.click()}}}
-  if(e.code==='KeyP')togglePause();if(e.code==='Enter'&&!$('ov').hidden&&document.activeElement===document.body){const b=$('ovc').querySelector('.go');if(b)b.click()}});
+  if(e.code==='KeyP')togglePause();if(e.code==='KeyR'&&!e.repeat)resetPeriod();if(e.code==='Enter'&&!$('ov').hidden&&document.activeElement===document.body){const b=$('ovc').querySelector('.go');if(b)b.click()}});
 addEventListener('keyup',e=>{const k=KM[e.code];if(k)keys[k]=0;if(e.code==='ShiftLeft'||e.code==='ShiftRight'||e.code==='Space')keys.run=0});
 addEventListener('blur',()=>{keys={up:0,down:0,left:0,right:0,run:0};joy.x=joy.y=0;runBtn=false});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&G&&G.phase==='play'&&!paused)togglePause()});

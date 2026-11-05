@@ -51,14 +51,14 @@ html.touch.playing .pbar{display:flex}
 </style></head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="./">← All games</a><div class="btns"><button class="btn" id="bMenu" type="button">Menu</button><button class="btn" id="bPause" type="button">Pause</button><button class="btn" id="bSound" type="button">Sound: on</button></div></div>
+  <div class="top"><a href="./">← All games</a><div class="btns"><button class="btn" id="bReset" type="button">Reset (R)</button><button class="btn" id="bMenu" type="button">Menu</button><button class="btn" id="bPause" type="button">Pause</button><button class="btn" id="bSound" type="button">Sound: on</button></div></div>
   <h1>Shred Park</h1>
   <div id="stage">
     <canvas id="cv" aria-label="Shred Park skateboarding game"></canvas>
     <div id="achpop" hidden></div>
     <div class="tc"><div class="joy" id="joy"><div class="knob" id="knob"></div></div>
       <div class="tb"><button type="button" data-b="flip">FLIP</button><button type="button" data-b="grab">GRAB</button><button type="button" data-b="grind">GRIND</button><button type="button" class="ol" data-b="ollie">OLLIE</button></div></div>
-    <div class="pbar"><button type="button" id="pPause">Pause</button><button type="button" id="pMenu">Menu</button></div>
+    <div class="pbar"><button type="button" id="pReset">Reset</button><button type="button" id="pPause">Pause</button><button type="button" id="pMenu">Menu</button></div>
     <div class="ov" id="ov"><div class="card" id="ovc"></div></div>
   </div>
   <div class="info">
@@ -262,14 +262,16 @@ function showCard(h){$('ovc').innerHTML=h;$('ov').hidden=false;root.classList.re
 function hideCard(){$('ov').hidden=true}
 function menu(){const best=+(localStorage.getItem('shred-best')||0);showCard(`<h2>Shred Park</h2><p>Skate the park, link tricks into combos, and unlock an achievement for every trick.</p>
   <div class="row"><button class="go" type="button" data-a="free">Free skate</button><button class="go" type="button" data-a="session">2-minute session</button></div><p>${best?`Best session: ${best.toLocaleString()}`:'No sessions yet'} · Achievements: ${ACH.filter(a=>GOT[a.id]).length} of ${ACH.length}</p>
-  <div class="keys"><span><kbd>←</kbd><kbd>→</kbd> push, spin, balance</span><span><kbd>Space</kbd> ollie (hold, let go)</span><span><kbd>J</kbd> flip + direction</span><span><kbd>K</kbd> grab + direction</span><span><kbd>L</kbd> hold to grind</span><span><kbd>↓</kbd>/<kbd>↑</kbd> manual</span></div>`)}
+  <div class="keys"><span><kbd>←</kbd><kbd>→</kbd> push, spin, balance</span><span><kbd>Space</kbd> ollie (hold, let go)</span><span><kbd>J</kbd> flip + direction</span><span><kbd>K</kbd> grab + direction</span><span><kbd>L</kbd> hold to grind</span><span><kbd>↓</kbd>/<kbd>↑</kbd> manual</span><span><kbd>R</kbd> reset</span></div>`)}
 $('ovc').addEventListener('click',e=>{const b=e.target.closest('button[data-a]');if(!b)return;audio();mode=b.dataset.a==='session'?'session':'free';reset();hideCard();if(TOUCH)root.classList.add('playing');setTimeout(resize,30);flash(mode==='session'?'2 minutes. Go!':'Free skate',TOUCH?'Push the joystick to get rolling':'Push with → to get rolling')});
+function resetRun(){if(!S)return;paused=false;$('bPause').textContent='Pause';$('pPause').textContent='Pause';grindSound(false);reset();hideCard();if(TOUCH)root.classList.add('playing');flash(mode==='session'?'Reset: 2 minutes. Go!':'Reset','Back at the start')}
+$('bReset').addEventListener('click',resetRun);$('pReset').addEventListener('click',resetRun);
 function togglePause(){if(!S)return;paused=!paused;$('bPause').textContent=paused?'Resume':'Pause';$('pPause').textContent=paused?'Resume':'Pause';grindSound(false)}
 $('bPause').addEventListener('click',togglePause);$('pPause').addEventListener('click',togglePause);$('bMenu').addEventListener('click',()=>{paused=false;menu()});$('pMenu').addEventListener('click',()=>{paused=false;menu()});
 $('bSound').addEventListener('click',()=>{soundOn=!soundOn;try{localStorage.setItem('shred-sound',soundOn?'on':'off')}catch(e){}$('bSound').textContent='Sound: '+(soundOn?'on':'off');if(!soundOn)grindSound(false)});$('bSound').textContent='Sound: '+(soundOn?'on':'off');
 const KM={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',Space:'ollie',KeyJ:'flip',KeyK:'grab',KeyL:'grind'};
-addEventListener('keydown',e=>{if(!$('ov').hidden){if(e.code==='Enter'&&document.activeElement===document.body){const b=$('ovc').querySelector('.go');if(b)b.click()}return}
-  const k=KM[e.code];if(k){e.preventDefault();if(!K[k]&&(k==='flip'||k==='grab'))press(k);K[k]=1;audio()}if(e.code==='KeyP')togglePause()});
+addEventListener('keydown',e=>{if(!$('ov').hidden){if(e.code==='KeyR'&&S&&!e.repeat){resetRun();return}if(e.code==='Enter'&&document.activeElement===document.body){const b=$('ovc').querySelector('.go');if(b)b.click()}return}
+  const k=KM[e.code];if(k){e.preventDefault();if(!K[k]&&(k==='flip'||k==='grab'))press(k);K[k]=1;audio()}if(e.code==='KeyP')togglePause();if(e.code==='KeyR'&&!e.repeat)resetRun()});
 addEventListener('keyup',e=>{const k=KM[e.code];if(k)K[k]=0});
 addEventListener('blur',()=>{for(const k in K)K[k]=0;joy.x=joy.y=0});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&S&&!paused)togglePause()});

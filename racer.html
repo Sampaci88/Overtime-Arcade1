@@ -64,18 +64,18 @@ html.touch.playing .hud .spd{bottom:140px}
 </style></head>
 <body>
 <div class="wrap">
-  <div class="top"><a href="./">← All games</a><div class="btns"><button class="btn" id="bTracks" type="button">Tracks</button><button class="btn" id="bRestart" type="button">Restart (Enter)</button><button class="btn" id="bSound" type="button">Sound: on</button></div></div>
+  <div class="top"><a href="./">← All games</a><div class="btns"><button class="btn" id="bTracks" type="button">Tracks</button><button class="btn" id="bRestart" type="button">Reset (R)</button><button class="btn" id="bSound" type="button">Sound: on</button></div></div>
   <h1>Apex Rush</h1>
   <div id="stage">
     <div class="hud"><div class="tl"><div class="big" id="hTime">0:00.00</div><div class="sm" id="hCp"></div><div class="sm" id="hBest"></div></div>
       <div class="tr"><div class="sm" id="hTrack"></div><div class="sm" id="hMedals"></div></div><div class="note" id="hNote"></div><div class="mid" id="hMid"></div><div class="spd"><span id="hSpd">0</span><small>KM/H</small></div></div>
     <div class="tc"><button class="l" data-k="left" type="button" aria-label="Steer left">◀</button><button class="r" data-k="right" type="button" aria-label="Steer right">▶</button><button class="gas" data-k="up" type="button">GAS</button><button class="brk" data-k="down" type="button">BRAKE</button><button class="dr" data-k="drift" type="button">DRIFT</button></div>
-    <div class="pbar"><button type="button" id="pReset">Checkpoint</button><button type="button" id="pRestart">Restart</button><button type="button" id="pTracks">Tracks</button></div>
+    <div class="pbar"><button type="button" id="pReset">Checkpoint</button><button type="button" id="pRestart">Reset</button><button type="button" id="pTracks">Tracks</button></div>
     <div class="ov" id="ov"><div class="card" id="ovc"></div></div>
   </div>
   <div class="info">
-    <section><h2>How to play</h2><ul><li>Drive from the start to the finish as fast as you can. Hit every checkpoint.</li><li>Orange pads are boosts. Ramps jump gaps, so carry your speed.</li><li>Fall off and you go back to your last checkpoint. Beat the gold time to earn a gold medal.</li><li>Your best run races with you as a see-through ghost.</li></ul></section>
-    <section><h2>Controls</h2><ul><li><kbd>W</kbd>/<kbd>↑</kbd> gas, <kbd>S</kbd>/<kbd>↓</kbd> brake and reverse</li><li><kbd>A</kbd> <kbd>D</kbd> steer, hold <kbd>Space</kbd> to drift</li><li><kbd>R</kbd> back to the last checkpoint, <kbd>Enter</kbd> restart</li><li>On a phone: steer on the left, gas and brake on the right.</li></ul></section>
+    <section><h2>How to play</h2><ul><li>Drive from the start to the finish as fast as you can. Hit every checkpoint.</li><li>Orange pads are boosts. Ramps jump gaps, so carry your speed.</li><li>Fall off and you go back to your last checkpoint. Press R any time to reset and start the run over. Beat the gold time to earn a gold medal.</li><li>Your best run races with you as a see-through ghost.</li></ul></section>
+    <section><h2>Controls</h2><ul><li><kbd>W</kbd>/<kbd>↑</kbd> gas, <kbd>S</kbd>/<kbd>↓</kbd> brake and reverse</li><li><kbd>A</kbd> <kbd>D</kbd> steer, hold <kbd>Space</kbd> to drift</li><li><kbd>R</kbd> reset (start the run over), <kbd>Enter</kbd> back to the last checkpoint</li><li>On a phone: steer on the left, gas and brake on the right.</li></ul></section>
     <section><h2>Random tracks</h2><p>Tap Random for a brand-new track. Every track has a code: send it to a friend and race the same track.</p></section>
   </div>
 </div>
@@ -272,7 +272,7 @@ function menu(){let M={};try{M=JSON.parse(localStorage.getItem('apex-medals')||'
   const best=c=>{try{const b=JSON.parse(localStorage.getItem('apex-best-'+c)||'null');return b?fmt(b.t):'—'}catch(e){return'—'}};
   showCard(`<h2>Apex Rush</h2><p>Pick a track. Beat the gold time on all ten.</p><div class="trks">${TRACKS.map((t,i)=>`<button class="trk" type="button" data-t="${i}"><b>${i+1}. ${t[0]}</b><small><span class="medal m-${M[t[2]]||'n'}"></span>Best ${best(t[2])}</small></button>`).join('')}</div>
     <div class="row"><button class="go" type="button" data-a="random">Random track</button><input id="code" maxlength="12" placeholder="Track code" aria-label="Track code" autocomplete="off"><button class="btn" type="button" data-a="code">Race this code</button></div>
-    <div class="keys"><span><kbd>W</kbd> gas</span><span><kbd>A</kbd><kbd>D</kbd> steer</span><span><kbd>Space</kbd> drift</span><span><kbd>R</kbd> checkpoint</span><span><kbd>Enter</kbd> restart</span></div>`)}
+    <div class="keys"><span><kbd>W</kbd> gas</span><span><kbd>A</kbd><kbd>D</kbd> steer</span><span><kbd>Space</kbd> drift</span><span><kbd>R</kbd> reset</span><span><kbd>Enter</kbd> last checkpoint</span></div>`)}
 let curIdx=-1;
 function startIdx(i){curIdx=i;const t=TRACKS[i];load(t[2],i,t[0],t[1])}
 $('ovc').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;audio();
@@ -293,7 +293,7 @@ $('bSound').addEventListener('click',()=>{soundOn=!soundOn;try{localStorage.setI
 const KM={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',Space:'drift',ShiftLeft:'drift'};
 addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT'){if(e.code==='Enter'){const b=$('ovc').querySelector('[data-a="code"]');if(b)b.click()}return}
   const k=KM[e.code];if(k&&$('ov').hidden){keys[k]=1;e.preventDefault();audio();return}
-  if(e.code==='KeyR'&&G&&G.phase==='race')respawn();if(e.code==='Enter'){if($('ov').hidden)restart();else{const b=$('ovc').querySelector('.go');if(b&&document.activeElement===document.body)b.click()}}});
+  if(e.code==='KeyR'&&!e.repeat&&TR&&G&&G.phase!=='menu'){e.preventDefault();load(TR.code,curIdx>=0?curIdx:null,TR.name,TR.theme);return}if(e.code==='Enter'){if($('ov').hidden){if(G&&G.phase==='race')respawn()}else{const b=$('ovc').querySelector('.go');if(b&&document.activeElement===document.body)b.click()}}});
 addEventListener('keyup',e=>{const k=KM[e.code];if(k)keys[k]=0});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=0});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){for(const k in keys)keys[k]=0;engine(false)}});
