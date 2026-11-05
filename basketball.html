@@ -200,7 +200,7 @@ thead th{font-family:var(--display);font-weight:700;font-size:15px;letter-spacin
 (()=>{
 'use strict';
 /* ---------- court and rules (feet, seconds) ---------- */
-const L=94,W=50,MY=25,RIMX=[5.25,88.75],RIMZ=10,RIMR=.75,BBX=[4,90],THREE=23.75,GRAV=32,BALLR=.39;
+const L=94,W=50,MY=25,RIMX=[5.25,88.75],RIMZ=10,RIMR=.75,BBX=[4,90],THREE=23.75,BALLR=.39;let GRAV=32;
 const ORD=['1st','2nd','3rd','4th','OT','2OT','3OT','4OT'];
 const CLUBS=[
   {name:'St. Charles Cardinals',abbr:'STC',c:'#b31b1b',t:'#ffffff',city:'St. Charles'},
@@ -2174,12 +2174,12 @@ function menuBox(id,html,onClick){const b=document.createElement('section');b.cl
 .skclock{position:absolute;left:50%;top:8px;transform:translateX(-50%);z-index:28;padding:6px 14px;border-radius:8px;background:rgba(8,10,14,.85);color:#fff;font:800 20px/1 var(--display);letter-spacing:.05em;font-variant-numeric:tabular-nums;pointer-events:none}.skclock span{color:#ffc23d}`;document.head.appendChild(css)}
 /* ---------- uniforms: St. Charles can wear home red, away white, the blackout or the throwback ---------- */
 const UNI=(()=>{const KEY='stc-uniform',si=CCL.findIndex(c=>c.abbr==='STC');if(si<0)return{id:'home'};const base={c:CLUBS[si].c,t:CLUBS[si].t};
-  const SETS={home:{name:'Home red',c:base.c,t:base.t},away:{name:'Away white',c:'#f2f2ee',t:base.c},black:{name:'Blackout',c:'#16181c',t:base.c},throw:{name:'Throwback',c:'#7a1414',t:'#f2c14e'}};
-  let id='home';try{id=localStorage.getItem(KEY)||'home'}catch(e){}if(!SETS[id])id='home';
+  const SETS={home:{name:'Home red',c:base.c,t:base.t},away:{name:'Away white',c:'#f2f2ee',t:base.c},black:{name:'Blackout',c:'#16181c',t:base.c},throw:{name:'Throwback',c:'#7a1414',t:'#f2c14e'},gold:{name:'Gold Rush',c:'#c9a227',t:'#16181c',lock:'kit-gold'},ice:{name:'Ice',c:'#cfe6ff',t:'#b71c1c',lock:'kit-ice'},pink:{name:'Pink Out',c:'#e2558b',t:'#ffffff',lock:'kit-pink'},flame:{name:'Cardinal Flame',c:'#c4161c',t:'#ff8a1f',lock:'kit-flame'}};const ok=k=>SETS[k]&&(!SETS[k].lock||shopOwns(SETS[k].lock));
+  let id='home';try{id=localStorage.getItem(KEY)||'home'}catch(e){}if(!ok(id))id='home';
   function apply(){const s=SETS[id];CLUBS[si].c=s.c;CLUBS[si].t=s.t;for(const k in _crowdCache)delete _crowdCache[k]}
-  const box=menuBox('unibox','',e=>{const b=e.target.closest('[data-uni]');if(!b)return;id=b.dataset.uni;try{localStorage.setItem(KEY,id)}catch(_){}apply();render()});
-  function render(){box.innerHTML=`<h2>St. Charles <span>uniforms</span></h2><div class="xchips">${Object.keys(SETS).map(k=>`<button class="chip" type="button" aria-pressed="${k===id}" data-uni="${k}"><span class="dot" style="--j:${SETS[k].c};--t:${SETS[k].t}"></span>${SETS[k].name}</button>`).join('')}</div><p class="frnote">St. Charles wear this in every game until you change it.</p>`}
-  apply();render();return{get id(){return id}}})();
+  const box=menuBox('unibox','',e=>{const b=e.target.closest('[data-uni]');if(!b)return;if(!ok(b.dataset.uni)){toast('Unlock these uniforms in the Shop');return}id=b.dataset.uni;try{localStorage.setItem(KEY,id)}catch(_){}apply();render()});
+  function render(){box.innerHTML=`<h2>St. Charles <span>uniforms</span></h2><div class="xchips">${Object.keys(SETS).map(k=>`<button class="chip" type="button" aria-pressed="${k===id}" data-uni="${k}"><span class="dot" style="--j:${SETS[k].c};--t:${SETS[k].t}"></span>${ok(k)?'':'🔒 '}${SETS[k].name}</button>`).join('')}</div><p class="frnote">St. Charles wear this in every game until you change it. Locked sets are in the Shop.</p>`}
+  apply();render();return{get id(){return id},refresh:render}})();
 /* ---------- rivalry: St. Charles and DeSales play for the Founders Cup, with the all-time series kept ---------- */
 const RIVAL=(()=>{const KEY='rivalry-'+CELESPORT,CUP='The Founders Cup';let rec=null;try{rec=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}rec=rec||{stc:0,sfd:0,tie:0};
   const ab=i=>CLUBS[i]&&CLUBS[i].abbr,on=()=>!G.demo&&!G.skills&&G.clubs[0]!==G.clubs[1]&&G.clubs.every(i=>ab(i)==='STC'||ab(i)==='SFD');
@@ -2232,11 +2232,11 @@ const SKILLS=(()=>{const KEY='skills-best-'+CELESPORT,GOAL={hockey:8,lacrosse:8,
   setInterval(()=>{if(!$('menu').hidden&&G.skills)G.skills=false;const w=G.warm;if(G.skills===true&&w){clk.hidden=false;clk.innerHTML=`${Math.max(0,Math.ceil(60-w.t))}s · <span>${w.goals||0}</span> ${UNITS}`}else clk.hidden=true},200);
   render();return{finish,start}})();
 /* ---------- achievements: badges shared by all five games ---------- */
-const ACH=(()=>{const KEY='overtime-achievements',L=[['first','First W','Win a game'],['timeout','Drew It Up','Win a game after calling a timeout'],['daily','Daily Grinder','Beat a Daily Challenge'],['daily3','On a Roll','Beat the Daily Challenge 3 days in a row'],['created','Made in STC','Play a game with your created player'],['legend','Legend Slayer','Beat the CPU on Legend'],['shutout','Shutout','Win without giving up a score'],['blowout','Statement Win','Win by a big margin'],['hat','Hat Trick','One of your players scores 3 in a game'],['trick','Highlight Reel','Score with a trick shot or skill move'],['clutch','Ice in the Veins','Win it in overtime or score at the buzzer'],['ccl','CCL Champions','Win the CCL in franchise mode'],['state','State Champs','Win the state tournament'],['mayhem','Mayhem Champs','Win March Mayhem'],['rival','Founders Cup','Win the rivalry game'],['skills','Skills Star','Ace a skills challenge'],['weather','All Weather','Win in rain, snow or wind'],['night','Big Night','Win on Senior Night or Homecoming'],['five','Five-Sport Star','Win a game in all five sports']];
+const ACH=(()=>{const KEY='overtime-achievements',L=[['first','First W','Win a game'],['shop','Big Spender','Buy something in the shop'],['chal','Challenge Accepted','Beat a friend’s challenge'],['half','Halftime Hero','Make all 3 in a halftime contest'],['career','Legend in the Making','Finish a four-year career'],['timeout','Drew It Up','Win a game after calling a timeout'],['daily','Daily Grinder','Beat a Daily Challenge'],['daily3','On a Roll','Beat the Daily Challenge 3 days in a row'],['created','Made in STC','Play a game with your created player'],['legend','Legend Slayer','Beat the CPU on Legend'],['shutout','Shutout','Win without giving up a score'],['blowout','Statement Win','Win by a big margin'],['hat','Hat Trick','One of your players scores 3 in a game'],['trick','Highlight Reel','Score with a trick shot or skill move'],['clutch','Ice in the Veins','Win it in overtime or score at the buzzer'],['ccl','CCL Champions','Win the CCL in franchise mode'],['state','State Champs','Win the state tournament'],['mayhem','Mayhem Champs','Win March Mayhem'],['rival','Founders Cup','Win the rivalry game'],['skills','Skills Star','Ace a skills challenge'],['weather','All Weather','Win in rain, snow or wind'],['night','Big Night','Win on Senior Night or Homecoming'],['five','Five-Sport Star','Win a game in all five sports']];
   let D=null;try{D=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}D=D||{got:{},sports:{}};const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}};
   const box=menuBox('achbox','');
   function render(){const n=Object.keys(D.got).length;box.innerHTML=`<h2>Achievements <span>${n} of ${L.length}</span></h2><div class="achgrid">${L.map(([id,nm,ds])=>`<div class="ach${D.got[id]?' got':''}"><b>${nm}</b>${ds}</div>`).join('')}</div><p class="frnote">Shared by all five games on this device.</p>`}
-  let pop=null;function give(id){const a=L.find(x=>x[0]===id);if(!a||D.got[id])return;D.got[id]=Date.now();save();render();
+  let pop=null;function give(id){const a=L.find(x=>x[0]===id);if(!a||D.got[id])return;D.got[id]=Date.now();save();render();try{coinsAdd(25,'Achievement')}catch(e){}
     if(!pop){pop=document.createElement('div');pop.className='achpop';document.body.appendChild(pop)}pop.innerHTML=`Achievement unlocked · <b>${a[1]}</b>`;pop.hidden=false;clearTimeout(give.t);give.t=setTimeout(()=>{pop.hidden=true},4500)}
   const _c=callout;callout=function(t,...a){try{const s=String(t).toUpperCase();if(!G.demo){if(/(BEHIND THE BACK|DIVE SHOT|AIR GAIT|BETWEEN-THE-LEGS|BICYCLE KICK) GOAL|ANKLE BREAKER BUCKET/.test(s)&&G.score[0]>0)give('trick');if(/GAME WINNER|AT THE BUZZER|OVERTIME SCORE/.test(s)&&G.score[0]>=G.score[1])give('clutch')}}catch(e){}return _c.call(this,t,...a)};
   const _b=BIGCELE;BIGCELE=function(t,...a){const m={'CCL Champions':'ccl','State Champions':'state','March Mayhem Champions':'mayhem','The Founders Cup':'rival'}[t];if(m)give(m);return _b.call(this,t,...a)};
@@ -2456,7 +2456,7 @@ const CAP=(()=>{const KEY='cap-'+CELESPORT,SK=[['spd','Speed'],['off','Scoring']
     <p class="frnote" id="capFoot"></p><div class="xchips"><button type="button" class="chip" data-cap="save">Save player</button>${c?'<button type="button" class="chip plain" data-cap="del">Remove</button>':''}</div>`;foot()}
   {const css=document.createElement('style');css.textContent=`.capf{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:8px 0}.capf label{display:grid;gap:4px;font-size:13px;opacity:.9}.capf input,.capf select{min-height:36px;padding:0 8px;border-radius:6px;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.25);color:inherit;font:inherit;min-width:0}
 .capsk{display:grid;gap:6px;margin:6px 0}.capr{display:grid;grid-template-columns:80px 36px 28px 36px 1fr;align-items:center;gap:6px;font-size:14px}.capr b{text-align:center}.capr .chip{min-width:36px;padding:0;justify-content:center}.capr i{height:8px;border-radius:4px;background:linear-gradient(90deg,#ffc23d var(--w),rgba(255,255,255,.12) var(--w))}`;document.head.appendChild(css)}
-  render();return{live,ovr}})();
+  render();return{live,ovr,bump(n){if(!D)return;const ks=['spd','off','pas','dfn'];for(let i=0;i<n;i++){const k=ks.slice().sort((a,b)=>D[a]-D[b])[0];if(D[k]<10)D[k]++}W=Object.assign({},D);save();render()}}})();
 /* ---------- Daily Challenge: a new late-game spot every day, the same for everyone ---------- */
 const DAILY=(()=>{const KEY='daily-'+CELESPORT,day=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
   let S={};try{S=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){S={}}const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
@@ -2475,7 +2475,7 @@ const DAILY=(()=>{const KEY='daily-'+CELESPORT,day=()=>{const d=new Date();retur
   setInterval(()=>{const t=G.daily;if(t&&!t.applied&&!G.demo&&$('menu').hidden&&G.phase!=='warm'&&G.phase!=='replay')apply()},120);
   {const _ng=newGame;newGame=function(demo){if(demo||(G.daily&&G.daily.applied))G.daily=null;return _ng.apply(this,arguments)}}
   AFTER.push(()=>{const t=G.daily;if(!t||!t.applied)return;G.daily=null;const won=userWon();
-    if(won){if(S.last!==t.d){const y=new Date(Date.now()-864e5),yd=y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');S.streak=S.last===yd?(S.streak||0)+1:1;S.best=Math.max(S.best||0,S.streak);S.last=t.d;save()}
+    if(won){try{coinsAdd(40,'Daily Challenge')}catch(e){}if(S.last!==t.d){const y=new Date(Date.now()-864e5),yd=y.getFullYear()+'-'+String(y.getMonth()+1).padStart(2,'0')+'-'+String(y.getDate()).padStart(2,'0');S.streak=S.last===yd?(S.streak||0)+1:1;S.best=Math.max(S.best||0,S.streak);S.last=t.d;save()}
       try{ACH.give('daily');if((S.streak||0)>=3)ACH.give('daily3')}catch(e){}setTimeout(()=>toast(`Daily Challenge complete! Streak: ${S.streak} day${S.streak===1?'':'s'}`),900)}
     else setTimeout(()=>toast('Daily Challenge not done yet. Try again!'),900);render()});
   AFTER.push(()=>{try{const c=CAP.live();if(c&&G.clubs.includes(CLUBS.findIndex(x=>x.abbr==='STC')))ACH.give('created')}catch(e){}});
@@ -2616,6 +2616,133 @@ const BOARD=(()=>{const box=menuBox('lbbox','');const SP=[['hockey','Hockey'],['
     <p class="frnote">These are the best marks played on this phone or computer. Show your friends, or have them play on yours.</p>`}
   {const css=document.createElement('style');css.textContent='.lbt{width:100%;font-size:13px;border-collapse:collapse}.lbt td,.lbt th{padding:3px 4px;text-align:left}';document.head.appendChild(css)}
   render();setInterval(()=>{if(!$('menu').hidden)render()},5000);return{render}})();
+/* ---------- coins: earned in every game, shared by all of them, spent in the shop ---------- */
+function coinsData(){try{return JSON.parse(localStorage.getItem('overtime-coins')||'null')||{c:0,own:{},earned:0}}catch(e){return{c:0,own:{},earned:0}}}
+function coinsSave(d){try{localStorage.setItem('overtime-coins',JSON.stringify(d))}catch(e){}}
+function shopOwns(k){return!!coinsData().own[k]}
+function coinsAdd(n,why){n=Math.round(n*((typeof WEEK!=='undefined'&&WEEK.mul)?WEEK.mul(why):1));if(!(n>0))return 0;const d=coinsData();d.c+=n;d.earned=(d.earned||0)+n;coinsSave(d);
+  try{let el=document.getElementById('coinpop');if(!el){el=document.createElement('div');el.id='coinpop';document.body.appendChild(el)}el.innerHTML=`+${n} coins <small>${esc(why||'')}</small>`;el.hidden=false;el.classList.remove('go');void el.offsetWidth;el.classList.add('go');clearTimeout(coinsAdd.t);coinsAdd.t=setTimeout(()=>{el.hidden=true},2600)}catch(e){}
+  try{SHOP.render()}catch(e){}return n}
+{const css=document.createElement('style');css.textContent=`#coinpop{position:fixed;z-index:90;left:50%;top:calc(14px + env(safe-area-inset-top,0px));transform:translateX(-50%);background:#ffc23d;color:#1a1405;font:800 15px system-ui,sans-serif;padding:8px 16px;border-radius:999px;box-shadow:0 4px 16px rgba(0,0,0,.35);pointer-events:none}
+#coinpop small{font-weight:600;opacity:.75;margin-left:4px}#coinpop.go{animation:coinin .35s ease-out}@keyframes coinin{from{transform:translate(-50%,-10px);opacity:0}to{transform:translate(-50%,0);opacity:1}}
+@media (prefers-reduced-motion:reduce){#coinpop.go{animation:none}}
+.shopgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:8px;margin:8px 0}.shopi{border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:8px 10px;display:grid;gap:4px;font-size:13px}.shopi b{font-size:14px}.shopi .chip{justify-self:start}
+.hcov{position:fixed;inset:0;z-index:95;background:rgba(6,9,14,.92);display:grid;place-items:center;padding:16px}.hcbox{width:min(560px,100%);background:#121821;border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:18px;color:#fff;text-align:center;font:500 15px system-ui,sans-serif}
+.hcbox h3{font:900 26px/1.1 "Arial Narrow",system-ui,sans-serif;text-transform:uppercase;margin:0 0 6px;color:#ffc23d}.hcbar{position:relative;height:34px;border-radius:17px;background:#26303d;margin:18px 0;overflow:hidden}.hcz{position:absolute;top:0;bottom:0;background:#2fbf71}
+.hcm{position:absolute;top:-4px;bottom:-4px;width:6px;margin-left:-3px;background:#fff;border-radius:3px}.hcbox button{min-height:48px;min-width:160px;border-radius:10px;border:0;background:#ffc23d;color:#1a1405;font:800 16px system-ui,sans-serif;margin:4px}.hcbox button.alt{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}`;document.head.appendChild(css)}
+/* ---------- weekly events: something different every week ---------- */
+const WEEK=(()=>{const EV=[{id:'double',name:'Double Coins Week',txt:'Every coin you earn this week counts double.'},{id:'turbo',name:'Turbo Week',txt:'Turbo mode pays triple coins this week.'},
+  {id:'rival',name:'Rivalry Week',txt:'Games against DeSales pay triple coins this week.'},{id:'daily',name:'Daily Grind Week',txt:'Daily Challenges pay triple coins this week.'},
+  {id:'under',name:'Underdog Week',txt:'Wins on Hard or Legend pay double coins this week.'},{id:'slip',name:'Slippery Week',txt:'Slippery mode is free to play this week.'}];
+  const n=Math.floor((Date.now()/864e5+3)/7),ev=EV[n%EV.length];
+  function mul(why){const w=String(why||'');if(ev.id==='double')return 2;if(ev.id==='turbo'&&ARC&&ARC.cur()==='turbo'&&/win|loss|game/i.test(w))return 3;
+    if(ev.id==='rival'&&/win|game/i.test(w)&&G.clubs&&G.clubs.some(i=>CLUBS[i]&&CLUBS[i].abbr==='SFD'))return 3;if(ev.id==='daily'&&/daily/i.test(w))return 3;if(ev.id==='under'&&/win/i.test(w)&&G.diff>=2)return 2;return 1}
+  return{ev,mul}})();
+/* ---------- the shop ---------- */
+const SHOP=(()=>{const ITEMS=[
+  ['kit-gold','Gold Rush uniforms','Gold with black trim, for St. Charles',250],['kit-ice','Ice uniforms','Ice blue and red',250],['kit-pink','Pink Out uniforms','For the big Pink Out game',300],['kit-flame','Cardinal Flame uniforms','Red and orange',400],
+  ['mode-slip','Slippery mode','Everybody slides around like the floor is wet',150],['goalmsg','Your own goal banner','Type a message that shows after every St. Charles score',200],
+  ['hype','Hype calls','The announcers go wild for St. Charles scores',150],['soldout','Sold-out crowd','A louder, bigger crowd in every game',200],['mode-moon','Moon Ball (basketball)','Low gravity: huge jumps and floaty shots',150]];
+  const box=menuBox('shopbox','',click);
+  function render(){const d=coinsData();box.innerHTML=`<h2>Shop <span>${d.c} coins</span></h2><p class="frnote">Win games, finish the Daily Challenge, earn achievements and nail halftime contests to earn coins. Everything you buy works in all the games. <b>${esc(WEEK.ev.name)}:</b> ${esc(WEEK.ev.txt)}</p>
+    <div class="shopgrid">${ITEMS.map(([k,n,ds,cost])=>`<div class="shopi"><b>${esc(n)}</b><span>${esc(ds)}</span>${d.own[k]?(k==='goalmsg'?`<input id="goalMsg" maxlength="28" value="${esc(d.msg||'')}" placeholder="CARDS UP!" aria-label="Goal banner message">`:'<span>✓ Yours</span>'):`<button type="button" class="chip" data-buy="${k}">${cost} coins</button>`}</div>`).join('')}</div>`}
+  function click(e){const b=e.target.closest('[data-buy]');if(!b)return;const it=ITEMS.find(x=>x[0]===b.dataset.buy),d=coinsData();if(!it)return;
+    if(d.c<it[3]){toast(`You need ${it[3]-d.c} more coins`);return}d.c-=it[3];d.own[it[0]]=Date.now();coinsSave(d);render();toast(`${it[1]} unlocked!`);try{ACH.give('shop')}catch(_){}try{UNI.refresh&&UNI.refresh()}catch(_){}try{ARC.render()}catch(_){}}
+  box.addEventListener('input',e=>{if(e.target.id==='goalMsg'){const d=coinsData();d.msg=e.target.value.replace(/[<>]/g,'').slice(0,28);coinsSave(d)}});
+  // the goal banner, hype calls and sold-out crowd
+  const HYPE=['BANG! St. Charles!','Oh, are you kidding me?! Cardinals!','Put it on the poster! St. Charles!','Lights out! What a play by the Cardinals!','Cardinal Nation is on its feet!'];
+  {const _c=celebrate;celebrate=function(team,big){const r=_c.apply(this,arguments);try{if(!G.demo&&club(team).abbr==='STC'){const d=coinsData();
+    if(d.own.goalmsg&&d.msg)setTimeout(()=>{try{callout(d.msg,club(team).name,club(team).c)}catch(e){}},900);if(d.own.hype)setTimeout(()=>{try{say(pick(HYPE),3)}catch(e){}},400)}}catch(e){}return r}}
+  {const _r=roar;roar=function(l,secs){return _r.call(this,shopOwns('soldout')?Math.min(1,l*1.25):l,secs?secs*(shopOwns('soldout')?1.2:1):secs)}}
+  render();return{render}})();
+/* ---------- arcade modes: the same games with the rules turned up ---------- */
+const ARC=(()=>{const KEY='arcade-mode-'+CELESPORT,TO={hockey:3,lacrosse:5,soccer:3,basketball:21,football:21}[CELESPORT]||3,UNITS=CELESPORT==='basketball'||CELESPORT==='football'?'points':'goals';
+  const MODES=[['normal','Normal','The regular game',null],['turbo','Turbo','Everyone is 30% faster',null],['first','First to '+TO,`No clock: first team to ${TO} ${UNITS} wins`,null],['slip','Slippery','Everybody slides like the floor is wet','mode-slip']];
+  if(CELESPORT==='basketball')MODES.push(['moon','Moon Ball','Low gravity: huge jumps and floaty shots','mode-moon']);
+  let id='normal';try{id=localStorage.getItem(KEY)||'normal'}catch(e){}
+  const unlocked=m=>!m[3]||shopOwns(m[3])||(m[0]==='slip'&&WEEK.ev.id==='slip');
+  const on=()=>!G.demo&&!G.fr&&!G.tourn&&!G.skills&&!G.daily&&!G.career&&!G.chal&&id!=='normal';
+  const cur=()=>on()?id:'normal';
+  const box=menuBox('arcbox','',e=>{const b=e.target.closest('[data-arc]');if(!b)return;const m=MODES.find(x=>x[0]===b.dataset.arc);if(!m)return;if(!unlocked(m)){toast('Unlock this mode in the Shop');return}id=m[0];try{localStorage.setItem(KEY,id)}catch(_){}render()});
+  function render(){const m=MODES.find(x=>x[0]===id)||MODES[0];box.innerHTML=`<h2>Arcade mode <span>${esc(m[1])}</span></h2><div class="xchips">${MODES.map(x=>`<button type="button" class="chip plain" data-arc="${x[0]}" aria-pressed="${x[0]===id}">${unlocked(x)?'':'🔒 '}${esc(x[1])}</button>`).join('')}</div><p class="frnote">${esc(m[2])}. Arcade modes are for regular games (not franchise, tournaments or challenges).</p>`}
+  // turbo and slippery change how every player accelerates
+  {const _a=accelTo;accelTo=function(p,dvx,dvy,dt,acc){const c=cur();if(c==='turbo'&&p&&p.team!=null)return _a.call(this,p,dvx*1.3,dvy*1.3,dt,acc*1.35);if(c==='slip'&&p&&p.team!=null)return _a.call(this,p,dvx,dvy,dt,acc*.28);return _a.apply(this,arguments)}}
+  if(CELESPORT==='basketball'){const _st=step;step=function(dt,rdt){GRAV=cur()==='moon'?13:32;return _st.apply(this,arguments)}}
+  // first to N: the clock never runs out, and the game ends when somebody gets there
+  let done=false;{const _ng=newGame;newGame=function(){done=false;const r=_ng.apply(this,arguments);if(!arguments[0]&&on())setTimeout(()=>{try{const m=MODES.find(x=>x[0]===id);toast(`Arcade mode: ${m[1]}. ${m[2]}`)}catch(e){}},1200);return r}}
+  {const _st=step;step=function(dt,rdt){const r=_st.apply(this,arguments);try{if(cur()==='first'&&G.score&&!done){if(G.clock<60)G.clock=60;
+    if(Math.max(...G.score)>=TO&&['live','fo','call','presnap','tip','ko','inbound','restart','dead'].includes(G.phase)){done=true;endGame()}}}catch(e){}return r}}
+  {const _d=draw;draw=function(){_d.apply(this,arguments);try{if(cur()==='first'&&!G.rp&&$('menu').hidden){const s=`FIRST TO ${TO}`;ctx.font='800 14px "Arial Narrow",system-ui,sans-serif';const w=ctx.measureText(s).width+16;ctx.fillStyle='#ffc23d';ctx.fillRect(cw-w-10,ch-34,w,22);ctx.fillStyle='#1a1405';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(s,cw-w-2,ch-22)}}catch(e){}}}
+  render();return{cur,render}})();
+/* ---------- halftime contests: one shot at a prize between halves ---------- */
+const HALF=(()=>{const T={hockey:['Chuck-a-puck','Land the puck on the center-ice target'],lacrosse:['Bucket shot','Bury it in the bucket from midfield'],basketball:['Half-court shot','Swish it from half court'],soccer:['Crossbar challenge','Ping the crossbar from the top of the box'],football:['50-yard field goal','Split the uprights from 50']}[CELESPORT]||['Halftime shot','Make it'];
+  function open(after){const ov=document.createElement('div');ov.className='hcov';ov.setAttribute('role','dialog');ov.setAttribute('aria-label',T[0]);
+    ov.innerHTML=`<div class="hcbox"><h3>${T[0]}</h3><p>${T[1]}. Stop the marker in the green: 3 tries. Tap the button or press Space.</p><div class="hcbar"><div class="hcz"></div><div class="hcm"></div></div><p id="hcres" aria-live="polite">Try 1 of 3</p><button type="button" id="hcgo">Shoot!</button><button type="button" class="alt" id="hcskip">Back to the game</button></div>`;
+    document.body.appendChild(ov);const z=ov.querySelector('.hcz'),m=ov.querySelector('.hcm'),res=ov.querySelector('#hcres');let tries=0,made=0,t0=performance.now(),raf=0,zoneC=.5,w=.14,spd=1.5,live=true;
+    function zone(){zoneC=.2+Math.random()*.6;w=Math.max(.07,.15-tries*.03);spd=1.4+tries*.35;z.style.left=((zoneC-w/2)*100)+'%';z.style.width=(w*100)+'%'}zone();
+    const pos=()=>(Math.sin((performance.now()-t0)/1000*spd*Math.PI)+1)/2;
+    function tick(){if(!live)return;m.style.left=(pos()*100)+'%';raf=requestAnimationFrame(tick)}tick();
+    function shoot(){if(!live||tries>=3)return;const p=pos(),hit=Math.abs(p-zoneC)<=w/2;tries++;if(hit){made++;try{roar(.5,2.5)}catch(e){}}
+      res.textContent=(hit?'Good! ':'Just missed. ')+(tries<3?`Try ${tries+1} of 3`:`You made ${made} of 3.`);
+      if(tries>=3){live=false;cancelAnimationFrame(raf);const prize=made*15+(made===3?30:0);if(prize)coinsAdd(prize,T[0]);if(made===3){try{ACH.give('half')}catch(e){}try{say(`He made all three! The crowd is going crazy!`,3)}catch(e){}}
+        ov.querySelector('#hcgo').hidden=true;ov.querySelector('#hcskip').textContent='Back to the game'}else{zone();t0=performance.now()-Math.random()*900}}
+    function close(){live=false;cancelAnimationFrame(raf);removeEventListener('keydown',key,true);ov.remove();if(after)after()}
+    function key(e){if(e.code==='Space'||e.code==='Enter'){e.preventDefault();e.stopImmediatePropagation();if(tries>=3)close();else shoot()}else if(e.code==='Escape'){e.preventDefault();close()}}
+    ov.querySelector('#hcgo').addEventListener('click',shoot);ov.querySelector('#hcskip').addEventListener('click',close);addEventListener('keydown',key,true);ov.querySelector('#hcgo').focus()}
+  // the break card between halves gets a contest button
+  const isBreak=t=>t==='Halftime'||(CELESPORT==='hockey'&&t==='End of the 2nd');
+  {const _cd=card;card=function(title,text,buttons){if(!G.demo&&isBreak(String(title))&&Array.isArray(buttons)&&!G.skills){buttons=buttons.slice();buttons.push({label:`${T[0]} (win coins)`,fn:()=>{open(()=>{try{card(title,text,buttons.filter(b=>!/win coins/.test(b.label)))}catch(e){}})}})}return _cd.call(this,title,text,buttons)}}
+  return{open}})();
+/* ---------- challenge links: send your result to a friend, who has to beat it ---------- */
+const CHAL=(()=>{const base=()=>{const u=new URL(location.href);u.searchParams.delete('ch');return u};
+  function link(){const s0=G.score[0],s1=G.score[1],o={u:CLUBS[G.clubs[0]].abbr,o:CLUBS[G.clubs[1]].abbr,s:[s0,s1],d:G.diff,m:ARC.cur()},u=base();u.searchParams.set('ch',btoa(JSON.stringify(o)));return u.toString()}
+  async function share(){const url=link(),txt=`${club(0).abbr} ${G.score[0]}–${G.score[1]} ${club(1).abbr} in Overtime Arcade. Can you beat it?`;
+    try{if(navigator.share){await navigator.share({title:'Overtime Arcade challenge',text:txt,url});return}}catch(e){if(e&&e.name==='AbortError')return}
+    try{await navigator.clipboard.writeText(url);toast('Challenge link copied. Paste it to a friend');return}catch(e){}
+    card('Challenge link',`Copy this and send it to a friend: ${url}`,[{label:'Done',fn:hideCard}])}
+  AFTER.push(()=>{try{if(G.demo||G.skills||G.fr||G.tourn)return;setTimeout(()=>{const row=$('cardB');if(!row||$('card').hidden||row.querySelector('[data-chal]'))return;const b=document.createElement('button');b.type='button';b.className=(row.querySelector('button')||{}).className||'btn';b.dataset.chal='1';b.textContent='Challenge a friend';b.addEventListener('click',share);row.appendChild(b)},60)}catch(e){}});
+  // opening a challenge link
+  let C=null;try{const q=new URLSearchParams(location.search).get('ch');if(q)C=JSON.parse(atob(q))}catch(e){C=null}
+  function accept(){const ui=CLUBS.findIndex(c=>c.abbr===C.u),oi=CLUBS.findIndex(c=>c.abbr===C.o);if(ui<0||oi<0||ui===oi){toast('That challenge uses a team this game does not have');return}
+    hideCard();G.skills=false;G.tourn=null;G.tvenue=null;G.clubs=[ui,oi];if(C.d!=null&&typeof DIFFS!=='undefined'&&DIFFS[C.d])G.diff=C.d;try{renderMenu()}catch(e){}setTimeout(()=>{G.chal=C;$('start').click()},40)}
+  if(C&&Array.isArray(C.s))setTimeout(()=>{try{const need=C.s[0]>C.s[1]?`win by ${C.s[0]-C.s[1]+1} or more`:'win the game';
+    card('Challenge from a friend',`Your friend played ${C.u} vs ${C.o} and finished ${C.s[0]}–${C.s[1]}. To beat it, ${need}.`,[{label:'Accept the challenge',fn:accept},{label:'No thanks',fn:hideCard}])}catch(e){}},900);
+  {const _ng=newGame;newGame=function(demo){if(demo)G.chal=null;else if(G.chal&&G.chal.started)G.chal=null;if(G.chal)G.chal.started=true;return _ng.apply(this,arguments)}}
+  AFTER.push(()=>{const c=G.chal;if(!c)return;G.chal=null;const m=G.score[0]-G.score[1],need=c.s[0]>c.s[1]?c.s[0]-c.s[1]:0;
+    if(m>need){coinsAdd(50,'Challenge beaten');try{ACH.give('chal')}catch(e){}setTimeout(()=>{try{callout('Challenge beaten!',`You won by ${m}`,'#ffc23d')}catch(e){}toast('Challenge beaten! Send one back with Challenge a friend')},700)}
+    else setTimeout(()=>toast('Not this time. Try the challenge again!'),700)});
+  return{link}})();
+/* ---------- career mode: your created player, freshman to senior year ---------- */
+const CAREER=(()=>{const KEY='career-'+CELESPORT,N=6,YRS=['Freshman','Sophomore','Junior','Senior'];let S=null;try{S=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}
+  const save=()=>{try{if(S)localStorage.setItem(KEY,JSON.stringify(S));else localStorage.removeItem(KEY)}catch(e){}};
+  const box=menuBox('carbox','',click);
+  const opps=()=>CCL.map((c,i)=>i).filter(i=>CLUBS[i].abbr!=='STC');
+  function tot(){const t={};for(const g of (S&&S.games)||[])for(const[k]of PCOLS)t[k]=(t[k]||0)+(g.st[k]||0);return t}
+  const line=t=>PCOLS.filter(([k])=>t[k]).map(([k,l])=>`${Math.round(t[k])} ${l}`).join(', ')||'no stats yet';
+  function render(){const c=CAP.live();
+    if(!S){box.innerHTML=`<h2>Career <span>${c?esc(c.name):'make a player first'}</span></h2><p class="frnote">Play four years as your created player, from freshman to senior. Each season is ${N} games. Your player gets better every year, and you can earn All-CCL honors and a state title.</p>${c?`<div class="xchips"><button type="button" class="chip" data-car="start">Start ${esc(c.name)}'s career</button></div>`:'<p class="frnote">Make a player in Create a player first.</p>'}`;return}
+    const t=tot(),yr=YRS[S.year-1]||'Graduated',done=S.year>4;
+    box.innerHTML=`<h2>Career <span>${esc(S.name)} · ${done?'graduated':yr+' year'}</span></h2>
+      <p>${done?'Career complete!':`Game ${S.g+1} of ${N}${S.g===N-1&&S.year===4?' · State final':''}`} · Record ${S.w}-${S.l} · Career: ${esc(line(t))}</p>
+      ${S.honors.length?`<p>Honors: ${S.honors.map(esc).join(' · ')}</p>`:''}
+      <div class="xchips">${done?'':'<button type="button" class="chip" data-car="play">Play the next game</button>'}<button type="button" class="chip plain" data-car="reset">${S.arm>Date.now()?'Tap again to end this career':'Start over'}</button></div>`}
+  function click(e){const b=e.target.closest('[data-car]');if(!b)return;const a=b.dataset.car,c=CAP.live();
+    if(a==='start'){if(!c)return;S={name:c.name,year:1,g:0,w:0,l:0,games:[],honors:[],seasonPs:0};save();render();return}
+    if(a==='reset'){if(S.arm>Date.now()){S=null;save()}else{S.arm=Date.now()+4000;setTimeout(render,4100)}render();return}
+    if(a==='play'){if(!c||c.name!==S.name){toast(`Your created player has to be ${S.name}. Change him back in Create a player`);return}
+      const os=opps(),oi=os[(S.g+S.year)%os.length];G.skills=false;G.tourn=null;G.tvenue=null;G.clubs=[X9.STCI,oi];try{renderMenu()}catch(_){}setTimeout(()=>{G.career=true;$('start').click()},40)}}
+  {const _ng=newGame;newGame=function(demo){if(demo||G.careerStarted)G.career=false;G.careerStarted=!!G.career;return _ng.apply(this,arguments)}}
+  AFTER.push(()=>{if(!G.career||!S)return;G.career=false;G.careerStarted=false;const won=userWon(),r=Object.values(G.pst||{}).find(q=>q.team===0&&q.name&&(q.name===S.name||S.name.endsWith(q.name)))||{};
+    const st={};for(const[k]of PCOLS)st[k]=r[k]||0;S.games.push({y:S.year,w:won,s:G.score.slice(),st});if(won)S.w++;else S.l++;S.seasonPs+=pscore(st);S.g++;let msg='';
+    if(S.g>=N){const avg=S.seasonPs/N,yr=YRS[S.year-1];
+      if(avg>=6)S.honors.push(`${yr}: All-CCL First Team`);else if(avg>=3)S.honors.push(`${yr}: All-CCL Second Team`);
+      if(S.year===4&&won){S.honors.push('State champion');try{callout('STATE CHAMPIONS',`${S.name} goes out on top`,'#ffc23d')}catch(e){}}
+      try{CAP.bump(3)}catch(e){}msg=S.year<4?`${yr} season over (${S.w}-${S.l}). ${S.name} got better over the summer!`:`${S.name}'s career is over. What a run!`;
+      S.year++;S.g=0;S.seasonPs=0;if(S.year>4){coinsAdd(300,'Career complete');try{ACH.give('career')}catch(e){}}}
+    save();render();if(msg)setTimeout(()=>toast(msg),1000)});
+  render();setInterval(()=>{if(!$('menu').hidden)render()},4000);return{get:()=>S}})();
+/* ---------- coins for playing ---------- */
+AFTER.push(()=>{try{if(G.demo||G.skills)return;const d=G.score[0]-G.score[1],won=userWon();coinsAdd(won?20+5*Math.min(Math.max(d,0),6):5,won?'Win':'Game played')}catch(e){}});
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'basketball',otPts:2,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b,m=7*G.qlen,s=x=>Math.max(4,Math.round(m*(1+x*.5)+gauss()*m*.11));return[s(d),s(-d)]}};
