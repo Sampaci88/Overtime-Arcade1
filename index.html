@@ -73,6 +73,8 @@ h2.section{font:900 clamp(30px,4.4vw,40px)/1 var(--display);text-transform:upper
 .s-fb::after{content:"50";position:absolute;left:50%;bottom:10px;transform:translateX(-50%);font:900 28px/1 var(--display);color:var(--chalk);letter-spacing:.06em}
 .s-soc{background:repeating-linear-gradient(90deg,#2f7d3b 0 28px,#2a7336 28px 56px)}
 .s-base{background:radial-gradient(ellipse 60% 90% at 50% 110%,#b9875a 0 55%,transparent 56%),repeating-linear-gradient(0deg,#2f8a3e 0 22px,#2a7c37 22px 44px)}
+.s-race{background:linear-gradient(160deg,transparent 0 38%,#3d434c 38% 52%,#c4161c 52% 54%,transparent 54%),linear-gradient(180deg,#9fd3f0,#6fae58)}
+.s-skate{background:radial-gradient(circle at 0 100%,#b9b4aa 0 46%,transparent 47%),radial-gradient(circle at 100% 100%,#b9b4aa 0 46%,transparent 47%),linear-gradient(180deg,#5ab0e2,#bfe3f4)}
 .s-bell{background:repeating-linear-gradient(90deg,#b3262f 0 26px,#8a1d26 26px 28px,#b3262f 28px 54px),#b3262f;box-shadow:inset 0 -18px 0 #d8d4cb}
 .s-soc::before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:3px solid var(--chalk)}
 .s-soc::after{content:"";position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border:3px solid var(--chalk);border-radius:50%}
@@ -111,7 +113,7 @@ footer .by b{color:var(--cardinal)}
 <div class="wrap">
   <header>
     <div class="board">
-      <div class="top"><span>CCL · Central Catholic League</span><span>6 sports + Beat the Bell · you vs the CPU</span></div>
+      <div class="top"><span>CCL · Central Catholic League</span><span>5 sports + 3 more games · you vs the CPU</span></div>
       <h1>Overtime Arcade</h1>
       <p class="maker">Made by <b>Sam Pacifico</b></p>
       <div class="score" aria-label="Home: you. Away: the computer.">
@@ -225,27 +227,42 @@ footer .by b{color:var(--cardinal)}
         </ul></div>
       </div>
     </article>
-    <article class="card">
-      <div class="surface s-base" aria-hidden="true"></div>
-      <div class="body">
-        <span class="sport">Baseball · new</span>
-        <h3>Extra Innings</h3>
-        <p class="desc">Time your swing, pick your pitch, and watch every hit play out on the field. Tied after the last inning? Extra innings.</p>
-        <a class="play" href="baseball.html">Play baseball</a>
-        <div class="ctl"><h4>Controls</h4>
-        <ul class="keys">
-          <li><kbd>WASD</kbd><span>Move the bat circle, or aim your pitch</span></li>
-          <li><kbd>Space</kbd><span>Swing. Pitching: start the meter, then press again in the green</span></li>
-          <li><kbd>1 2 3</kbd><span>Fastball, curveball, changeup</span></li>
-        </ul></div>
-      </div>
-    </article>
   </main>
   </section>
 
   <section aria-labelledby="diff-h">
   <h2 class="section" id="diff-h">Something different</h2>
   <div class="grid">
+    <article class="card">
+      <div class="surface s-race" aria-hidden="true"></div>
+      <div class="body">
+        <span class="sport">Racing · new</span>
+        <h3>Apex Rush</h3>
+        <p class="desc">Low-poly time trials on tracks in the sky: boost pads, jumps over gaps, checkpoints, medals and a ghost of your best run. Make a random track and send the code to a friend.</p>
+        <a class="play" href="racer.html">Play Apex Rush</a>
+        <div class="ctl"><h4>Controls</h4>
+        <ul class="keys">
+          <li><kbd>W / S</kbd><span>Gas / brake</span></li>
+          <li><kbd>A / D</kbd><span>Steer, hold Space to drift</span></li>
+          <li><kbd>R</kbd><span>Back to the last checkpoint</span></li>
+        </ul></div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="surface s-skate" aria-hidden="true"></div>
+      <div class="body">
+        <span class="sport">Skateboarding · new</span>
+        <h3>Shred Park</h3>
+        <p class="desc">Kickflips, grinds, grabs, manuals and spins up to the 900. Link tricks into combos and unlock an achievement for every trick.</p>
+        <a class="play" href="skate.html">Play Shred Park</a>
+        <div class="ctl"><h4>Controls</h4>
+        <ul class="keys">
+          <li><kbd>← →</kbd><span>Push, spin in the air, balance</span></li>
+          <li><kbd>Space</kbd><span>Ollie (hold, then let go)</span></li>
+          <li><kbd>J / K / L</kbd><span>Flip / grab / grind, add an arrow for other tricks</span></li>
+        </ul></div>
+      </div>
+    </article>
     <article class="card">
       <div class="surface s-bell" aria-hidden="true"></div>
       <div class="body">
@@ -287,7 +304,7 @@ footer .by b{color:var(--cardinal)}
     </div>
   </section>
 
-  <footer><span class="by">Made by <b>Sam Pacifico</b></span><span>Best on a computer with a keyboard. On a phone, each game shows an on-screen joystick and buttons. Turn the sound on in a game to hear the commentary and the crowd.</span><span><b>Version 33</b> · a new baseball game (Extra Innings), a new non-sport game (Beat the Bell), coins and a shop (uniforms, Slippery mode, Moon Ball, your own goal banner, hype calls, a sold-out crowd), arcade modes (Turbo, First to, Slippery), challenge links to send friends, halftime contests, a new event every week, Career mode, plus timeouts with play calls (T, or the Timeout button), injuries in franchise mode, student-section signs and chants, a lot more from the announcers, a season recap you can listen to, make your own team, a leaderboard, Create-a-Player, a Daily Challenge, two players in every sport (one keyboard, or one phone or tablet), lacrosse penalties, man-up and multiple overtimes, rosters.txt for all five sports, no more screen flashes in football, plus two players on one keyboard in hockey and lacrosse (Player 2 uses the arrow keys), Dynasty mode (keep playing season after season: seniors graduate, freshmen join, players improve, a trophy case), player stats, Player of the Game and season awards in football, basketball and soccer too, season leaders, team records, St. Charles uniforms, the Founders Cup rivalry with DeSales, weather (rain, snow, wind), skills challenges, achievements, a state tournament after the CCL season (every sport), March Mayhem with 64 teams (basketball), championship celebrations, season awards (MVP, Offensive and Defensive Player of the Year, Goalie of the Year), Senior Night and Homecoming, a highlight reel after every game, game winners and buzzer beaters, between-the-legs (hockey), ankle breakers (basketball), bicycle kicks (soccer), hockey and lacrosse: superstar players (★ Sniper, Brick Wall, Engine, Enforcer), a players-to-watch preview, individual player stats and Player of the Game, a stronger St. Charles in every sport, franchise settings (number of games, difficulty, game length), a realistic post ping, much louder crowds and goal horn, bigger stands, longer cheering, lacrosse body checks knock players down for a few seconds (odd-man rushes), fake shot (F, or Fake on a phone) and trick shots (behind the back, dive, Air Gait), better goalies, player ratings you set in the roster file, much lighter sound so phones stay steady, plus an even stronger St. Charles hockey team, the 4-chime goal horn and goal song, Save &amp; quit, your stats, Bill Bender on the call, fans in the stands and The Cockpit.</span></footer>
+  <footer><span class="by">Made by <b>Sam Pacifico</b></span><span>Best on a computer with a keyboard. On a phone, each game shows an on-screen joystick and buttons. Turn the sound on in a game to hear the commentary and the crowd.</span><span><b>Version 34</b> · new games: Apex Rush (low-poly racing) and Shred Park (skateboarding, with an achievement for every trick); baseball removed; a new non-sport game (Beat the Bell), coins and a shop (uniforms, Slippery mode, Moon Ball, your own goal banner, hype calls, a sold-out crowd), arcade modes (Turbo, First to, Slippery), challenge links to send friends, halftime contests, a new event every week, Career mode, plus timeouts with play calls (T, or the Timeout button), injuries in franchise mode, student-section signs and chants, a lot more from the announcers, a season recap you can listen to, make your own team, a leaderboard, Create-a-Player, a Daily Challenge, two players in every sport (one keyboard, or one phone or tablet), lacrosse penalties, man-up and multiple overtimes, rosters.txt for all five sports, no more screen flashes in football, plus two players on one keyboard in hockey and lacrosse (Player 2 uses the arrow keys), Dynasty mode (keep playing season after season: seniors graduate, freshmen join, players improve, a trophy case), player stats, Player of the Game and season awards in football, basketball and soccer too, season leaders, team records, St. Charles uniforms, the Founders Cup rivalry with DeSales, weather (rain, snow, wind), skills challenges, achievements, a state tournament after the CCL season (every sport), March Mayhem with 64 teams (basketball), championship celebrations, season awards (MVP, Offensive and Defensive Player of the Year, Goalie of the Year), Senior Night and Homecoming, a highlight reel after every game, game winners and buzzer beaters, between-the-legs (hockey), ankle breakers (basketball), bicycle kicks (soccer), hockey and lacrosse: superstar players (★ Sniper, Brick Wall, Engine, Enforcer), a players-to-watch preview, individual player stats and Player of the Game, a stronger St. Charles in every sport, franchise settings (number of games, difficulty, game length), a realistic post ping, much louder crowds and goal horn, bigger stands, longer cheering, lacrosse body checks knock players down for a few seconds (odd-man rushes), fake shot (F, or Fake on a phone) and trick shots (behind the back, dive, Air Gait), better goalies, player ratings you set in the roster file, much lighter sound so phones stay steady, plus an even stronger St. Charles hockey team, the 4-chime goal horn and goal song, Save &amp; quit, your stats, Bill Bender on the call, fans in the stands and The Cockpit.</span></footer>
 </div>
 <script>
 // St. Charles names come from rosters.txt (edited on GitHub by the site's owner) and go to the games through the Play links

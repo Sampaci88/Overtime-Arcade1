@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Apex Rush</title>
+<meta name="theme-color" content="#0e1214">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Work+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#0e1214;--panel:#161c1f;--line:#2b3438;--fg:#efebe2;--muted:#a7afaa;--led:#ffc23d;--cyan:#4fd6e8;
+  --display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;--body:"Work Sans",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 var(--body)}
+.wrap{max-width:1180px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-right,0px)) 40px max(16px,env(safe-area-inset-left,0px));display:grid;gap:14px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.top a{color:var(--fg);font-weight:600}
+h1{margin:0;font:900 clamp(34px,6vw,56px)/.9 var(--display);text-transform:uppercase;color:var(--led);letter-spacing:.02em}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{min-height:40px;padding:0 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--fg);font:600 14px var(--body);cursor:pointer}
+.btn:hover{border-color:var(--led)}.btn:focus-visible,.go:focus-visible,.trk:focus-visible{outline:2px solid var(--led);outline-offset:2px}
+#stage{position:relative;width:100%;aspect-ratio:16/9;max-height:calc(100vh - 140px);background:#9fd3f0;border-radius:12px;overflow:hidden;border:1px solid var(--line);touch-action:none}
+#stage canvas{display:block;width:100%!important;height:100%!important}
+.hud{position:absolute;inset:0;pointer-events:none;z-index:3;font-family:var(--display)}
+.hud .tl{position:absolute;left:12px;top:10px;display:grid;gap:4px}
+.hud .big{font:900 34px/1 var(--display);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.45);font-variant-numeric:tabular-nums}
+.hud .sm{font:700 14px/1.2 var(--body);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.hud .tr{position:absolute;right:12px;top:10px;text-align:right;display:grid;gap:2px}
+.hud .spd{position:absolute;right:16px;bottom:12px;font:900 44px/1 var(--display);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.45);text-align:right}
+.hud .spd small{display:block;font:700 13px var(--body)}
+.hud .mid{position:absolute;left:0;right:0;top:34%;text-align:center;font:900 clamp(40px,9vw,88px)/1 var(--display);color:var(--led);text-shadow:0 3px 0 rgba(0,0,0,.5)}
+.hud .note{position:absolute;left:0;right:0;top:20%;text-align:center;font:800 22px var(--display);color:#fff;text-shadow:0 2px 2px rgba(0,0,0,.6);letter-spacing:.04em}
+.ov{position:absolute;inset:0;display:grid;place-items:center;background:rgba(5,8,11,.84);padding:14px;z-index:6}.ov[hidden]{display:none}
+.card{width:min(760px,100%);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:10px;max-height:100%;overflow:auto;text-align:center}
+.card h2{margin:0;font:900 clamp(28px,5vw,42px)/1 var(--display);text-transform:uppercase;color:var(--led)}
+.card p{margin:0;color:var(--muted)}.card .bigt{font:800 26px/1.2 var(--display);color:var(--fg);letter-spacing:.03em}
+.trks{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;text-align:left}
+.trk{border:1px solid var(--line);background:#0b0f11;border-radius:10px;padding:8px 10px;color:var(--fg);font:600 14px var(--body);cursor:pointer;display:grid;gap:2px;min-height:64px}
+.trk b{font:800 18px var(--display);letter-spacing:.03em}.trk small{color:var(--muted)}
+.trk:hover{border-color:var(--led)}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
+.row input{min-height:42px;padding:0 10px;border-radius:8px;border:1px solid var(--line);background:#0b0f11;color:var(--fg);font:600 15px var(--body);width:min(220px,100%)}
+.go{min-height:50px;min-width:180px;padding:0 20px;border-radius:10px;border:0;background:var(--led);color:#1a1405;font:800 18px var(--body);cursor:pointer}
+.medal{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:4px}
+.m-g{background:#f2c14e}.m-s{background:#c9d1d9}.m-b{background:#c98a4a}.m-n{background:#3a4452}
+kbd{display:inline-block;min-width:26px;padding:1px 6px;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;background:#0b0f11;color:var(--fg);font:600 13px var(--body)}
+.keys{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;font-size:14px;color:var(--muted)}
+.info{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:12px}
+.info section{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.info h2{margin:0 0 6px;font:800 20px var(--display);text-transform:uppercase;letter-spacing:.04em}.info li,.info p{color:var(--muted);font-size:15px;margin:0}.info ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.tc{display:none}html.touch .tc{display:block}
+.tc button{position:absolute;z-index:4;border-radius:14px;border:1px solid rgba(255,255,255,.35);background:rgba(15,22,32,.55);color:#fff;font:800 16px var(--body);touch-action:none;-webkit-user-select:none;user-select:none}
+.tc .l{left:calc(14px + env(safe-area-inset-left,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));width:84px;height:84px}
+.tc .r{left:calc(108px + env(safe-area-inset-left,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));width:84px;height:84px}
+.tc .gas{right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));width:96px;height:110px;background:rgba(255,194,61,.85);color:#1a1405;border:0}
+.tc .brk{right:calc(120px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));width:72px;height:72px}
+.tc .dr{right:calc(120px + env(safe-area-inset-right,0px));bottom:calc(98px + env(safe-area-inset-bottom,0px));width:72px;height:44px;font-size:13px}
+html.touch.playing,html.touch.playing body{overflow:hidden;height:100%}
+html.touch.playing #stage{position:fixed;inset:0;z-index:40;border-radius:0;border:0;max-height:none;aspect-ratio:auto}
+.pbar{display:none;position:absolute;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:5;gap:6px}
+html.touch.playing .pbar{display:flex}
+.pbar button{min-height:34px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(20,28,40,.85);color:#fff;font:700 13px var(--body)}
+html.touch.playing .hud .spd{bottom:140px}
+</style></head>
+<body>
+<div class="wrap">
+  <div class="top"><a href="./">← All games</a><div class="btns"><button class="btn" id="bTracks" type="button">Tracks</button><button class="btn" id="bRestart" type="button">Restart (Enter)</button><button class="btn" id="bSound" type="button">Sound: on</button></div></div>
+  <h1>Apex Rush</h1>
+  <div id="stage">
+    <div class="hud"><div class="tl"><div class="big" id="hTime">0:00.00</div><div class="sm" id="hCp"></div><div class="sm" id="hBest"></div></div>
+      <div class="tr"><div class="sm" id="hTrack"></div><div class="sm" id="hMedals"></div></div><div class="note" id="hNote"></div><div class="mid" id="hMid"></div><div class="spd"><span id="hSpd">0</span><small>KM/H</small></div></div>
+    <div class="tc"><button class="l" data-k="left" type="button" aria-label="Steer left">◀</button><button class="r" data-k="right" type="button" aria-label="Steer right">▶</button><button class="gas" data-k="up" type="button">GAS</button><button class="brk" data-k="down" type="button">BRAKE</button><button class="dr" data-k="drift" type="button">DRIFT</button></div>
+    <div class="pbar"><button type="button" id="pReset">Checkpoint</button><button type="button" id="pRestart">Restart</button><button type="button" id="pTracks">Tracks</button></div>
+    <div class="ov" id="ov"><div class="card" id="ovc"></div></div>
+  </div>
+  <div class="info">
+    <section><h2>How to play</h2><ul><li>Drive from the start to the finish as fast as you can. Hit every checkpoint.</li><li>Orange pads are boosts. Ramps jump gaps, so carry your speed.</li><li>Fall off and you go back to your last checkpoint. Beat the gold time to earn a gold medal.</li><li>Your best run races with you as a see-through ghost.</li></ul></section>
+    <section><h2>Controls</h2><ul><li><kbd>W</kbd>/<kbd>↑</kbd> gas, <kbd>S</kbd>/<kbd>↓</kbd> brake and reverse</li><li><kbd>A</kbd> <kbd>D</kbd> steer, hold <kbd>Space</kbd> to drift</li><li><kbd>R</kbd> back to the last checkpoint, <kbd>Enter</kbd> restart</li><li>On a phone: steer on the left, gas and brake on the right.</li></ul></section>
+    <section><h2>Random tracks</h2><p>Tap Random for a brand-new track. Every track has a code: send it to a friend and race the same track.</p></section>
+  </div>
+</div>
+<script src="lib/three.min.js"></script>
+<script>
+(()=>{
+'use strict';
+const $=id=>document.getElementById(id),root=document.documentElement,TOUCH=matchMedia('(pointer: coarse)').matches;if(TOUCH)root.classList.add('touch');
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t;
+if(!window.THREE){$('ovc').innerHTML='<h2>Could not load</h2><p>The 3D engine did not load. Check your connection and reload the page.</p>';return}
+const T3=THREE;
+/* ---------- seeded random ---------- */
+function hashStr(s){let h=2166136261;for(const c of String(s))h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0}
+function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const TRACKS=[['Warm Up','Sunny','A1'],['Switchback','Sunny','B7'],['Hop Skip','Sunny','C3'],['Ridge Run','Dusk','D9'],['Boost Lane','Sunny','E2'],['Big Air','Dusk','F5'],['Corkscrew Valley','Sunny','G8'],['Night Owl','Night','H4'],['Long Haul','Dusk','J6'],['Apex Legend','Night','K1']];
+/* ---------- the track: a ribbon in the sky ---------- */
+function makeTrack(code,level){const r=rng(hashStr('apex:'+code)),L=level==null?2+Math.floor(r()*7):level;
+  const W=L<3?14:L<6?12.5:11,segs=[];const nS=14+L*3;
+  segs.push({t:'str',len:40});
+  for(let i=0;i<nS;i++){const x=r();let s;
+    if(x<.3)s={t:'turn',len:50+r()*50,yaw:(r()<.5?-1:1)*(.45+r()*1.0)};
+    else if(x<.45)s={t:'hill',len:50+r()*40,dy:(r()<.5?-1:1)*(6+r()*10)};
+    else if(x<.58)s={t:'boost',len:40+r()*30};
+    else if(x<.58+.06+L*.025)s={t:'jump',len:22,gap:12+r()*(6+L*1.5),drop:2+r()*5};
+    else if(x<.85)s={t:'turn',len:30+r()*30,yaw:(r()<.5?-1:1)*(.3+r()*.6),dy:(r()-.5)*8};
+    else s={t:'str',len:30+r()*40};
+    segs.push(s)}
+  segs.push({t:'str',len:50});
+  // walk the segments one meter at a time
+  const P=[];let x=0,y=40,z=0,yaw=0,i0=0;const cps=[];let sinceCp=0;
+  const tooClose=(px,py,pz)=>{for(let k=0;k<P.length-70;k+=3){const q=P[k];if(Math.abs(q.y-py)<10&&(q.x-px)**2+(q.z-pz)**2<26*26)return true}return false};
+  for(let si=0;si<segs.length;si++){const s=segs[si];
+    if(s.t==='turn'){// try the other way if this turn runs into the track
+      const tryEnd=sg=>{let a=yaw,px=x,pz=z;for(let k=0;k<s.len;k++){a+=sg*Math.abs(s.yaw)/s.len;px+=Math.sin(a);pz+=Math.cos(a);if(tooClose(px,y,pz))return false}return true};
+      if(!tryEnd(Math.sign(s.yaw))){if(tryEnd(-Math.sign(s.yaw)))s.yaw=-s.yaw;else{s.t='hill';s.dy=14}}}
+    const n=Math.round(s.len);
+    for(let k=0;k<n;k++){const f=k/n;let dyaw=0,dy=0,flag=0,bank=0;
+      if(s.t==='turn'){dyaw=s.yaw/n;bank=-Math.sign(s.yaw)*Math.min(.32,Math.abs(s.yaw)/n*14)*Math.sin(f*Math.PI);dy=(s.dy||0)/n}
+      if(s.t==='hill')dy=s.dy/n*(1-Math.cos(f*Math.PI*2))*1;
+      if(s.t==='boost'&&k>n*.3&&k<n*.3+8)flag=1;if(s.t==='jump'&&k<7)flag=1;
+      yaw+=dyaw;y+=dy;
+      if(s.t==='jump'){// ramp up, then the gap
+        if(k<n){y+=Math.sin(f*Math.PI/2)*.22}}
+      P.push({x,y,z,yaw,bank,flag,w:W,gap:false});x+=Math.sin(yaw);z+=Math.cos(yaw)}
+    if(s.t==='jump'){const g=Math.round(s.gap);for(let k=0;k<g;k++){P.push({x,y:y-s.drop*(k/g),z,yaw,bank:0,flag:0,w:W,gap:true});x+=Math.sin(yaw);z+=Math.cos(yaw)}y-=s.drop;
+      for(let k=0;k<4;k++){P.push({x,y,z,yaw,bank:0,flag:0,w:W,gap:false});x+=Math.sin(yaw);z+=Math.cos(yaw)}}
+    sinceCp++;if(sinceCp>=3&&si<segs.length-2){sinceCp=0;cps.push(P.length-1)}}
+  // smooth heights and work out the frame at every meter
+  for(let pass=0;pass<3;pass++)for(let i=1;i<P.length-1;i++)if(!P[i].gap&&!P[i-1].gap&&!P[i+1].gap)P[i].y=(P[i-1].y+P[i].y*2+P[i+1].y)/4;
+  for(let i=0;i<P.length;i++){const a=P[Math.max(0,i-1)],b=P[Math.min(P.length-1,i+1)],p=P[i];
+    const f=new T3.Vector3(b.x-a.x,b.y-a.y,b.z-a.z).normalize(),rt=new T3.Vector3(-f.z,0,f.x).normalize();
+    rt.applyAxisAngle(f,p.bank);const up=new T3.Vector3().crossVectors(rt,f).normalize();if(up.y<0)up.negate();p.f=f;p.r=rt;p.u=up;
+    p.k=i>0?Math.atan2(Math.sin(p.yaw-P[i-1].yaw),Math.cos(p.yaw-P[i-1].yaw)):0}
+  const realLen=P.length,par=realLen/44+cps.length*.15;// gold: a clean, fast run
+  return{code,level:L,P,cps,W,gold:Math.round(par*10)/10,silver:Math.round(par*1.15*10)/10,bronze:Math.round(par*1.35*10)/10,minY:Math.min(...P.map(p=>p.y))}}
+/* ---------- the 3D scene ---------- */
+const stage=$('stage');
+const renderer=new T3.WebGLRenderer({antialias:!TOUCH,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio||1,TOUCH?1.5:2));stage.insertBefore(renderer.domElement,stage.firstChild);
+const scene=new T3.Scene(),cam=new T3.PerspectiveCamera(68,16/9,.5,1600);
+const hemi=new T3.HemisphereLight(0xdff2ff,0x4a6b3a,.85),sun=new T3.DirectionalLight(0xffffff,.75);sun.position.set(80,140,40);scene.add(hemi,sun);
+let world=new T3.Group();scene.add(world);
+const THEMES={Sunny:{sky:0x9fd3f0,fog:0xbfe3f4,ground:0x6fae58,hemi:.85,sun:.75},Dusk:{sky:0xf0a46a,fog:0xe9b388,ground:0x6b8e4e,hemi:.7,sun:.6},Night:{sky:0x16203a,fog:0x1c2744,ground:0x2b4a2e,hemi:.45,sun:.25}};
+function canvasTex(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new T3.CanvasTexture(c);t.anisotropy=4;return t}
+const boostTex=canvasTex(64,128,(g,w,h)=>{g.fillStyle='#ff8a1f';g.fillRect(0,0,w,h);g.fillStyle='#fff3c4';for(let i=0;i<2;i++){const y=10+i*58;g.beginPath();g.moveTo(w/2,y);g.lineTo(w-6,y+40);g.lineTo(w/2,y+26);g.lineTo(6,y+40);g.closePath();g.fill()}});
+const checkTex=canvasTex(128,32,(g,w,h)=>{for(let x=0;x<16;x++)for(let y=0;y<4;y++){g.fillStyle=(x+y)%2?'#111':'#fff';g.fillRect(x*8,y*8,8,8)}});
+let TR=null,carMesh=null,ghostMesh=null,gates=[];
+function buildWorld(tr,themeName){scene.remove(world);world.traverse(o=>{if(o.geometry)o.geometry.dispose()});world=new T3.Group();scene.add(world);gates=[];
+  const th=THEMES[themeName]||THEMES.Sunny;scene.background=new T3.Color(th.sky);scene.fog=new T3.Fog(th.fog,120,900);hemi.intensity=th.hemi;sun.intensity=th.sun;
+  const P=tr.P,pos=[],col=[],cpos=[],ccol=[];const road=new T3.Color(),c1=new T3.Color(0x3d434c),c2=new T3.Color(0x464d57),red=new T3.Color(0xd0293a),wht=new T3.Color(0xf4f4ee);
+  const edge=(p,side,off)=>new T3.Vector3(p.x,p.y,p.z).addScaledVector(p.r,side*(p.w/2+off));
+  const quad=(arr,carr,a,b,c,d,colr)=>{arr.push(a.x,a.y,a.z,b.x,b.y,b.z,c.x,c.y,c.z,a.x,a.y,a.z,c.x,c.y,c.z,d.x,d.y,d.z);for(let k=0;k<6;k++)carr.push(colr.r,colr.g,colr.b)};
+  for(let i=0;i<P.length-1;i++){const p=P[i],q=P[i+1];if(p.gap||q.gap)continue;road.copy(Math.floor(i/6)%2?c1:c2);
+    quad(pos,col,edge(p,-1,0),edge(q,-1,0),edge(q,1,0),edge(p,1,0),road);
+    const cc=Math.floor(i/3)%2?red:wht;for(const sd of[-1,1]){quad(cpos,ccol,edge(p,sd,0),edge(q,sd,0),edge(q,sd,.9).addScaledVector(q.u,.15),edge(p,sd,.9).addScaledVector(p.u,.15),cc)}
+    // the underside, so it looks solid from below
+    const dn=.8;quad(cpos,ccol,edge(p,1,.9).addScaledVector(p.u,-dn),edge(q,1,.9).addScaledVector(q.u,-dn),edge(q,-1,.9).addScaledVector(q.u,-dn),edge(p,-1,.9).addScaledVector(p.u,-dn),new T3.Color(0x2a2f36))}
+  const mk=(arr,carr)=>{const g=new T3.BufferGeometry();g.setAttribute('position',new T3.Float32BufferAttribute(arr,3));g.setAttribute('color',new T3.Float32BufferAttribute(carr,3));g.computeVertexNormals();return g};
+  world.add(new T3.Mesh(mk(pos,col),new T3.MeshPhongMaterial({vertexColors:true,flatShading:true,shininess:5,side:T3.DoubleSide})));
+  world.add(new T3.Mesh(mk(cpos,ccol),new T3.MeshPhongMaterial({vertexColors:true,flatShading:true,shininess:0,side:T3.DoubleSide})));
+  // boost pads
+  const bm=new T3.MeshBasicMaterial({map:boostTex});for(let i=0;i<P.length;i++)if(P[i].flag&&(i===0||!P[i-1].flag)){const p=P[i],g=new T3.PlaneGeometry(p.w*.5,7),m=new T3.Mesh(g,bm);
+    const mid=P[Math.min(P.length-1,i+3)];m.position.set(mid.x,mid.y,mid.z).addScaledVector(mid.u,.06);const M=new T3.Matrix4().makeBasis(mid.r,mid.f,mid.u);m.quaternion.setFromRotationMatrix(M);world.add(m)}
+  // pillars under the track and a low-poly ground with trees
+  const gy=tr.minY-30,pm=new T3.MeshPhongMaterial({color:0x8d939b,flatShading:true});
+  for(let i=10;i<P.length;i+=26){const p=P[i];if(p.gap)continue;const h=p.y-gy-1,g=new T3.BoxGeometry(2.2,h,2.2),m=new T3.Mesh(g,pm);m.position.set(p.x,gy+h/2,p.z);world.add(m)}
+  let bx0=1e9,bx1=-1e9,bz0=1e9,bz1=-1e9;for(const p of P){bx0=Math.min(bx0,p.x);bx1=Math.max(bx1,p.x);bz0=Math.min(bz0,p.z);bz1=Math.max(bz1,p.z)}
+  const gw=bx1-bx0+900,gd=bz1-bz0+900,gg=new T3.PlaneGeometry(gw,gd,24,24);gg.rotateX(-Math.PI/2);const gp=gg.attributes.position;for(let i=0;i<gp.count;i++)gp.setY(i,(Math.sin(i*12.9898)*43758.5453%1)*3);gg.computeVertexNormals();
+  const ground=new T3.Mesh(gg,new T3.MeshPhongMaterial({color:th.ground,flatShading:true}));ground.position.set((bx0+bx1)/2,gy,(bz0+bz1)/2);world.add(ground);
+  const tr2=rng(hashStr(tr.code+'trees')),tm=new T3.MeshPhongMaterial({color:0x3f7d3a,flatShading:true}),km=new T3.MeshPhongMaterial({color:0x7a5a3a,flatShading:true}),rm=new T3.MeshPhongMaterial({color:0x9aa0a6,flatShading:true});
+  for(let i=0;i<160;i++){const x=bx0-200+tr2()*(bx1-bx0+400),z=bz0-200+tr2()*(bz1-bz0+400);if(tr2()<.75){const h=6+tr2()*10,c=new T3.Mesh(new T3.ConeGeometry(h*.35,h,6),tm);c.position.set(x,gy+h/2+2,z);world.add(c);const t=new T3.Mesh(new T3.CylinderGeometry(.5,.6,3,5),km);t.position.set(x,gy+1.5,z);world.add(t)}
+    else{const s=2+tr2()*6,ro=new T3.Mesh(new T3.IcosahedronGeometry(s,0),rm);ro.position.set(x,gy+s*.5,z);world.add(ro)}}
+  // checkpoint gates and the finish arch
+  const gm=new T3.MeshPhongMaterial({color:0x4fd6e8,flatShading:true});
+  const arch=(i,mat,tex)=>{const p=P[i],grp=new T3.Group();for(const sd of[-1,1]){const post=new T3.Mesh(new T3.BoxGeometry(.8,6,.8),mat);post.position.copy(edge(p,sd,1.4)).addScaledVector(p.u,3);grp.add(post)}
+    const bar=new T3.Mesh(new T3.BoxGeometry(p.w+3.6,1.4,.8),tex?new T3.MeshBasicMaterial({map:tex}):mat);bar.position.set(p.x,p.y,p.z).addScaledVector(p.u,6.4);const M=new T3.Matrix4().makeBasis(p.r,p.u,p.f.clone().negate());bar.quaternion.setFromRotationMatrix(M);grp.add(bar);world.add(grp);return grp};
+  for(const i of tr.cps)gates.push({i,g:arch(i,gm.clone()),hit:false});
+  arch(P.length-6,new T3.MeshPhongMaterial({color:0xf4f4ee,flatShading:true}),checkTex);arch(4,new T3.MeshPhongMaterial({color:0xffc23d,flatShading:true}));
+  world.add(carMesh=makeCar(0xd0293a,1));world.add(ghostMesh=makeCar(0x9cc8ff,.35));ghostMesh.visible=false}
+function makeCar(color,op){const g=new T3.Group(),tp=op<1;const mb=new T3.MeshPhongMaterial({color,flatShading:true,transparent:tp,opacity:op,shininess:30}),mc=new T3.MeshPhongMaterial({color:0x22262c,flatShading:true,transparent:tp,opacity:op}),mg=new T3.MeshPhongMaterial({color:0x9cd4ff,flatShading:true,transparent:tp,opacity:tp?op:.85});
+  const body=new T3.Mesh(new T3.BoxGeometry(2.1,.7,4.2),mb);body.position.y=.65;g.add(body);const nose=new T3.Mesh(new T3.BoxGeometry(1.9,.4,1),mb);nose.position.set(0,.55,2.4);g.add(nose);
+  const cab=new T3.Mesh(new T3.BoxGeometry(1.6,.6,1.9),mg);cab.position.set(0,1.25,-.3);g.add(cab);const wing=new T3.Mesh(new T3.BoxGeometry(2.2,.12,.6),mc);wing.position.set(0,1.35,-2);g.add(wing);
+  for(const[x,z]of[[-1.1,1.4],[1.1,1.4],[-1.1,-1.4],[1.1,-1.4]]){const w=new T3.Mesh(new T3.CylinderGeometry(.45,.45,.4,8),mc);w.rotation.z=Math.PI/2;w.position.set(x,.45,z);g.add(w)}return g}
+/* ---------- the car ---------- */
+let SIM=false;
+const C={s:0,d:0,psi:0,v:0,air:false,p:new T3.Vector3(),vel:new T3.Vector3(),yaw:0,fall:0,boostT:0};
+let G=null,keys={up:0,down:0,left:0,right:0,drift:0},soundOn=true;try{soundOn=localStorage.getItem('apex-sound')!=='off'}catch(e){}
+const VMAX=52,BOOST=74;
+function at(s){const P=TR.P,i=clamp(Math.floor(s),0,P.length-2),f=clamp(s-i,0,1),a=P[i],b=P[i+1];
+  return{x:lerp(a.x,b.x,f),y:lerp(a.y,b.y,f),z:lerp(a.z,b.z,f),f:a.f.clone().lerp(b.f,f).normalize(),r:a.r.clone().lerp(b.r,f).normalize(),u:a.u.clone().lerp(b.u,f).normalize(),k:a.k,w:a.w,gap:a.gap,flag:a.flag,i}}
+function place(){const q=at(C.s);const p=new T3.Vector3(q.x,q.y,q.z).addScaledVector(q.r,C.d);C.p.copy(p);
+  const fw=q.f.clone().applyAxisAngle(q.u,-C.psi);const M=new T3.Matrix4().makeBasis(fw.clone().cross(q.u).negate(),q.u,fw);carMesh.quaternion.setFromRotationMatrix(M);carMesh.position.copy(p);C.fw=fw;C.up=q.u}
+function respawn(toStart){const i=toStart||!G.lastCp?4:G.lastCp;C.s=i+.5;C.d=0;C.psi=0;C.v=toStart?0:Math.max(22,Math.min(C.v,30));C.air=false;C.fall=0;place();if(!toStart){G.resets++;note('Back to the checkpoint')}}
+function launch(extraUp){C.air=true;const q=at(C.s);C.vel.copy(C.fw.clone().multiplyScalar(C.v*Math.cos(C.psi)+0)).addScaledVector(q.r,0);C.vel.copy(C.fw).multiplyScalar(C.v);C.vel.y+=extraUp||0;C.airT=0}
+function step(dt){const P=TR.P;let steer=(keys.right-keys.left),thr=keys.up,brk=keys.down,drift=keys.drift;
+  if(G.phase!=='race'){thr=0;brk=0;steer=0}
+  if(!C.air){const q=at(C.s);
+    // speed
+    const vmax=C.boostT>0?BOOST:VMAX;if(thr)C.v+=(C.v<vmax?24*(1-C.v/vmax*.85):-30)*dt;else C.v-=C.v*.25*dt;
+    if(brk)C.v-=(C.v>0?42:14)*dt;C.v=clamp(C.v,-12,BOOST);C.v-=q.f.y*20*dt;
+    if(q.flag){if(C.boostT<=0)boostSfx();C.boostT=1.4}if(C.boostT>0){C.boostT-=dt;C.v=Math.min(BOOST,C.v+46*dt)}
+    // steering: the track bends under you; drifting turns harder and slides
+    const sp=Math.abs(C.v),rate=steer*(2.6-1.0*Math.min(1,sp/VMAX))*(drift?1.55:1)*(C.v<0?-1:1)*Math.min(1,sp/6);
+    C.psi+=(rate+q.k*C.v*Math.cos(C.psi))*dt;if(!drift)C.psi*=1-dt*.9;else C.v-=C.v*.18*dt;C.psi=clamp(C.psi,-1.3,1.3);
+    C.s+=C.v*Math.cos(C.psi)*dt;C.d+=C.v*Math.sin(C.psi)*dt;C.s=clamp(C.s,0,P.length-1.01);
+    place();
+    const q2=at(C.s);if(q2.gap){launch(Math.max(0,q.f.y)*C.v*.6+2)}else if(Math.abs(C.d)>q2.w/2+1){launch(0);C.fall=1}
+  }else{// in the air
+    C.airT+=dt;C.vel.y-=26*dt;C.p.addScaledVector(C.vel,dt);carMesh.position.copy(C.p);
+    // land on whatever piece of track is under the car
+    let best=null,bd=1e9;const i0=Math.max(0,Math.floor(C.s)-30),i1=Math.min(P.length-1,Math.floor(C.s)+140);
+    for(let i=i0;i<i1;i++){const p=P[i];if(p.gap)continue;const dx=C.p.x-p.x,dz=C.p.z-p.z,d2=dx*dx+dz*dz;if(d2<bd){bd=d2;best=i}}
+    if(best!=null){const p=P[best],rel=new T3.Vector3(C.p.x-p.x,C.p.y-p.y,C.p.z-p.z),lat=rel.dot(p.r),h=rel.dot(p.u),fwd=rel.dot(p.f);
+      if(Math.abs(fwd)<1.3&&Math.abs(lat)<p.w/2+.6&&h<.4&&h>-3&&C.vel.y<=0&&C.airT>.08){C.air=false;C.fall=0;C.s=clamp(best+fwd,0,P.length-1.01);C.d=lat;const vf=C.vel.dot(p.f),vr=C.vel.dot(p.r);C.v=Math.max(0,vf*.96);C.psi=clamp(Math.atan2(vr,Math.max(1,vf))*.4,-.6,.6);place();thud()}
+      else{C.s=best}}
+    if(C.p.y<TR.minY-26){respawn()}
+    const look=C.vel.clone();look.y*=.3;if(look.lengthSq()>1){const m=new T3.Matrix4().lookAt(new T3.Vector3(),look.normalize().negate(),new T3.Vector3(0,1,0));carMesh.quaternion.setFromRotationMatrix(m)}}
+  // checkpoints and the finish
+  for(const g of gates)if(!g.hit&&!C.air&&C.s>=g.i&&C.s<g.i+25){g.hit=true;G.lastCp=g.i;G.cpTimes.push(G.t);if(SIM)continue;g.g.children.forEach(m=>m.material.color&&m.material.color.set(0x2fbf71));chime();const sp=G.best&&G.best.cps?G.best.cps[G.cpTimes.length-1]:null;note(sp!=null?`${G.t-sp>=0?'+':'−'}${Math.abs(G.t-sp).toFixed(2)} vs best`:'Checkpoint')}
+  if(!C.air&&C.s>=P.length-8&&gates.every(g=>g.hit)&&G.phase==='race')finish();
+  else if(!C.air&&C.s>=P.length-8&&G.phase==='race'&&!G.missNote){G.missNote=true;note('You missed a checkpoint! Press R')}}
+/* ---------- the run ---------- */
+function load(code,level,name,theme){TR=makeTrack(code,level);TR.name=name||('Random · '+code);TR.theme=theme||['Sunny','Dusk','Night'][hashStr(code)%3];buildWorld(TR,TR.theme);
+  calibrate();G={phase:'count',t:0,cd:3,lastCp:0,cpTimes:[],resets:0,rec:[],recT:0,best:loadBest(),missNote:false};C.v=0;respawn(true);hideCard();$('hTrack').textContent=TR.name+' · '+TR.code;medalsHud();if(TOUCH)root.classList.add('playing');setTimeout(resize,30);engine(true)}
+// a computer test drive sets the medal times for every track, so they're always fair
+function calibrate(){if(TR.cal)return;const saveK=Object.assign({},keys);SIM=true;G={phase:'race',t:0,lastCp:0,cpTimes:[],resets:0,rec:[],best:null};respawn(true);let t=0;
+  try{while(G.phase==='race'&&t<180){const q=TR.P[Math.floor(C.s)],ah=TR.P[Math.min(TR.P.length-1,Math.floor(C.s)+25)],sharp=Math.abs(ah.yaw-q.yaw)>.55,err=C.d*.08+C.psi*1.2;
+    keys.up=sharp&&C.v>46?0:1;keys.down=sharp&&C.v>52?1:0;keys.drift=sharp&&Math.abs(C.d)>2?1:0;keys.right=err<-.05?1:0;keys.left=err>.05?1:0;step(1/120);t+=1/120;G.t=t}}catch(e){}
+  SIM=false;for(const g of gates)g.hit=false;Object.assign(keys,saveK);for(const k in keys)keys[k]=0;
+  if(G.phase==='done'&&G.resets===0){TR.gold=Math.round(t*1.1*10)/10;TR.silver=Math.round(t*1.28*10)/10;TR.bronze=Math.round(t*1.55*10)/10}TR.cal=true}
+const KEY=()=>'apex-best-'+TR.code;
+function loadBest(){try{return JSON.parse(localStorage.getItem(KEY())||'null')}catch(e){return null}}
+function medalOf(t){return t<=TR.gold?'g':t<=TR.silver?'s':t<=TR.bronze?'b':'n'}
+function medalsHud(){const b=G.best;$('hMedals').innerHTML=`<span class="medal m-g"></span>${TR.gold.toFixed(1)}s &nbsp;<span class="medal m-s"></span>${TR.silver.toFixed(1)}s &nbsp;<span class="medal m-b"></span>${TR.bronze.toFixed(1)}s`;$('hBest').textContent=b?`Best ${fmt(b.t)}`:''}
+const fmt=t=>{const m=Math.floor(t/60),s=t-m*60;return m+':'+(s<10?'0':'')+s.toFixed(2)};
+function finish(){G.phase='done';if(SIM)return;const t=G.t,prev=G.best,nb=!prev||t<prev.t,med=medalOf(t);fanfare();engine(false);
+  if(nb){try{localStorage.setItem(KEY(),JSON.stringify({t,cps:G.cpTimes,ghost:G.rec}))}catch(e){try{localStorage.setItem(KEY(),JSON.stringify({t,cps:G.cpTimes}))}catch(_){}}}
+  const old=prev?medalOf(prev.t):'n',rank={n:0,b:1,s:2,g:3},gain=Math.max(0,rank[med]-rank[old]);const coins=gain?[0,10,20,35].slice(rank[old]+1,rank[med]+1).reduce((a,b)=>a+b,0):3;addCoins(coins);
+  let M={};try{M=JSON.parse(localStorage.getItem('apex-medals')||'{}')}catch(e){}if(rank[med]>(rank[M[TR.code]]||0)){M[TR.code]=med;try{localStorage.setItem('apex-medals',JSON.stringify(M))}catch(e){}}
+  const mn={g:'Gold medal!',s:'Silver medal',b:'Bronze medal',n:'Finished'}[med];
+  showCard(`<h2>${mn}</h2><p class="bigt">${fmt(t)}${nb&&prev?' · new best!':''}</p><p>${prev?`Your best: ${fmt(Math.min(prev.t,t))}. `:''}Gold ${TR.gold.toFixed(1)}s · Silver ${TR.silver.toFixed(1)}s · Bronze ${TR.bronze.toFixed(1)}s${G.resets?` · ${G.resets} checkpoint reset${G.resets>1?'s':''}`:''}</p><p>+${coins} coins for the Overtime Arcade shop</p>
+    <div class="row"><button class="go" type="button" data-a="retry">Race again</button><button class="btn" type="button" data-a="next">Next track</button><button class="btn" type="button" data-a="share">Share this track</button><button class="btn" type="button" data-a="menu">All tracks</button></div>`)}
+function addCoins(n){try{const d=JSON.parse(localStorage.getItem('overtime-coins')||'null')||{c:0,own:{},earned:0};d.c+=n;d.earned=(d.earned||0)+n;localStorage.setItem('overtime-coins',JSON.stringify(d))}catch(e){}}
+/* ---------- sound ---------- */
+let AC=null,eng=null;function audio(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume()}catch(e){}}
+function tone(f,d,type,vol,at){if(!AC||!soundOn||SIM)return;const t=AC.currentTime+(at||0),o=AC.createOscillator(),g=AC.createGain();o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(vol||.12,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+d+.02)}
+function chime(){tone(880,.15,'triangle',.14);tone(1320,.25,'triangle',.12,.1)}
+function fanfare(){[523,659,784,1046].forEach((f,i)=>tone(f,.35,'triangle',.12,i*.13))}
+function thud(){tone(90,.12,'sine',.18)}
+function boostSfx(){if(!AC||!soundOn||SIM)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type='sawtooth';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(900,t+.5);g.gain.setValueAtTime(.06,t);g.gain.exponentialRampToValueAtTime(.001,t+.6);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+.62)}
+function engine(on){if(!AC)return;try{if(on&&soundOn&&!eng){const o=AC.createOscillator(),o2=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain();o.type='sawtooth';o2.type='square';f.type='lowpass';f.frequency.value=600;g.gain.value=.035;o.connect(f);o2.connect(f);f.connect(g).connect(AC.destination);o.start();o2.start();eng={o,o2,g,f}}
+  else if((!on||!soundOn)&&eng){eng.o.stop();eng.o2.stop();eng=null}}catch(e){}}
+/* ---------- the camera and the frame ---------- */
+const camPos=new T3.Vector3(),camLook=new T3.Vector3();
+function resize(){const r=stage.getBoundingClientRect();renderer.setSize(Math.max(200,r.width),Math.max(150,r.height),false);cam.aspect=Math.max(.5,r.width/Math.max(1,r.height));cam.updateProjectionMatrix()}
+addEventListener('resize',()=>setTimeout(resize,60));
+let last=0;function frame(now){const dt=Math.min(.033,(now-(last||now))/1000);last=now;
+  if(G&&TR){if(G.phase==='count'){G.cd-=dt;$('hMid').textContent=G.cd>0?String(Math.ceil(G.cd)):'GO!';if(G.cd<=0){G.phase='race';G.t=0;setTimeout(()=>{if(G.phase==='race')$('hMid').textContent=''},600)}}
+    if(G.phase==='race'||G.phase==='count'){const sub=3;for(let k=0;k<sub;k++)step(dt/sub);if(G.phase==='race'){G.t+=dt;G.recT+=dt;if(G.recT>=.1){G.recT=0;if(G.rec.length<3000)G.rec.push([+C.p.x.toFixed(1),+C.p.y.toFixed(1),+C.p.z.toFixed(1),+(Math.atan2(C.fw?C.fw.x:0,C.fw?C.fw.z:1)).toFixed(2)])}}}
+    // ghost of your best run
+    const gh=G.best&&G.best.ghost;if(gh&&gh.length&&G.phase==='race'){const k=G.t/.1,i=Math.floor(k),a=gh[Math.min(i,gh.length-1)],b=gh[Math.min(i+1,gh.length-1)],f=k-i;ghostMesh.visible=i<gh.length;ghostMesh.position.set(lerp(a[0],b[0],f),lerp(a[1],b[1],f),lerp(a[2],b[2],f));ghostMesh.rotation.set(0,a[3],0)}else ghostMesh.visible=false;
+    $('hTime').textContent=fmt(G.t);$('hSpd').textContent=String(Math.round(Math.abs(C.v)*3.6));$('hCp').textContent=`Checkpoints ${gates.filter(g=>g.hit).length}/${gates.length}`;
+    if(eng){const r=Math.abs(C.v)/VMAX;eng.o.frequency.value=55+r*140;eng.o2.frequency.value=27+r*70;eng.f.frequency.value=400+r*900}
+    // chase camera
+    const fw=C.air?C.vel.clone().setY(0).normalize():(C.fw||new T3.Vector3(0,0,1)),up=C.air?new T3.Vector3(0,1,0):(C.up||new T3.Vector3(0,1,0));
+    const want=C.p.clone().addScaledVector(fw,-9.5).addScaledVector(up,4.2),lookAt=C.p.clone().addScaledVector(fw,6).addScaledVector(up,1.2);
+    camPos.lerp(want,1-Math.pow(.0015,dt));camLook.lerp(lookAt,1-Math.pow(.0005,dt));if(camPos.distanceToSquared(C.p)>2500){camPos.copy(want);camLook.copy(lookAt)}cam.position.copy(camPos);cam.lookAt(camLook);
+    const fovT=68+Math.min(14,Math.max(0,C.v-30)*.4);cam.fov+=(fovT-cam.fov)*Math.min(1,dt*3);cam.updateProjectionMatrix()}
+  renderer.render(scene,cam);requestAnimationFrame(frame)}
+let noteT=0;function note(s){if(SIM)return;$('hNote').textContent=s;clearTimeout(noteT);noteT=setTimeout(()=>{$('hNote').textContent=''},1800)}
+/* ---------- menus ---------- */
+function showCard(h){$('ovc').innerHTML=h;$('ov').hidden=false;root.classList.remove('playing');const b=$('ovc').querySelector('.go,.trk');if(b)b.focus()}
+function hideCard(){$('ov').hidden=true}
+function menu(){let M={};try{M=JSON.parse(localStorage.getItem('apex-medals')||'{}')}catch(e){}
+  const best=c=>{try{const b=JSON.parse(localStorage.getItem('apex-best-'+c)||'null');return b?fmt(b.t):'—'}catch(e){return'—'}};
+  showCard(`<h2>Apex Rush</h2><p>Pick a track. Beat the gold time on all ten.</p><div class="trks">${TRACKS.map((t,i)=>`<button class="trk" type="button" data-t="${i}"><b>${i+1}. ${t[0]}</b><small><span class="medal m-${M[t[2]]||'n'}"></span>Best ${best(t[2])}</small></button>`).join('')}</div>
+    <div class="row"><button class="go" type="button" data-a="random">Random track</button><input id="code" maxlength="12" placeholder="Track code" aria-label="Track code" autocomplete="off"><button class="btn" type="button" data-a="code">Race this code</button></div>
+    <div class="keys"><span><kbd>W</kbd> gas</span><span><kbd>A</kbd><kbd>D</kbd> steer</span><span><kbd>Space</kbd> drift</span><span><kbd>R</kbd> checkpoint</span><span><kbd>Enter</kbd> restart</span></div>`)}
+let curIdx=-1;
+function startIdx(i){curIdx=i;const t=TRACKS[i];load(t[2],i,t[0],t[1])}
+$('ovc').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;audio();
+  if(b.dataset.t!=null){startIdx(+b.dataset.t);return}const a=b.dataset.a;
+  if(a==='random'){curIdx=-1;const c=Math.random().toString(36).slice(2,8).toUpperCase();load(c,null)}
+  else if(a==='code'){const c=($('code').value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');if(!c)return;const ti=TRACKS.findIndex(t=>t[2]===c);if(ti>=0)startIdx(ti);else{curIdx=-1;load(c,null)}}
+  else if(a==='retry')load(TR.code,curIdx>=0?curIdx:null,TR.name,TR.theme);
+  else if(a==='next'){if(curIdx>=0&&curIdx<TRACKS.length-1)startIdx(curIdx+1);else{curIdx=-1;load(Math.random().toString(36).slice(2,8).toUpperCase(),null)}}
+  else if(a==='menu')menu();
+  else if(a==='share'){const url=location.origin+location.pathname+'?track='+encodeURIComponent(TR.code),txt=`Race me on ${TR.name} in Apex Rush. My time: ${G&&G.best?fmt(G.best.t):''}`;
+    try{if(navigator.share){await navigator.share({title:'Apex Rush',text:txt,url});return}}catch(err){if(err&&err.name==='AbortError')return}
+    try{await navigator.clipboard.writeText(url);b.textContent='Link copied!'}catch(err){b.textContent='Code: '+TR.code}}});
+$('bTracks').addEventListener('click',()=>{engine(false);menu()});$('pTracks').addEventListener('click',()=>{engine(false);menu()});
+const restart=()=>{if(TR&&$('ov').hidden)load(TR.code,curIdx>=0?curIdx:null,TR.name,TR.theme)};$('bRestart').addEventListener('click',restart);$('pRestart').addEventListener('click',restart);
+$('pReset').addEventListener('click',()=>{if(G&&G.phase==='race')respawn()});
+$('bSound').addEventListener('click',()=>{soundOn=!soundOn;try{localStorage.setItem('apex-sound',soundOn?'on':'off')}catch(e){}$('bSound').textContent='Sound: '+(soundOn?'on':'off');engine(soundOn&&G&&G.phase==='race')});$('bSound').textContent='Sound: '+(soundOn?'on':'off');
+/* ---------- input ---------- */
+const KM={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',Space:'drift',ShiftLeft:'drift'};
+addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT'){if(e.code==='Enter'){const b=$('ovc').querySelector('[data-a="code"]');if(b)b.click()}return}
+  const k=KM[e.code];if(k&&$('ov').hidden){keys[k]=1;e.preventDefault();audio();return}
+  if(e.code==='KeyR'&&G&&G.phase==='race')respawn();if(e.code==='Enter'){if($('ov').hidden)restart();else{const b=$('ovc').querySelector('.go');if(b&&document.activeElement===document.body)b.click()}}});
+addEventListener('keyup',e=>{const k=KM[e.code];if(k)keys[k]=0});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=0});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){for(const k in keys)keys[k]=0;engine(false)}});
+for(const b of document.querySelectorAll('.tc button[data-k]')){const k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();audio();keys[k]=1;try{b.setPointerCapture(e.pointerId)}catch(_){}});
+  for(const t of['pointerup','pointercancel','lostpointercapture'])b.addEventListener(t,()=>{keys[k]=0});b.addEventListener('contextmenu',e=>e.preventDefault())}
+resize();
+const q=new URLSearchParams(location.search).get('track');
+if(q){const c=q.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12),ti=TRACKS.findIndex(t=>t[2]===c);TR=makeTrack(ti>=0?c:c,ti>=0?ti:null);TR.name=ti>=0?TRACKS[ti][0]:'Shared track · '+c;TR.theme=ti>=0?TRACKS[ti][1]:'Sunny';buildWorld(TR,TR.theme);
+  showCard(`<h2>A friend sent you a track</h2><p class="bigt">${TR.name}</p><div class="row"><button class="go" type="button" data-a="retry">Race it</button><button class="btn" type="button" data-a="menu">All tracks</button></div>`);if(ti>=0)curIdx=ti}
+else{TR=makeTrack('A1',0);TR.name='Warm Up';buildWorld(TR,'Sunny');G={phase:'menu',t:0,best:null};C.s=4.5;place();menu()}
+camPos.set(C.p.x,C.p.y+30,C.p.z-40);camLook.copy(C.p);requestAnimationFrame(frame);
+if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+window.__apex={get G(){return G},get TR(){return TR},C,keys,makeTrack,load,step};
+})();
+</script>
+</body></html>
