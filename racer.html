@@ -74,7 +74,7 @@ html.touch.playing .hud .spd{bottom:140px}
     <div class="ov" id="ov"><div class="card" id="ovc"></div></div>
   </div>
   <div class="info">
-    <section><h2>How to play</h2><ul><li>Drive from the start to the finish as fast as you can. Hit every checkpoint.</li><li>Orange pads are boosts. Ramps jump gaps, so carry your speed.</li><li>Fall off and you go back to your last checkpoint. Press R any time to reset and start the run over. Beat the gold time to earn a gold medal.</li><li>Your best run races with you as a see-through ghost.</li></ul></section>
+    <section><h2>How to play</h2><ul><li>Drive from the start to the finish as fast as you can. Hit every checkpoint.</li><li>Orange pads are boosts. Ramps jump gaps, so carry your speed.</li><li>Guard rails keep you on the track, but scraping them slows you down. Miss a jump and you go back to your last checkpoint. Press R any time to start the run over. Beat the gold time to earn a gold medal.</li><li>Your best run races with you as a see-through ghost.</li></ul></section>
     <section><h2>Controls</h2><ul><li><kbd>W</kbd>/<kbd>↑</kbd> gas, <kbd>S</kbd>/<kbd>↓</kbd> brake and reverse</li><li><kbd>A</kbd> <kbd>D</kbd> steer, hold <kbd>Space</kbd> to drift</li><li><kbd>R</kbd> reset (start the run over), <kbd>Enter</kbd> back to the last checkpoint</li><li>On a phone: steer on the left, gas and brake on the right.</li></ul></section>
     <section><h2>Random tracks</h2><p>Tap Random for a brand-new track. Every track has a code: send it to a friend and race the same track.</p></section>
   </div>
@@ -93,7 +93,7 @@ function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^
 const TRACKS=[['Warm Up','Sunny','A1'],['Switchback','Sunny','B7'],['Hop Skip','Sunny','C3'],['Ridge Run','Dusk','D9'],['Boost Lane','Sunny','E2'],['Big Air','Dusk','F5'],['Corkscrew Valley','Sunny','G8'],['Night Owl','Night','H4'],['Long Haul','Dusk','J6'],['Apex Legend','Night','K1']];
 /* ---------- the track: a ribbon in the sky ---------- */
 function makeTrack(code,level){const r=rng(hashStr('apex:'+code)),L=level==null?2+Math.floor(r()*7):level;
-  const W=L<3?14:L<6?12.5:11,segs=[];const nS=14+L*3;
+  const W=L<3?21:L<6?19:17,segs=[];const nS=14+L*3;
   segs.push({t:'str',len:40});
   for(let i=0;i<nS;i++){const x=r();let s;
     if(x<.3)s={t:'turn',len:50+r()*50,yaw:(r()<.5?-1:1)*(.45+r()*1.0)};
@@ -106,7 +106,7 @@ function makeTrack(code,level){const r=rng(hashStr('apex:'+code)),L=level==null?
   segs.push({t:'str',len:50});
   // walk the segments one meter at a time
   const P=[];let x=0,y=40,z=0,yaw=0,i0=0;const cps=[];let sinceCp=0;
-  const tooClose=(px,py,pz)=>{for(let k=0;k<P.length-70;k+=3){const q=P[k];if(Math.abs(q.y-py)<10&&(q.x-px)**2+(q.z-pz)**2<26*26)return true}return false};
+  const tooClose=(px,py,pz)=>{for(let k=0;k<P.length-70;k+=3){const q=P[k];if(Math.abs(q.y-py)<10&&(q.x-px)**2+(q.z-pz)**2<34*34)return true}return false};
   for(let si=0;si<segs.length;si++){const s=segs[si];
     if(s.t==='turn'){// try the other way if this turn runs into the track
       const tryEnd=sg=>{let a=yaw,px=x,pz=z;for(let k=0;k<s.len;k++){a+=sg*Math.abs(s.yaw)/s.len;px+=Math.sin(a);pz+=Math.cos(a);if(tooClose(px,y,pz))return false}return true};
@@ -150,6 +150,8 @@ function buildWorld(tr,themeName){scene.remove(world);world.traverse(o=>{if(o.ge
   for(let i=0;i<P.length-1;i++){const p=P[i],q=P[i+1];if(p.gap||q.gap)continue;road.copy(Math.floor(i/6)%2?c1:c2);
     quad(pos,col,edge(p,-1,0),edge(q,-1,0),edge(q,1,0),edge(p,1,0),road);
     const cc=Math.floor(i/3)%2?red:wht;for(const sd of[-1,1]){quad(cpos,ccol,edge(p,sd,0),edge(q,sd,0),edge(q,sd,.9).addScaledVector(q.u,.15),edge(p,sd,.9).addScaledVector(p.u,.15),cc)}
+    // low guard rails along both edges
+    const rc=Math.floor(i/4)%2?new T3.Color(0xe9edf2):new T3.Color(0xc4161c);for(const sd of[-1,1]){const a0=edge(p,sd,.9),b0=edge(q,sd,.9);quad(cpos,ccol,a0,b0,b0.clone().addScaledVector(q.u,.9),a0.clone().addScaledVector(p.u,.9),rc)}
     // the underside, so it looks solid from below
     const dn=.8;quad(cpos,ccol,edge(p,1,.9).addScaledVector(p.u,-dn),edge(q,1,.9).addScaledVector(q.u,-dn),edge(q,-1,.9).addScaledVector(q.u,-dn),edge(p,-1,.9).addScaledVector(p.u,-dn),new T3.Color(0x2a2f36))}
   const mk=(arr,carr)=>{const g=new T3.BufferGeometry();g.setAttribute('position',new T3.Float32BufferAttribute(arr,3));g.setAttribute('color',new T3.Float32BufferAttribute(carr,3));g.computeVertexNormals();return g};
@@ -197,11 +199,11 @@ function step(dt){const P=TR.P;let steer=(keys.right-keys.left),thr=keys.up,brk=
     if(brk)C.v-=(C.v>0?42:14)*dt;C.v=clamp(C.v,-12,BOOST);C.v-=q.f.y*20*dt;
     if(q.flag){if(C.boostT<=0)boostSfx();C.boostT=1.4}if(C.boostT>0){C.boostT-=dt;C.v=Math.min(BOOST,C.v+46*dt)}
     // steering: the track bends under you; drifting turns harder and slides
-    const sp=Math.abs(C.v),rate=steer*(2.6-1.0*Math.min(1,sp/VMAX))*(drift?1.55:1)*(C.v<0?-1:1)*Math.min(1,sp/6);
-    C.psi+=(rate+q.k*C.v*Math.cos(C.psi))*dt;if(!drift)C.psi*=1-dt*.9;else C.v-=C.v*.18*dt;C.psi=clamp(C.psi,-1.3,1.3);
+    const sp=Math.abs(C.v),rate=steer*2.5*(drift?1.35:1)*(C.v<0?-1:1)*Math.min(1,sp/5);
+    C.psi+=(rate+q.k*C.v*Math.cos(C.psi)*.7)*dt;if(!drift)C.psi*=1-dt*2.2;else C.v-=C.v*.15*dt;C.psi=clamp(C.psi,-1.1,1.1);
     C.s+=C.v*Math.cos(C.psi)*dt;C.d+=C.v*Math.sin(C.psi)*dt;C.s=clamp(C.s,0,P.length-1.01);
     place();
-    const q2=at(C.s);if(q2.gap){launch(Math.max(0,q.f.y)*C.v*.6+2)}else if(Math.abs(C.d)>q2.w/2+1){launch(0);C.fall=1}
+    const q2=at(C.s);if(q2.gap){launch(Math.max(0,q.f.y)*C.v*.6+2)}else{const lim=q2.w/2+.3;if(Math.abs(C.d)>lim){const sd=Math.sign(C.d);C.d=sd*lim;if(Math.sign(C.psi)===sd)C.psi*=.25;C.v-=C.v*.9*dt;if(!C.scrapeT||C.scrapeT<performance.now()){C.scrapeT=performance.now()+260;scrape()}place()}}
   }else{// in the air
     C.airT+=dt;C.vel.y-=26*dt;C.p.addScaledVector(C.vel,dt);carMesh.position.copy(C.p);
     // land on whatever piece of track is under the car
@@ -244,6 +246,7 @@ function tone(f,d,type,vol,at){if(!AC||!soundOn||SIM)return;const t=AC.currentTi
 function chime(){tone(880,.15,'triangle',.14);tone(1320,.25,'triangle',.12,.1)}
 function fanfare(){[523,659,784,1046].forEach((f,i)=>tone(f,.35,'triangle',.12,i*.13))}
 function thud(){tone(90,.12,'sine',.18)}
+function scrape(){tone(220,.08,'square',.04);tone(160,.1,'sawtooth',.03,.04)}
 function boostSfx(){if(!AC||!soundOn||SIM)return;const t=AC.currentTime,o=AC.createOscillator(),g=AC.createGain();o.type='sawtooth';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(900,t+.5);g.gain.setValueAtTime(.06,t);g.gain.exponentialRampToValueAtTime(.001,t+.6);o.connect(g).connect(AC.destination);o.start(t);o.stop(t+.62)}
 function engine(on){if(!AC)return;try{if(on&&soundOn&&!eng){const o=AC.createOscillator(),o2=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain();o.type='sawtooth';o2.type='square';f.type='lowpass';f.frequency.value=600;g.gain.value=.035;o.connect(f);o2.connect(f);f.connect(g).connect(AC.destination);o.start();o2.start();eng={o,o2,g,f}}
   else if((!on||!soundOn)&&eng){eng.o.stop();eng.o2.stop();eng=null}}catch(e){}}
