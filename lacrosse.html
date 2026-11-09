@@ -2532,6 +2532,61 @@ const CAREER=(()=>{const KEY='career-'+CELESPORT,N=6,YRS=['Freshman','Sophomore'
   render();setInterval(()=>{if(!$('menu').hidden)render()},4000);return{get:()=>S}})();
 /* ---------- coins for playing ---------- */
 AFTER.push(()=>{try{if(G.demo||G.skills)return;const d=G.score[0]-G.score[1],won=userWon();coinsAdd(won?20+5*Math.min(Math.max(d,0),6):5,won?'Win':'Game played')}catch(e){}});
+/* ---------- contests: quick one-player events between games ---------- */
+const CONTEST=(()=>{
+  const LIST={hockey:[['breakaway','Breakaway challenge','Five breakaways against the goalie. Score as many as you can.','goals']],
+    lacrosse:[['speed','Fastest shot','Five shots. Your fastest shot that goes in counts. Shoot harder and it gets harder to aim.','mph']],
+    basketball:[['three','3-point contest','60 seconds. Only threes count, and every fifth make is a money ball worth 2.','points'],['dunk','Dunk contest','Three dunks for the judges. Drive in fast, and cross over first for style points.','points']],
+    football:[['drill','2-minute drill','Down 21-17 with 2:00 left at your own 25. Score a touchdown to win. Your best is the most time left.','seconds left']]}[CELESPORT]||[];
+  if(!LIST.length)return{on:()=>false};
+  const best=k=>{try{return+(localStorage.getItem('contest-'+CELESPORT+'-'+k)||0)}catch(e){return 0}},setBest=(k,v)=>{try{localStorage.setItem('contest-'+CELESPORT+'-'+k,String(v))}catch(e){}};
+  let C=null;const on=()=>!!C&&!C.over;
+  const box=menuBox('contestbox','',e=>{const b=e.target.closest('[data-ct]');if(!b)return;audio();start(b.dataset.ct)});
+  function render(){box.innerHTML=`<h2>Contests <span>${LIST.length===1?'1 event':LIST.length+' events'}</span></h2>${LIST.map(([k,n,d,u])=>`<div class="frnext"><span><b>${n}</b> · ${d} <small>Best: ${best(k)||'—'} ${u}</small></span><div class="frbtns"><button class="go" type="button" data-ct="${k}">Play</button></div></div>`).join('')}<p class="frnote">Each one takes about a minute and pays coins for the shop.</p>`}
+  const hud=document.createElement('div');hud.className='cthud';hud.hidden=true;($('stage')||$('pitch')||$('fieldbox')).appendChild(hud);
+  {const css=document.createElement('style');css.textContent=`.cthud{position:absolute;left:50%;top:10px;transform:translateX(-50%);z-index:6;background:rgba(10,14,18,.88);color:#fff;border:1px solid rgba(255,194,61,.6);border-radius:10px;padding:6px 14px;font:800 16px system-ui,sans-serif;text-align:center;pointer-events:none}.cthud small{display:block;font:600 12px system-ui,sans-serif;color:#cfd8d2}html.contest .skclock{display:none!important}`;document.head.appendChild(css)}
+  function show(t,s){hud.hidden=false;hud.innerHTML=`${t}${s?`<small>${s}</small>`:''}`}
+  function start(k){const def=LIST.find(x=>x[0]===k);if(!def)return;C={k,def,n:0,score:0,max:0,log:[],over:false,makes:0};document.documentElement.classList.add('contest');
+    G.fr=false;G.tourn=null;G.tvenue=null;G.daily=null;
+    if(k==='breakaway'||k==='drill'){G.skills='contest';startGame();setTimeout(()=>{try{endWarmup()}catch(e){}setTimeout(k==='breakaway'?breakaway:drill,120)},150)}
+    else{G.skills=true;startGame()}
+    tick()}
+  function tick(){if(!C||C.over){hud.hidden=true;return}const k=C.k;
+    if(k==='breakaway')show(`Breakaway ${Math.min(5,C.n+1)} of 5`,`Goals: ${C.score}`);
+    else if(k==='speed')show(`Shot ${Math.min(5,C.n+1)} of 5`,`Fastest goal: ${C.max?C.max+' mph':'—'}${C.last?` · last shot ${C.last} mph`:''}`);
+    else if(k==='three'){const w=G.warm;show(`3-point contest · ${w?Math.max(0,Math.ceil(60-w.t)):60}s`,`Points: ${C.score}${C.makes%5===4?' · next make is the money ball!':''}`)}
+    else if(k==='dunk')show(`Dunk ${Math.min(3,C.n+1)} of 3`,`Total: ${C.score.toFixed(1)}${C.log.length?' · last: '+C.log[C.log.length-1]:''}`);
+    else if(k==='drill')show('2-minute drill',`Down ${Math.max(0,G.score[1]-G.score[0])} · ${Math.floor(G.clock/60)}:${String(Math.floor(G.clock%60)).padStart(2,'0')} left`);
+    setTimeout(tick,200)}
+  function finish(result,unit,pay,extra){if(!C||C.over)return;C.over=true;document.documentElement.classList.remove('contest');hud.hidden=true;const k=C.k,b=best(k),nb=result>b;if(nb)setBest(k,result);
+    try{coinsAdd(pay,C.def[1])}catch(e){}G.phase='final';try{speechSynthesis.cancel()}catch(e){}if(nb&&result>0)try{roar(.8,3)}catch(e){}
+    card(C.def[1],`${extra||''}${result} ${unit}. ${nb&&result>0?'New best!':`Your best: ${Math.max(b,result)}.`}`,[{label:'Try again',fn:()=>{hideCard();start(k)}},{label:'Menu',fn:()=>{C=null;toDemo()}}]);render()}
+  // ---- hockey: five breakaways, built on the shootout
+  function breakaway(){if(!C)return;startShootout();G.so.contest=true}
+  if(CELESPORT==='hockey'){const _sn=soNext;soNext=function(){const so=G.so;if(so&&so.contest&&C){C.n=so.res[0].length;C.score=so.res[0].reduce((a,b)=>a+b,0);
+      if(C.n>=5){so.done=true;for(const p of P)p.active=true;finish(C.score,C.score===1?'goal':'goals',10+C.score*12,'')}else{so.turn=0;so.round++;soAttempt()}return}return _sn.apply(this,arguments)}}
+  // ---- football: the two-minute drill
+  function drill(){if(!C)return;G.q=4;G.clock=120;G.score=[17,21];G.poss=0;G.ballOn=25;G.down=1;G.togo=10;G.ballX=MID;G.pendRun=0;try{startCall()}catch(e){}say('Two minutes left, down by four, 75 yards to go. Let\'s see what you\'ve got.',3)}
+  if(CELESPORT==='football'){const _st=step;step=function(){const r=_st.apply(this,arguments);if(on()&&C.k==='drill'&&G.score[0]>=G.score[1]+2){const left=Math.ceil(G.clock);G.patPending=false;finish(left,'seconds left',40+Math.floor(left/2),'Touchdown! You won it with ')}return r};
+    AFTER.push(()=>{if(on()&&C.k==='drill')finish(0,'seconds left',5,G.score[0]>G.score[1]?'':'Time ran out. ')})}
+  // ---- lacrosse: fastest shot
+  if(CELESPORT==='lacrosse'){const _sh=WP.shoot;WP.shoot=function(pw){const r=_sh.apply(this,arguments);if(on()&&C.k==='speed'&&r!==false){C.n++;C.last=Math.round((26+pw*24)*2.045);C.pend=C.last;C.endAt=C.n>=5?performance.now()+2200:0}return r};
+    const _wc=warmCheer;warmCheer=function(made){const r=_wc.apply(this,arguments);if(on()&&C.k==='speed'&&made&&C.pend){C.max=Math.max(C.max,C.pend);C.pend=0;floatText(WP.u,C.max+' mph','#ffc23d')}return r};
+    setInterval(()=>{if(on()&&C.k==='speed'&&C.endAt&&performance.now()>C.endAt)finish(C.max,'mph',8+Math.floor(C.max/6),C.max?'Fastest goal: ':'No goals. ')},250)}
+  // ---- basketball: threes and dunks
+  if(CELESPORT==='basketball'){let lastKind=null,lastThree=false,lastSpeed=0,lastX=false;
+    const _ss=startShot;startShot=function(p,user){const r=_ss.apply(this,arguments);if(on()&&p===WP.u&&p.shot){lastKind=p.shot.kind;lastThree=!!p.shot.three;lastSpeed=hyp(p.vx,p.vy);lastX=p.xT>0||GT-(p.ankleAt||-9)<1.2;
+        if(C.k==='dunk'){if(lastKind!=='dunk'){toast('That one won\'t count: drive all the way to the rim for a dunk')}else C.n++}}return r};
+    const _wc=warmCheer;warmCheer=function(made){const r=_wc.apply(this,arguments);if(!on())return r;
+      if(C.k==='three'&&made&&lastThree){C.makes++;const money=C.makes%5===0;C.score+=money?2:1;floatText(WP.u,money?'Money ball! +2':'+1',money?'#ffc23d':'#3ddc84')}
+      if(C.k==='dunk'&&lastKind==='dunk'){const base=made?7.2+Math.min(1.4,lastSpeed/14)+(lastX?.7:0):5;const js=[0,1,2].map(()=>Math.min(10,Math.round((base+(Math.random()-.5)*.6)*10)/10));const tot=js.reduce((a,b)=>a+b,0);C.score+=tot;C.log.push(js.join(' · '));
+        callout(made?'Judges: '+js.join(' · '):'Missed dunk',made?`${tot.toFixed(1)} points`:'The judges give it '+tot.toFixed(1),'#ffc23d');if(C.n>=3)setTimeout(()=>finish(Math.round(C.score*10)/10,'points',8+Math.floor(C.score/4),'Dunk total: '),2200)}
+      return r}}
+  // the 60-second clock (and skipping warmups) ends the shooting contests
+  {const _f=SKILLS.finish;SKILLS.finish=function(w){if(on()){if(C.k==='three')return finish(C.score,'points',8+C.score*2,'3-point total: ');if(C.k==='speed')return finish(C.max,'mph',8+Math.floor(C.max/6),C.max?'Fastest goal: ':'');if(C.k==='dunk')return finish(Math.round(C.score*10)/10,'points',8+Math.floor(C.score/4),'Dunk total: ')}return _f.apply(this,arguments)}}
+  {const _ew=endWarmup;endWarmup=function(){if(on()&&G.skills===true&&G.warm){SKILLS.finish(G.warm);return}return _ew.apply(this,arguments)}}
+  setInterval(()=>{if(C&&!$('menu').hidden){if(!C.over)C.over=true;C=null;document.documentElement.classList.remove('contest');hud.hidden=true}},400);
+  render();return{on,start,get C(){return C}}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'lacrosse',otPts:1,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b;return[frPois(9+d*10),frPois(9-d*10)]}};
