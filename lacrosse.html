@@ -309,8 +309,8 @@ function updateHolds(t){ // offsides counting: 4 back, 3 forward; middies fill i
   for(const p of P)if(p.team===t&&p.role!=='M'){if((p.x-MX)*dir<0)def++;else off++}
   const ms=P.filter(p=>p.team===t&&p.role==='M').sort((a,b)=>(a.x-b.x)*dir);
   ms.forEach(m=>m.hold=null);
-  for(let i=0;i<Math.max(0,4-def)&&i<3;i++)ms[i].hold='back';
-  for(let i=0;i<Math.max(0,3-off)&&i<3;i++){const m=ms[2-i];if(!m.hold)m.hold='fwd'}
+  for(let i=0;i<Math.max(0,4-def)&&i<ms.length;i++)ms[i].hold='back';
+  for(let i=0;i<Math.max(0,3-off)&&i<ms.length;i++){const m=ms[ms.length-1-i];if(m&&!m.hold)m.hold='fwd'}
 }
 function keepOutOfCrease(p,tx,ty){
   const gx=atkGoal(p.team),dx=tx-gx,dy=ty-MY,d=hyp(dx,dy);
@@ -2715,7 +2715,7 @@ const FR=(()=>{
 })();
 
 let last=performance.now();
-function loop(now){const rdt=Math.min(.05,(now-last)/1000);last=now;if(!G.paused&&!G.demo&&G.phase!=='break'&&G.phase!=='final'){try{step(rdt*SPEEDS[G.speed].k,rdt)}catch(e){console.error(e)}}try{draw();hud()}catch(e){console.error(e);try{if(ctx.reset)ctx.reset()}catch(_){}}requestAnimationFrame(loop)}
+function loop(now){const rdt=Math.min(.05,(now-last)/1000);last=now;if(!G.paused&&!G.demo&&G.phase!=='break'&&G.phase!=='final'){try{step(rdt*SPEEDS[G.speed].k,rdt);loop.bad=0}catch(e){console.error(e);loop.bad=(loop.bad||0)+1;if(loop.bad>40){loop.bad=0;try{setupFaceoff();toast('Play restarted')}catch(e2){console.error(e2)}}}}try{draw();hud()}catch(e){console.error(e);try{if(ctx.reset)ctx.reset()}catch(_){}}requestAnimationFrame(loop)}
 renderMenu();buildTeams();resize();new ResizeObserver(resize).observe($('fieldbox').parentElement);addEventListener('resize',resize);
 newGame(true);showStartCard();
 requestAnimationFrame(loop);

@@ -2939,7 +2939,7 @@ const FR=(()=>{
 })();
 
 let last=performance.now();
-function loop(now){const rdt=Math.min(.05,(now-last)/1000);last=now;smoothKeys(rdt);if(!G.paused&&!G.demo&&G.phase!=='break'&&G.phase!=='final'){try{step(rdt*SPEEDS[G.speed].k,rdt)}catch(e){console.error(e)}}try{draw();hud()}catch(e){console.error(e);try{if(ctx.reset)ctx.reset()}catch(_){}}requestAnimationFrame(loop)}
+function loop(now){const rdt=Math.min(.05,(now-last)/1000);last=now;smoothKeys(rdt);if(!G.paused&&!G.demo&&G.phase!=='break'&&G.phase!=='final'){try{step(rdt*SPEEDS[G.speed].k,rdt);loop.bad=0}catch(e){console.error(e);loop.bad=(loop.bad||0)+1;if(loop.bad>40){loop.bad=0;try{startCall();toast('Play restarted')}catch(e2){console.error(e2)}}}}try{draw();hud()}catch(e){console.error(e);try{if(ctx.reset)ctx.reset()}catch(_){}}requestAnimationFrame(loop)}
 renderMenu();resize();new ResizeObserver(resize).observe($('pitch'));addEventListener('resize',resize);
 newGame(true);showStartCard();
 requestAnimationFrame(loop);
