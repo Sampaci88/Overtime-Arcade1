@@ -79,17 +79,26 @@ html.touch.playing .pbar{display:flex}
 const $=id=>document.getElementById(id),root=document.documentElement,cv=$('cv'),ctx=cv.getContext('2d'),TOUCH=matchMedia('(pointer: coarse)').matches;if(TOUCH)root.classList.add('touch');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),hyp=Math.hypot,pick=a=>a[Math.floor(Math.random()*a.length)];
 /* ---------- the park: one surface you ride on, in meters, y is up ---------- */
-const L=96;
-const path=[];function pt(x,y,tag){path.push({x,y,tag:tag||''})}
+/* ---------- the parks: each one is a single surface you ride on, in meters, y is up ---------- */
+let L=96,COP=4,PARK='park',path=[],PLEN=0,RAILS=[],GAPS=[];
+function pt(x,y,tag){path.push({x,y,tag:tag||''})}
 function arc(cx,cy,r,a0,a1,n,tag){for(let i=0;i<=n;i++){const a=a0+(a1-a0)*i/n;pt(cx+Math.cos(a)*r,cy+Math.sin(a)*r,tag)}}
-pt(0,4,'vert');pt(0,3.6,'vert');arc(3.6,3.6,3.6,Math.PI,Math.PI*1.5,16,'qp');           // left quarter pipe
-pt(12,0);pt(14.5,1.2,'kick');pt(15.2,1.2,'top');pt(19.8,1.2,'top');pt(22.6,0,'down');       // funbox
-pt(37,0);pt(40.5,1.8,'kick');pt(41,1.8,'top');pt(44,1.8,'top');pt(48,0,'stairs');           // stair set (ride down them and you bail)
-pt(55,0);pt(57.6,1.6,'kick');pt(58,1.6,'top');pt(63,1.6,'top');pt(66.2,0,'down');           // table gap
-pt(L-3.6,0);arc(L-3.6,3.6,3.6,Math.PI*1.5,Math.PI*2,16,'qp');pt(L,4,'vert');               // right quarter pipe
-let acc=0;for(let i=0;i<path.length;i++){if(i)acc+=hyp(path[i].x-path[i-1].x,path[i].y-path[i-1].y);path[i].s=acc}const PLEN=acc;
-const RAILS=[{name:'Flat Rail',x0:26,y0:.9,x1:33,y1:.9,kind:'rail'},{name:'Funbox Ledge',x0:15.4,y0:1.32,x1:19.6,y1:1.32,kind:'ledge'},{name:'Handrail',x0:44,y0:2.75,x1:48,y1:.95,kind:'rail'},{name:'Kink Rail',x0:70,y0:.75,x1:76,y1:.75,kind:'rail'}];
-const GAPS=[{name:'Funbox Gap',from:[13.8,15.3],to:[19.9,23],pts:400},{name:'Stair Set',from:[43,44.4],to:[47.6,56],pts:600},{name:'Table Gap',from:[56.8,58.2],to:[63.1,67],pts:700},{name:'Ledge to Rail',rail:true,from:[15,20],to:[26,33],pts:900}];
+const PARKS={
+  park:{name:'Shred Park',L:96,cop:4,build(){pt(0,4,'vert');pt(0,3.6,'vert');arc(3.6,3.6,3.6,Math.PI,Math.PI*1.5,16,'qp');           // left quarter pipe
+    pt(12,0);pt(14.5,1.2,'kick');pt(15.2,1.2,'top');pt(19.8,1.2,'top');pt(22.6,0,'down');       // funbox
+    pt(37,0);pt(40.5,1.8,'kick');pt(41,1.8,'top');pt(44,1.8,'top');pt(48,0,'stairs');           // stair set (ride down them and you bail)
+    pt(55,0);pt(57.6,1.6,'kick');pt(58,1.6,'top');pt(63,1.6,'top');pt(66.2,0,'down');           // table gap
+    pt(96-3.6,0);arc(96-3.6,3.6,3.6,Math.PI*1.5,Math.PI*2,16,'qp');pt(96,4,'vert')},
+    rails:[{name:'Flat Rail',x0:26,y0:.9,x1:33,y1:.9,kind:'rail'},{name:'Funbox Ledge',x0:15.4,y0:1.32,x1:19.6,y1:1.32,kind:'ledge'},{name:'Handrail',x0:44,y0:2.75,x1:48,y1:.95,kind:'rail'},{name:'Kink Rail',x0:70,y0:.75,x1:76,y1:.75,kind:'rail'}],
+    gaps:[{name:'Funbox Gap',from:[13.8,15.3],to:[19.9,23],pts:400},{name:'Stair Set',from:[43,44.4],to:[47.6,56],pts:600},{name:'Table Gap',from:[56.8,58.2],to:[63.1,67],pts:700},{name:'Ledge to Rail',rail:true,from:[15,20],to:[26,33],pts:900}]},
+  bowl:{name:'Cardinal Bowl',L:66,cop:4.5,build(){pt(0,4.5,'vert');pt(0,4.1,'vert');arc(4.1,4.1,4.1,Math.PI,Math.PI*1.5,18,'qp');    // the deep end
+    pt(21,0);pt(24.5,1.5,'kick');pt(25,1.5,'top');pt(30,1.5,'top');pt(34,0,'down');           // the hip
+    pt(66-4.1,0);arc(66-4.1,4.1,4.1,Math.PI*1.5,Math.PI*2,18,'qp');pt(66,4.5,'vert')},
+    rails:[{name:'Bowl Rail',x0:8,y0:.85,x1:16,y1:.85,kind:'rail'},{name:'Down Rail',x0:30.2,y0:2.5,x1:34,y1:.95,kind:'rail'},{name:'Long Ledge',x0:40,y0:.55,x1:54,y1:.55,kind:'ledge'}],
+    gaps:[{name:'Hip Gap',from:[23,25],to:[30.2,35],pts:700},{name:'Rail to Down Rail',rail:true,from:[8,16],to:[30,34],pts:1000},{name:'Down Rail to Ledge',rail:true,from:[30,34],to:[40,54],pts:900}]}};
+function buildPark(id){if(!PARKS[id])id='park';const P0=PARKS[id];PARK=id;L=P0.L;COP=P0.cop;path=[];P0.build();RAILS=P0.rails;GAPS=P0.gaps;
+  let acc=0;for(let i=0;i<path.length;i++){if(i)acc+=hyp(path[i].x-path[i-1].x,path[i].y-path[i-1].y);path[i].s=acc}PLEN=acc}
+let parkId='park';try{parkId=localStorage.getItem('shred-park')||'park'}catch(e){}buildPark(parkId);
 function along(s){s=clamp(s,0,PLEN);let i=1;while(i<path.length-1&&path[i].s<s)i++;const a=path[i-1],b=path[i],f=(s-a.s)/((b.s-a.s)||1);return{x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f,tx:(b.x-a.x)/((b.s-a.s)||1),ty:(b.y-a.y)/((b.s-a.s)||1),i,tag:b.tag}}
 function groundAt(x){for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i];if(b.x-a.x>1e-6&&x>=a.x&&x<=b.x){const f=(x-a.x)/(b.x-a.x);return{y:a.y+(b.y-a.y)*f,s:a.s+(b.s-a.s)*f,tag:b.tag,ang:Math.atan2(b.y-a.y,b.x-a.x)}}}return null}
 /* ---------- tricks and achievements ---------- */
@@ -103,7 +112,8 @@ for(const t of Object.values(GRABS))addA('t:'+t[0],t[0],'Land a '+t[0]);
 for(const t of ['50-50','Nosegrind','5-0','Boardslide'])addA('t:'+t,t,'Land a '+t+' grind');
 for(const [d] of SPINS)addA('t:'+d,d+' spin','Land a '+d+(d===900?' on the big ramps':''));
 addA('t:Manual','Manual','Hold a manual');addA('t:Nose Manual','Nose Manual','Hold a nose manual');
-for(const g of GAPS)addA('g:'+g.name,g.name,'Clear the '+g.name);
+for(const P0 of Object.values(PARKS))for(const g of P0.gaps)addA('g:'+g.name,g.name,'Clear the '+g.name+(P0.name!=='Shred Park'?' at '+P0.name:''));
+addA('skate','S.K.A.T.E. Champ','Beat Rival in a Game of S.K.A.T.E.');addA('bowl540','Bowl Rider','Land a 540 at Cardinal Bowl');
 addA('c5','Combo x5','Land a 5-trick combo');addA('c10','Combo x10','Land a 10-trick combo');addA('p10k','Ten Grand','Land a 10,000-point combo');addA('p50k','Fifty Grand','Land a 50,000-point combo');
 addA('grind3','Grind King','Grind for 3 seconds in one go');addA('man5','Wheelie Pop','Manual for 5 seconds in one go');addA('air','Big Air','Get 3 meters above the coping');addA('flipgrab','Flip and Grab','Land a flip and a grab in the same air');
 addA('session','Session Pro','Score 40,000 in a 2-minute session');addA('all','Park Legend','Unlock every other achievement');
@@ -133,7 +143,7 @@ function bank(){if(!S.combo.length)return;const n=S.combo.length,pts=comboScore(
   for(const c of S.combo){if(c.kind==='t')give('t:'+c.name);if(c.kind==='g')give('g:'+c.name)}
   if(n>=5)give('c5');if(n>=10)give('c10');if(pts>=10000)give('p10k');if(pts>=50000)give('p50k');
   flash(`${pts.toLocaleString()} points`,n>1?`${n}-trick combo`:S.combo[0].name);S.combo=[];S.comboPts=0;if(pts>=1500)chime()}
-function bail(why){if(S.st==='bail')return;S.st='bail';S.bailT=1.3;S.combo=[];S.comboPts=0;S.flip=null;S.grab=null;S.rail=null;S.man=null;grindSound(false);bailS();flash('Bail!',why||'');S.vx*=.3;S.v=0}
+function bail(why){if(S.st==='bail')return;if(mode==='skate')skBail();S.st='bail';S.bailT=1.3;S.combo=[];S.comboPts=0;S.flip=null;S.grab=null;S.rail=null;S.man=null;grindSound(false);bailS();flash('Bail!',why||'');S.vx*=.3;S.v=0}
 function flash(t,s){S.msg={t,s,at:performance.now()}}
 function launch(vx,vy,fromVert){S.st='air';S.vx=vx;S.vy=vy;S.spin=0;S.flip=null;S.grab=null;S.airTricks=[];S.launchX=S.x;S.vert=fromVert||0;S.maxY=S.y;S.manT=0}
 function startGrind(r,dir){const name=GRINDS[dir][0],len=hyp(r.x1-r.x0,r.y1-r.y0),f=clamp((S.x-r.x0)/(r.x1-r.x0),0,1);S.st='grind';S.rail=r;S.rt=f;S.rv=(S.vx*(r.x1-r.x0)+S.vy*(r.y1-r.y0))/len;if(Math.abs(S.rv)<2.5)S.rv=2.5*Math.sign(S.vx||S.face);S.gname=name;S.gT=0;S.bal=0;S.balV=(Math.random()-.5)*.8;
@@ -142,22 +152,25 @@ function startGrind(r,dir){const name=GRINDS[dir][0],len=hyp(r.x1-r.x0,r.y1-r.y0
 function finishAir(toGrind){let ok=true;const sp=Math.abs(S.spin),near=Math.round(sp/180)*180;
   if(S.flip&&S.flipT<S.flip[2]-.06){bail('You landed before the board came around');return false}
   if(!toGrind&&Math.abs(sp-near)>45){bail('Over-rotated');return false}
+  const rec={flip:S.flip?S.flip[0]:null,grab:S.grab?S.grab[0]:null,spin:near};
   if(S.flip)addTrick(S.flip[0],S.flip[1],'t');
   if(S.grab){const extra=Math.round(S.grab[1]*Math.min(1.5,S.grabT*.8));addTrick(S.grab[0],S.grab[1]+extra,'t')}
   for(const[d,p]of SPINS)if(near===d)addTrick(String(d),p,'t');if(near>=1080)addTrick(near+' spin',4500,'t');
   if(S.flip&&S.grab)give('flipgrab');if(near%360===180)S.face*=-1;
   if(!S.combo.length||S.combo[S.combo.length-1].kind==='o'||S.airTricks.length===0&&!S.flip&&!S.grab&&near===0)addTrick('Ollie',S.vert?150:80,'o');
-  if(S.vert&&S.maxY-4>3)give('air');S.flip=null;S.grab=null;S.spin=0;return ok}
+  if(S.vert&&S.maxY-COP>3)give('air');if(PARK==='bowl'&&near>=540)give('bowl540');
+  if(mode==='skate'&&!toGrind)skAir(rec);S.flip=null;S.grab=null;S.spin=0;return ok}
 function checkGap(rail){const lx=rail&&S.launchRail?(S.launchRail.x0+S.launchRail.x1)/2:S.launchX;for(const g of GAPS)if(!!g.rail===!!rail&&lx>=g.from[0]&&lx<=g.from[1]&&S.x>=g.to[0]&&S.x<=g.to[1]){addTrick(g.name,g.pts,'g');flash(g.name.toUpperCase()+'!','Gap bonus');break}}
 function update(dt){if(S.time!=null&&S.st!=='done'){S.time-=dt;if(S.time<=0){S.time=0;endSession();return}}
   const ix=(K.right-K.left)+joy.x;
+  if(mode==='skate')skTick(dt);
   if(S.st==='bail'){S.bailT-=dt;S.vx*=1-dt*2;S.x=clamp(S.x+S.vx*dt,.6,L-.6);if(S.bailT<=0){const g=groundAt(clamp(S.x,4,L-4));S.st='ground';S.s=g?g.s:12;S.v=0}return}
   if(S.st==='ground'||S.st==='manual'){const a=along(S.s);S.x=a.x;S.y=a.y;
     if(a.tag==='stairs'){bail('Ate the stairs');return}
     // gravity along the slope, pushing, and rolling friction
     let acc=-20*a.ty;if(S.st==='ground'){if(ix*S.face>.3&&Math.abs(S.v)<10)acc+=7*S.face;else if(ix*S.face<-.3)acc-=6*Math.sign(S.v||S.face);
       // pumping: lean into the direction you're rolling on the way down a ramp and you pick up speed
-      if(ix*S.face>.3&&S.v*a.ty<0&&Math.abs(a.ty)>.15)acc+=10*S.face}
+      if(ix*S.face>.3&&S.v*a.ty<0&&Math.abs(a.ty)>.15)acc+=12*S.face}
     S.v+=acc*dt;S.v-=S.v*.06*dt;S.v=clamp(S.v,-21,21);if(Math.abs(S.v)<.25&&ix*S.face<-.3){S.face*=-1;S.v=0}
     if(Math.abs(S.v)>.3)S.face=Math.sign(S.v)*1;
     const prev=along(S.s),ns=S.s+S.v*dt;
@@ -187,7 +200,7 @@ function update(dt){if(S.time!=null&&S.st!=='done'){S.time-=dt;if(S.time<=0){S.t
   if(S.x<.3){S.x=.3;S.vx=Math.abs(S.vx)*.3}if(S.x>L-.3){S.x=L-.3;S.vx=-Math.abs(S.vx)*.3}
   if(Math.abs(ix)>.3)S.spin+=ix*(S.vert?720:560)*dt;
   if(S.flip)S.flipT+=dt;if(S.grab){if(K.grab)S.grabT+=dt;}
-  if(S.vert){if(S.vy<0&&S.y<=4){// back in the ramp
+  if(S.vert){if(S.vy<0&&S.y<=COP){// back in the ramp
       const ok=finishAir(false);if(!ok)return;S.st='ground';S.s=S.vert<0?0.01:PLEN-.01;S.v=S.vert<0?Math.abs(S.vy):-Math.abs(S.vy);S.face=Math.sign(S.v);S.vert=0;S.bankT=.6;land()}return}
   // grind lock
   if(K.grind){for(const r of RAILS){if(S.x<Math.min(r.x0,r.x1)-.1||S.x>Math.max(r.x0,r.x1)+.1)continue;const f=(S.x-r.x0)/(r.x1-r.x0),ry=r.y0+(r.y1-r.y0)*f;if(S.vy<=0&&S.y>=ry-.12&&S.y<=ry+.45&&r!==S.launchRail){S.y=ry;startGrind(r,dirNow());return}}}
@@ -199,6 +212,31 @@ function update(dt){if(S.time!=null&&S.st!=='done'){S.time-=dt;if(S.time<=0){S.t
 function endSession(){S.st='done';bank();const best=+(localStorage.getItem('shred-best')||0),nb=S.score>best;if(nb)try{localStorage.setItem('shred-best',String(S.score))}catch(e){}if(S.score>=40000)give('session');
   const coins=10+Math.floor(S.score/2000);addCoins(coins);
   showCard(`<h2>Session over</h2><p class="bigt">${S.score.toLocaleString()} points</p><p>Best combo: ${S.best.toLocaleString()} · ${nb?'New best session!':`Your best: ${best.toLocaleString()}`}</p><p>+${coins} coins for the Overtime Arcade shop</p><div class="row"><button class="go" type="button" data-a="session">Go again</button><button class="btn" type="button" data-a="free">Free skate</button></div>`)}
+/* ---------- Game of S.K.A.T.E. against Rival ---------- */
+const WORD='SKATE',POOL=[{flip:'Kickflip'},{flip:'Heelflip'},{flip:'Pop Shove-it'},{grab:'Indy'},{grab:'Melon'},{spin:360},{flip:'Kickflip',spin:180},{flip:'360 Flip'},{flip:'Varial Kickflip'},{grab:'Method'},{flip:'Heelflip',spin:180},{grab:'Stalefish',spin:180},{grab:'Nose Grab'},{spin:540}];
+let SK=null;
+const tname=t=>[t.flip,t.grab].filter(Boolean).join(' + ')+(t.spin?((t.flip||t.grab)?' ':'')+t.spin:'');
+const letters=n=>WORD.slice(0,n).split('').join('.')+(n?'.':'');
+function skStart(){SK={you:0,cpu:0,state:'cpuSet',t:2.5,target:null,timer:0,msg:'Rival is up first.'}}
+function skSay(m){SK.msg=m;flash(m.split('. ')[0],m.split('. ').slice(1).join('. '))}
+function skTick(dt){if(!SK||SK.state==='done')return;
+  if(SK.state==='cpuSet'){SK.t-=dt;if(SK.t>0)return;const t=POOL[Math.floor(Math.random()*POOL.length)],parts=(t.flip?1:0)+(t.grab?1:0)+(t.spin?1:0),p=.8-parts*.07+(t.spin>=540?-.12:0);
+    if(Math.random()<p){SK.target=t;SK.state='youMatch';SK.timer=25;skSay(`Rival lands a ${tname(t)}. Match it`)}else{SK.state='youSet';SK.timer=30;skSay(`Rival misses a ${tname(t)}. Your turn to set a trick`)}return}
+  if(SK.state==='cpuMatch'){SK.t-=dt;if(SK.t>0)return;const t=SK.target,parts=(t.flip?1:0)+(t.grab?1:0)+(t.spin?1:0),p=.72-parts*.09-(t.spin>=540?.15:0);
+    if(Math.random()<p){SK.state='youSet';SK.timer=30;skSay(`Rival matches your ${tname(t)}. Set another one`)}else{SK.cpu++;if(SK.cpu>=5)return skEnd(true);SK.state='youSet';SK.timer=30;skSay(`Rival misses! Rival has ${letters(SK.cpu)}. Set another one`)}return}
+  if(SK.state==='youMatch'||SK.state==='youSet'){SK.timer-=dt;if(SK.timer<=0){if(SK.state==='youMatch')skMiss('Out of time');else{SK.state='cpuSet';SK.t=2;skSay('Out of time. Rival sets the next one')}}}}
+function skAir(r){if(!SK||S.st==='bail')return;const any=r.flip||r.grab||r.spin>=180;
+  if(SK.state==='youMatch'){const t=SK.target,ok=(!t.flip||t.flip===r.flip)&&(!t.grab||t.grab===r.grab)&&(!t.spin||t.spin===r.spin);if(ok){SK.state='cpuSet';SK.t=2.5;skSay(`You matched the ${tname(t)}. Rival sets again`)}else skMiss(any?`That was a ${tname(r)}, not a ${tname(t)}`:'No trick')}
+  else if(SK.state==='youSet'&&any){SK.target={flip:r.flip||undefined,grab:r.grab||undefined,spin:r.spin>=180?r.spin:undefined};SK.state='cpuMatch';SK.t=2.5;skSay(`You set a ${tname(SK.target)}. Rival's turn`)}}
+function skBail(){if(!SK)return;if(SK.state==='youMatch')setTimeout(()=>skMiss('You bailed'),10);else if(SK.state==='youSet'){SK.state='cpuSet';SK.t=2.5;setTimeout(()=>skSay('You bailed. Rival sets the next one'),10)}}
+function skMiss(why){SK.you++;if(SK.you>=5)return skEnd(false);SK.state='cpuSet';SK.t=2.5;skSay(`${why}. You have ${letters(SK.you)}`)}
+function skEnd(won){SK.state='done';if(won){give('skate');addCoins(40)}else addCoins(8);
+  showCard(`<h2>${won?'You win!':'Rival wins'}</h2><p class="bigt">You: ${letters(SK.you)||'clean'} · Rival: ${letters(SK.cpu)||'clean'}</p><p>${won?'+40 coins':'+8 coins'} for the Overtime Arcade shop</p><div class="row"><button class="go" type="button" data-a="skate">Play again</button><button class="btn" type="button" data-a="free">Free skate</button></div>`)}
+function drawSK(){if(mode!=='skate'||!SK)return;const top=TOUCH&&root.classList.contains('playing')?44:0,x=cw-10,y=10+top;ctx.textAlign='right';ctx.textBaseline='middle';
+  const row=(lbl,n,yy)=>{ctx.fillStyle='rgba(10,14,18,.82)';ctx.fillRect(x-240,yy,240,30);ctx.fillStyle='#fff';ctx.font='800 15px "Work Sans",sans-serif';ctx.textAlign='left';ctx.fillText(lbl,x-230,yy+15);ctx.textAlign='right';ctx.font='900 22px "Big Shoulders Display",sans-serif';
+    let xx=x-12;for(let i=4;i>=0;i--){ctx.fillStyle=i<n?'#ff6b6b':'#3a4452';ctx.fillText(WORD[i],xx,yy+16);xx-=24}};
+  row('YOU',SK.you,y);row('RIVAL',SK.cpu,y+34);
+  if(SK.state==='youMatch'||SK.state==='youSet'){ctx.fillStyle='rgba(10,14,18,.82)';ctx.fillRect(x-240,y+68,240,30);ctx.fillStyle='#ffc23d';ctx.font='800 14px "Work Sans",sans-serif';ctx.textAlign='left';ctx.fillText((SK.state==='youMatch'?'Match: '+tname(SK.target):'Set any trick')+` · ${Math.ceil(SK.timer)}s`,x-230,y+83)}}
 /* ---------- input: buttons pressed in the air ---------- */
 function press(b){if(!S||paused||S.st==='done')return;audio();
   if(b==='flip'&&S.st==='air'&&!S.flip){const f=FLIPS[dirNow()];S.flip=f;S.flipT=0;S.airTricks.push(f[0]);S.trickText=f[0]}
@@ -209,25 +247,26 @@ function resize(){const r=$('stage').getBoundingClientRect();dpr=Math.min(device
 addEventListener('resize',()=>setTimeout(resize,60));
 const X=x=>(x-camX)*Z+cw/2,Y=y=>ch*(TOUCH?.6:.74)-(y-camY)*Z;
 const city=(()=>{const a=[];let x=-20;while(x<L+40){const w=3+Math.random()*6,h=4+Math.random()*9;a.push({x,w,h,c:pick(['#5b7fa6','#6d8fb3','#4f6f94','#7d9cbc']),win:Math.random()<.7});x+=w+.5+Math.random()*2}return a})();
-function drawWorld(){const sky=ctx.createLinearGradient(0,0,0,ch);sky.addColorStop(0,'#5ab0e2');sky.addColorStop(1,'#bfe3f4');ctx.fillStyle=sky;ctx.fillRect(0,0,cw,ch);
+const SIGNX_={park:30,bowl:44};let SIGNX=30;
+function drawWorld(){SIGNX=SIGNX_[PARK]||30;const sky=ctx.createLinearGradient(0,0,0,ch);sky.addColorStop(0,'#5ab0e2');sky.addColorStop(1,'#bfe3f4');ctx.fillStyle=sky;ctx.fillRect(0,0,cw,ch);
   // the city far behind
   for(const b of city){const px=(b.x-camX*.35)*Z*.6+cw/2,base=Y(0)-Z*1.8,w=b.w*Z*.6,h=b.h*Z*.38;if(px+w<0||px>cw)continue;ctx.globalAlpha=.55;ctx.fillStyle=b.c;ctx.fillRect(px,base-h,w,h);if(b.win){ctx.fillStyle='rgba(255,255,230,.35)';for(let yy=base-h+6;yy<base-6;yy+=12)for(let xx=px+4;xx<px+w-4;xx+=10)ctx.fillRect(xx,yy,4,5)}ctx.globalAlpha=1}
   // fence
   ctx.fillStyle='#8f9aa3';const fy=Y(0)-Z*2.2;ctx.fillRect(0,fy,cw,2);ctx.strokeStyle='rgba(120,130,140,.5)';ctx.lineWidth=1;for(let x=Math.floor((camX-cw/Z)/1)*1;x<camX+cw/Z;x+=.5){const px=X(x)*0+((x-camX*.8)*Z+cw/2);ctx.beginPath();ctx.moveTo(px,fy);ctx.lineTo(px+Z*.5,fy+Z*2.2);ctx.moveTo(px+Z*.5,fy);ctx.lineTo(px,fy+Z*2.2);ctx.stroke()}
   // the concrete and the ramps
   ctx.fillStyle='#b9b4aa';ctx.beginPath();ctx.moveTo(X(path[0].x)-Z*.4,ch);ctx.lineTo(X(path[0].x)-Z*.4,Y(path[0].y));for(const p of path)ctx.lineTo(X(p.x),Y(p.y));ctx.lineTo(X(L)+Z*.4,Y(path[path.length-1].y));ctx.lineTo(X(L)+Z*.4,ch);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#d6d1c6';ctx.fillRect(X(0)-Z*.6,Y(4)-Z*.1,Z*.6,ch);ctx.fillRect(X(L),Y(4)-Z*.1,Z*.6,ch);
+  ctx.fillStyle='#d6d1c6';ctx.fillRect(X(0)-Z*.6,Y(COP)-Z*.1,Z*.6,ch);ctx.fillRect(X(L),Y(COP)-Z*.1,Z*.6,ch);
   ctx.strokeStyle='#8c877d';ctx.lineWidth=3;ctx.beginPath();for(let i=0;i<path.length;i++){const p=path[i];i?ctx.lineTo(X(p.x),Y(p.y)):ctx.moveTo(X(p.x),Y(p.y))}ctx.stroke();
   // stairs drawn as steps
-  {const a=path.find(p=>p.x===44&&p.tag==='top'),b=path.find(p=>p.tag==='stairs');ctx.fillStyle='#a9a398';ctx.beginPath();const n=6;ctx.moveTo(X(a.x),Y(a.y));for(let k=0;k<n;k++){const x0=a.x+(b.x-a.x)*k/n,x1=a.x+(b.x-a.x)*(k+1)/n,y1=a.y+(b.y-a.y)*(k+1)/n;ctx.lineTo(X(x1),Y(a.y+(b.y-a.y)*k/n));ctx.lineTo(X(x1),Y(y1))}ctx.lineTo(X(a.x),Y(b.y));ctx.closePath();ctx.fill();
+  if(PARK==='park'){const a=path.find(p=>p.x===44&&p.tag==='top'),b=path.find(p=>p.tag==='stairs');ctx.fillStyle='#a9a398';ctx.beginPath();const n=6;ctx.moveTo(X(a.x),Y(a.y));for(let k=0;k<n;k++){const x0=a.x+(b.x-a.x)*k/n,x1=a.x+(b.x-a.x)*(k+1)/n,y1=a.y+(b.y-a.y)*(k+1)/n;ctx.lineTo(X(x1),Y(a.y+(b.y-a.y)*k/n));ctx.lineTo(X(x1),Y(y1))}ctx.lineTo(X(a.x),Y(b.y));ctx.closePath();ctx.fill();
     ctx.strokeStyle='#777168';ctx.lineWidth=2;ctx.stroke()}
   // coping
-  ctx.fillStyle='#e8e8e8';for(const cx of[0,L]){ctx.beginPath();ctx.arc(X(cx),Y(4),Z*.12,0,Math.PI*2);ctx.fill()}
+  ctx.fillStyle='#e8e8e8';for(const cx of[0,L]){ctx.beginPath();ctx.arc(X(cx),Y(COP),Z*.12,0,Math.PI*2);ctx.fill()}
   // rails and the ledge
   for(const r of RAILS){ctx.strokeStyle=r.kind==='ledge'?'#e0a33d':'#d9dde2';ctx.lineWidth=r.kind==='ledge'?Z*.12:Z*.09;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(X(r.x0),Y(r.y0));ctx.lineTo(X(r.x1),Y(r.y1));ctx.stroke();
     if(r.kind==='rail'){ctx.lineWidth=Z*.06;ctx.strokeStyle='#9aa2ab';for(const f of[.08,.92]){const x=r.x0+(r.x1-r.x0)*f,y=r.y0+(r.y1-r.y0)*f,g=groundAt(x);ctx.beginPath();ctx.moveTo(X(x),Y(y));ctx.lineTo(X(x),Y(g?g.y:0));ctx.stroke()}}}
   // a few cardinal-red details
-  ctx.fillStyle='#2b2f36';ctx.fillRect(X(30)-Z*2.2,Y(0)-Z*3.3,Z*4.4,Z*1);ctx.fillRect(X(30)-Z*1.6,Y(0)-Z*2.3,Z*.15,Z*.1+Z*2.3-Z*.1);ctx.fillRect(X(30)+Z*1.45,Y(0)-Z*2.3,Z*.15,Z*2.3);ctx.fillStyle='#c4161c';ctx.font=`900 ${Math.round(Z*.6)}px "Big Shoulders Display",sans-serif`;ctx.textAlign='center';ctx.fillText('SHRED PARK',X(30),Y(0)-Z*2.62);ctx.fillText('STC',X(60.5),Y(1.6)+Z*.55)}
+  ctx.fillStyle='#2b2f36';ctx.fillRect(X(SIGNX)-Z*2.2,Y(0)-Z*3.3,Z*4.4,Z*1);ctx.fillRect(X(SIGNX)-Z*1.6,Y(0)-Z*2.3,Z*.15,Z*.1+Z*2.3-Z*.1);ctx.fillRect(X(SIGNX)+Z*1.45,Y(0)-Z*2.3,Z*.15,Z*2.3);ctx.fillStyle='#c4161c';ctx.font=`900 ${Math.round(Z*.6)}px "Big Shoulders Display",sans-serif`;ctx.textAlign='center';ctx.fillText(PARKS[PARK].name.toUpperCase(),X(SIGNX),Y(0)-Z*2.62);ctx.fillText('STC',X(PARK==='park'?60.5:27.5),Y(PARK==='park'?1.6:1.5)+Z*.55)}
 function drawSkater(){const crouch=S.crouch*.25+(S.st==='air'&&S.grab?.35:0);let ang=0;
   if(S.st==='ground'||S.st==='manual'){const a=along(S.s);ang=Math.atan2(a.ty,a.tx)}else if(S.st==='grind'){ang=Math.atan2(S.rail.y1-S.rail.y0,S.rail.x1-S.rail.x0)}
   const px=X(S.x),py=Y(S.y);ctx.save();ctx.translate(px,py);ctx.rotate(-ang);
@@ -246,7 +285,7 @@ function drawSkater(){const crouch=S.crouch*.25+(S.st==='air'&&S.grab?.35:0);let
   ctx.fillStyle='#f1c9a5';ctx.beginPath();ctx.arc(Z*.08,sh-Z*.2,Z*.16,0,Math.PI*2);ctx.fill();ctx.fillStyle='#c4161c';ctx.beginPath();ctx.arc(Z*.08,sh-Z*.24,Z*.17,Math.PI,0);ctx.fill();ctx.restore();ctx.restore();
   // balance meter for manuals and grinds
   if(S.st==='manual'||S.st==='grind'){const w=Z*1.6,x=px-w/2,y=py-Z*2.4;ctx.fillStyle='rgba(10,14,18,.8)';ctx.fillRect(x,y,w,8);ctx.fillStyle=Math.abs(S.bal)>.7?'#ff5a4e':'#7ee08a';ctx.fillRect(px+S.bal*w/2-3,y-3,6,14)}}
-function drawHud(){const pad=10,top=TOUCH&&root.classList.contains('playing')?44:0;ctx.textAlign='left';ctx.textBaseline='middle';
+function drawHud(){drawSK();const pad=10,top=TOUCH&&root.classList.contains('playing')?44:0;ctx.textAlign='left';ctx.textBaseline='middle';
   ctx.fillStyle='rgba(10,14,18,.82)';ctx.fillRect(pad,pad+top,210,S.time!=null?58:36);ctx.fillStyle='#fff';ctx.font='900 22px "Big Shoulders Display",sans-serif';ctx.fillText(`SCORE ${S.score.toLocaleString()}`,pad+10,pad+top+18);
   if(S.time!=null){ctx.fillStyle=S.time<10?'#ff8a80':'#ffc23d';ctx.fillText(`TIME ${Math.floor(S.time/60)}:${String(Math.floor(S.time%60)).padStart(2,'0')}`,pad+10,pad+top+44)}
   if(S.combo.length){const s=S.combo.map(c=>c.name).join(' + '),line=`${S.comboPts.toLocaleString()} × ${S.combo.length}`;ctx.font='700 15px "Work Sans",sans-serif';ctx.textAlign='center';const w=Math.min(cw-40,Math.max(ctx.measureText(s).width,160)+30);
@@ -261,10 +300,12 @@ let last=0;function frame(t){const dt=Math.min(.033,(t-(last||t))/1000);last=t;t
 function showCard(h){$('ovc').innerHTML=h;$('ov').hidden=false;root.classList.remove('playing');grindSound(false);const b=$('ovc').querySelector('.go');if(b)b.focus()}
 function hideCard(){$('ov').hidden=true}
 function menu(){const best=+(localStorage.getItem('shred-best')||0);showCard(`<h2>Shred Park</h2><p>Skate the park, link tricks into combos, and unlock an achievement for every trick.</p>
-  <div class="row"><button class="go" type="button" data-a="free">Free skate</button><button class="go" type="button" data-a="session">2-minute session</button></div><p>${best?`Best session: ${best.toLocaleString()}`:'No sessions yet'} · Achievements: ${ACH.filter(a=>GOT[a.id]).length} of ${ACH.length}</p>
+  <div class="row">${Object.entries(PARKS).map(([k,p])=>`<button class="btn" type="button" data-park="${k}" style="${parkId===k?'border-color:#ffc23d;color:#ffc23d':''}">${p.name}</button>`).join('')}</div>
+  <div class="row"><button class="go" type="button" data-a="free">Free skate</button><button class="go" type="button" data-a="session">2-minute session</button><button class="go" type="button" data-a="skate">Game of S.K.A.T.E.</button></div><p>${best?`Best session: ${best.toLocaleString()}`:'No sessions yet'} · Achievements: ${ACH.filter(a=>GOT[a.id]).length} of ${ACH.length}</p>
   <div class="keys"><span><kbd>←</kbd><kbd>→</kbd> push, spin, balance</span><span><kbd>Space</kbd> ollie (hold, let go)</span><span><kbd>J</kbd> flip + direction</span><span><kbd>K</kbd> grab + direction</span><span><kbd>L</kbd> hold to grind</span><span><kbd>↓</kbd>/<kbd>↑</kbd> manual</span><span><kbd>R</kbd> reset</span></div>`)}
-$('ovc').addEventListener('click',e=>{const b=e.target.closest('button[data-a]');if(!b)return;audio();mode=b.dataset.a==='session'?'session':'free';reset();hideCard();if(TOUCH)root.classList.add('playing');setTimeout(resize,30);flash(mode==='session'?'2 minutes. Go!':'Free skate',TOUCH?'Push the joystick to get rolling':'Push with → to get rolling')});
-function resetRun(){if(!S)return;paused=false;$('bPause').textContent='Pause';$('pPause').textContent='Pause';grindSound(false);reset();hideCard();if(TOUCH)root.classList.add('playing');flash(mode==='session'?'Reset: 2 minutes. Go!':'Reset','Back at the start')}
+$('ovc').addEventListener('click',e=>{const pk=e.target.closest('button[data-park]');if(pk){parkId=pk.dataset.park;try{localStorage.setItem('shred-park',parkId)}catch(_){}buildPark(parkId);menu();return}
+  const b=e.target.closest('button[data-a]');if(!b)return;audio();mode=b.dataset.a==='session'?'session':b.dataset.a==='skate'?'skate':'free';buildPark(parkId);reset();hideCard();if(mode==='skate')skStart();else SK=null;if(TOUCH)root.classList.add('playing');setTimeout(resize,30);flash(mode==='session'?'2 minutes. Go!':mode==='skate'?'Game of S.K.A.T.E.':'Free skate',TOUCH?'Push the joystick to get rolling':'Push with → to get rolling')});
+function resetRun(){if(!S)return;if(mode==='skate')skStart();paused=false;$('bPause').textContent='Pause';$('pPause').textContent='Pause';grindSound(false);reset();hideCard();if(TOUCH)root.classList.add('playing');flash(mode==='session'?'Reset: 2 minutes. Go!':'Reset','Back at the start')}
 $('bReset').addEventListener('click',resetRun);$('pReset').addEventListener('click',resetRun);
 function togglePause(){if(!S)return;paused=!paused;$('bPause').textContent=paused?'Resume':'Pause';$('pPause').textContent=paused?'Resume':'Pause';grindSound(false)}
 $('bPause').addEventListener('click',togglePause);$('pPause').addEventListener('click',togglePause);$('bMenu').addEventListener('click',()=>{paused=false;menu()});$('pMenu').addEventListener('click',()=>{paused=false;menu()});
@@ -282,7 +323,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&S&&!paused
     for(const t of['pointerup','pointercancel','lostpointercapture'])b.addEventListener(t,()=>{K[k]=0});b.addEventListener('contextmenu',e=>e.preventDefault())}}
 resize();renderAch();menu();requestAnimationFrame(frame);
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
-window.__shred={get S(){return S},K,joy,update,press,reset,RAILS,path,give,GOT,ACH,along,groundAt,setMode:m=>{mode=m}};
+window.__shred={get S(){return S},K,joy,update,press,reset,get RAILS(){return RAILS},get path(){return path},get SK(){return SK},buildPark,skStart,setPark:id=>{parkId=id;buildPark(id)},give,GOT,ACH,along,groundAt,setMode:m=>{mode=m}};
 })();
 </script>
 </body></html>
