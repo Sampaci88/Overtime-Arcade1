@@ -312,10 +312,10 @@ function inputVec(){let ix=KS.x+joy.x,iy=KS.y+joy.y;if(VCAM){const d=dirOf(0),wx
 function userMove(p,dt,vv){const v=vv||inputVec(),k=SPEEDS[G.speed].k,sk=Math.sqrt(k);
   if(v.m>.12){const want=Math.atan2(v.y,v.x),ms=maxSpd(p)*v.m,sp=hyp(p.vx,p.vy);
     if(sp>2.5){const cur=Math.atan2(p.vy,p.vx),d=Math.atan2(Math.sin(want-cur),Math.cos(want-cur));
-      if(Math.abs(d)<2.2){const rate=(3.6+3.4*(1-Math.min(1,sp/ms)))/sk,r=clamp(d,-rate*dt,rate*dt),na=cur+r,keep=sp*(1-Math.abs(r)*.08);p.vx=Math.cos(na)*keep;p.vy=Math.sin(na)*keep}
+      if(Math.abs(d)<2.2){const rate=(4.4+3.6*(1-Math.min(1,sp/ms)))/sk,r=clamp(d,-rate*dt,rate*dt),na=cur+r,keep=sp*(1-Math.abs(r)*.045);p.vx=Math.cos(na)*keep;p.vy=Math.sin(na)*keep}
       else{accelTo(p,0,0,dt,p.acc*2.6/sk);p.stopT=.25}}
-    accelTo(p,v.x*ms,v.y*ms,dt,p.acc*1.7/sk);turnTo(p,want,dt,(puck.owner===p?7.5:9.5)/sk)}
-  else accelTo(p,0,0,dt,p.acc*.4/sk)}
+    {const sp2=hyp(p.vx,p.vy),burst=1.7+.8*Math.max(0,1-sp2/Math.max(1,ms));accelTo(p,v.x*ms,v.y*ms,dt,p.acc*burst/sk)}turnTo(p,want,dt,(puck.owner===p?9:11)/sk)}
+  else accelTo(p,0,0,dt,p.acc*.28/sk)}
 function steerAvoid(c,tx,ty,dt){
   const a0=Math.atan2(ty-c.y,tx-c.x);let best=a0,bs=1e9;
   for(let k=-4;k<=4;k++){const a=a0+k*.28,hx=Math.cos(a),hy=Math.sin(a);let pen=Math.abs(k)*.5;
@@ -336,7 +336,7 @@ function boards(e,r,rest){
   if(e.y<CR)cy=CR;else if(e.y>W-CR)cy=W-CR;
   if(cx!==null&&cy!==null){const dx=e.x-cx,dy=e.y-cy,d=hyp(dx,dy);if(d>cr){nx=dx/d;ny=dy/d;e.x=cx+nx*cr;e.y=cy+ny*cr;hit=true}}
   else{if(e.x<r){e.x=r;nx=-1;hit=true}else if(e.x>L-r){e.x=L-r;nx=1;hit=true}if(e.y<r){e.y=r;ny=-1;hit=true}else if(e.y>W-r){e.y=W-r;ny=1;hit=true}const m=hyp(nx,ny);if(m){nx/=m;ny/=m}}
-  if(hit){const vn=e.vx*nx+e.vy*ny;if(vn>0){e.vx-=(1+rest)*vn*nx;e.vy-=(1+rest)*vn*ny;e.vx*=.9;e.vy*=.9}}
+  if(hit){const vn=e.vx*nx+e.vy*ny;if(vn>0){const end=e===puck&&(e.x<GLX[0]+6||e.x>GLX[1]-6),rs=end?Math.min(rest,.18):rest,tk=end?.72:.9;e.vx-=(1+rs)*vn*nx;e.vy-=(1+rs)*vn*ny;e.vx*=tk;e.vy*=tk}}
   return hit;
 }
 function netRect(gx){const out=gx>RED?1:-1;return[Math.min(gx,gx+out*NETD),MY-NHW,Math.max(gx,gx+out*NETD),MY+NHW]}
@@ -607,6 +607,7 @@ function updatePuck(dt){
     if(G.phase!=='live')return;
   }
   const f=Math.max(0,1-(puck.h>0?.05:.11)*dt*(sp>0?1:0));puck.vx*=f;puck.vy*=f;
+  if(puck.h<=0){const s2=hyp(puck.vx,puck.vy),dec=7*dt;if(s2>dec){puck.vx*=(s2-dec)/s2;puck.vy*=(s2-dec)/s2}else{puck.vx=0;puck.vy=0}}
   if(sp<3&&puck.h<=0){puck.vx*=.9;puck.vy*=.9}
   lineChecks(px0);
   if(G.phase!=='live')return;
