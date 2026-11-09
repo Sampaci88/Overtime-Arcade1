@@ -2684,7 +2684,7 @@ const FR=(()=>{
   // dynasty: the next season keeps your school, settings, trophies and players (seniors graduate, freshmen join, everyone else improves)
   const FIRSTN=['Jack','Luke','Owen','Ryan','Cole','Nate','Ben','Matt','Drew','Evan','Liam','Max','Sam','Will','Tyler','Gavin','Aiden','Carter','Mason','Connor'],LASTN=['Kelly','Murphy','Brennan','Walsh','Doyle','Novak','Keller','Rossi','Fischer','Burke','Hayes','Quinn','Moran','Sullivan','Ritter','Lang','Dunn','Shea','Becker','Hoffman'];
   function freshman(s,r){const ln=LASTN[Math.floor(r()*LASTN.length)];return{name:s.name&&!/ /.test(s.name)?ln:`${FIRSTN[Math.floor(r()*FIRSTN.length)]} ${ln}`,num:s.num,r:68+Math.floor(r()*9),cls:1,fresh:true}}
-  function nextSeason(){const old=S,y=old.year||1,seed=Math.floor(Math.random()*1e9),r=rng(seed+7),me=CLUBS[old.my].abbr;
+  function nextSeason(){if(FRCFG.sport==='lacrosse'){const st=TOURNS.find(t=>t.key==='state');if(st)st.reset()}const old=S,y=old.year||1,seed=Math.floor(Math.random()*1e9),r=rng(seed+7),me=CLUBS[old.my].abbr;
     const tr=old.trophies||{ccl:[],state:[],mayhem:[],awards:[]};if(old.champ===old.my&&!tr.ccl.includes(y))tr.ccl.push(y);for(const a of awards())if(a.p.club===me)tr.awards.push({year:y,t:a.t,name:a.p.name});
     const rc=old.rec[old.my],hist=(old.history||[]).concat([{year:y,w:rc.w,l:rc.l,t:rc.t,champ:old.champ}]);
     const dyn=old.dyn||{slots:{}},grads=[];for(const k in dyn.slots){const s=dyn.slots[k];if(s.cls>=4){if(s.name)grads.push(s.name);dyn.slots[k]=freshman(s,r)}else{s.cls++;s.r=Math.min(120,(s.r||75)+2+Math.floor(r()*4))}}
@@ -2698,6 +2698,7 @@ const FR=(()=>{
     if(S.phase==='done')h+=`<div class="frbtns"><button class="go" type="button" data-fr="next">Start Year ${y+1}</button></div><p class="frnote">Seniors graduate, freshmen join, and everyone who stays gets better.</p>`;
     return h}
   function newSeason(my){
+    if(FRCFG.sport==='lacrosse'){const st=TOURNS.find(t=>t.key==='state');if(st)st.reset()}
     const seed=Math.floor(Math.random()*1e9),r=rng(seed+7),cfg=Object.assign({},PEND);WEEKS=cfg.games;
     S={v:3,year:1,trophies:{ccl:[],state:[],mayhem:[],awards:[]},history:[],dyn:{slots:{}},my,cfg,week:0,seed,sched:schedule(seed),res:[],phase:'season',str:CCL.map((c,i)=>FRCFG.strength?FRCFG.strength(i):.38+r()*.24),rec:CCL.map(()=>({w:0,l:0,t:0,pf:0,pa:0,st:''})),po:null,champ:null};
     save();render();
@@ -2729,6 +2730,7 @@ const FR=(()=>{
   const pts=r=>3*r.w+r.t;
   function seeds(){return[...Array(NT).keys()].sort((x,y)=>{const a=S.rec[x],b=S.rec[y],pa=FRCFG.pts?pts(a)/Math.max(1,a.w+a.l+a.t):(a.w+a.t/2)/Math.max(1,a.w+a.l+a.t),pb=FRCFG.pts?pts(b)/Math.max(1,b.w+b.l+b.t):(b.w+b.t/2)/Math.max(1,b.w+b.l+b.t);return pb-pa||(b.pf-b.pa)-(a.pf-a.pa)||b.pf-a.pf})}
   function startPlayoffs(){
+    if(FRCFG.sport==='lacrosse'){const sd=seeds();S.conf=sd[0];S.champ=sd[0];S.phase='state';S.po=null;S.stateStarted=false;return}
     const sd=seeds();S.phase='playoffs';S.conf=sd[0];
     S.po={seed:sd,names:['CCL Semifinal','CCL Championship'],rounds:[[[0,3],[1,2]].map(([i,j])=>({a:sd[i],b:sd[j],done:false}))]};
     if(!sd.includes(S.my))S.po.out=true;
@@ -2750,6 +2752,7 @@ const FR=(()=>{
     else{const rd=S.po.rounds[S.po.rounds.length-1],m=rd.find(x=>!x.done&&(x.a===S.my||x.b===S.my));const msa=m.a===S.my?s0:s1,msb=m.a===S.my?s1:s0;settle(m,msa,msb,pk0==null?null:pk0===0?S.my:opp);advance()}
     save();
     const r=S.rec[S.my];
+    if(S.phase==='state')return S.champ===S.my?`${nm(S.my)} are CCL regular-season champions! Next up: the state tournament.`:`${nm(S.champ)} win the CCL. Next up: the state tournament.`;
     if(S.phase==='done')return S.champ===S.my?`${nm(S.my)} are CCL champions!`:`${nm(S.champ)} win the CCL championship.`;
     if(S.phase==='playoffs'&&S.po.out)return`Season over at ${r.w}-${r.l}-${r.t}. You missed the playoffs.`;
     if(S.phase==='playoffs'&&!nextGame())return`Eliminated. ${nm(S.my)} finish ${r.w}-${r.l}-${r.t}.`;
@@ -2783,11 +2786,15 @@ const FR=(()=>{
   function settings(c,locked){return chipRow('Games','games',GAMES.map((g,i)=>({v:g,t:`${g} <small>each school ${TIMES[i]}</small>`})),c.games,locked)
     +chipRow('Difficulty','diff',DIFFS.map((d,i)=>({v:i,t:d.label})),c.diff)
     +chipRow(UNITS[0].toUpperCase()+UNITS.slice(1),'len',LENS.map((m,i)=>({v:i,t:`${m} min`})),c.len)}
+  // lacrosse: when the regular season ends, the state tournament starts on its own; when it's over, so is the season
+  function stateSync(){if(!S||S.phase!=='state'||!FRCFG.sport==='lacrosse')return;const st=TOURNS.find(t=>t.key==='state');if(!st)return;const s=st.status();
+    if(!s.started&&!S.stateStarted){S.stateStarted=true;save();st.start(S.my)}else if(s.started&&s.done){S.phase='done';S.stateWon=s.won;S.stateChamp=s.champ;save();if(s.won)setTimeout(()=>say(`${nm(S.my)} are the state champions!`,2),400)}}
+  setInterval(()=>{if(S&&S.phase==='state'&&!$('menu').hidden){const was=S.phase;stateSync();if(S.phase!==was)render()}},1000);
   function render(){
-    const el=$('frBody');if(!el)return;
+    const el=$('frBody');if(!el)return;stateSync();
     if(!PEND)PEND={games:(NT-1)*2,diff:G.diff,len:G[LK]||0};
     let h='';
-    if(!S){h=`<p>Play a ${PEND.games}-game CCL season. You play each of the other ${NT-1} schools ${TIMES[GAMES.indexOf(PEND.games)]}, home and away. All ${NT} make the playoffs, every round is one game${FRCFG.pk?' (ties go to a penalty shootout)':''}, and the regular-season conference champion gets the No. 1 seed. Your progress saves in this browser.</p>
+    if(!S){h=`<p>Play a ${PEND.games}-game CCL season. You play each of the other ${NT-1} schools ${TIMES[GAMES.indexOf(PEND.games)]}, home and away. ${FRCFG.sport==='lacrosse'?'The best regular-season record wins the CCL. Then everyone heads to the state tournament: 16 teams, win or go home.':`All ${NT} make the playoffs, every round is one game${FRCFG.pk?' (ties go to a penalty shootout)':''}, and the regular-season conference champion gets the No. 1 seed.`} Your progress saves in this browser.</p>
       ${settings(PEND,false)}
       <div class="frbtns"><button class="go" type="button" data-fr="new">Start CCL season with ${esc(nm(G.clubs[0]))}</button></div><p class="frnote">Pick your school in the list above first.</p>`}
     else{
@@ -2795,12 +2802,14 @@ const FR=(()=>{
       let status;
       if(S.phase==='season')status=`<b>${esc(nm(S.my))}</b> · ${rec} · Game ${S.week+1} of ${WEEKS}`;
       else if(S.phase==='playoffs')status=S.po.out?`<b>${esc(nm(S.my))}</b> finished ${rec} and missed the playoffs`:n?`<b>${esc(nm(S.my))}</b> · ${rec} · Playoffs: ${S.po.names[S.po.rounds.length-1]}`:`<b>${esc(nm(S.my))}</b> are out of the playoffs`;
-      else status=S.champ===S.my?`<b>${esc(nm(S.my))} are CCL champions!</b> Final record ${rec}`:`<b>${esc(nm(S.champ))}</b> won the CCL championship. You finished ${rec}`;
+      else if(S.phase==='state')status=(S.champ===S.my?`<b>${esc(nm(S.my))} are CCL champions!</b>`:`<b>${esc(nm(S.champ))}</b> won the CCL.`)+` You finished ${rec}. Now it's the state tournament: play your games in the State tournament box.`;
+      else status=(S.champ===S.my?`<b>${esc(nm(S.my))} are CCL champions!</b> Final record ${rec}`:`<b>${esc(nm(S.champ))}</b> won the CCL championship. You finished ${rec}`)+(S.stateChamp?(S.stateWon?' · <b>State champions too!</b>':` · State champion: ${esc(S.stateChamp)}`):'');
       if(!S.cfg)S.cfg={games:WEEKS,diff:G.diff,len:G[LK]||0};
       h=`<p class="frstatus">${(S.year||1)>1?`Year ${S.year} · `:''}${status}</p><p class="frnote">Season settings: ${esc(cfgText(S.cfg))} <button class="btn" type="button" data-fr="cfg">${editCfg?'Done':'Change'}</button></p>`+(editCfg?settings(S.cfg,true)+'<p class="frnote">The number of games is set when the season starts. Difficulty and length apply to your next game.</p>':'');
       if(n){const or=S.rec[opp];h+=`<div class="frnext"><span>Next: ${esc(n.label)} vs <b>${esc(nm(opp))}</b> (${or.w}-${or.l}-${or.t})</span><div class="frbtns"><button class="go" type="button" data-fr="play">Play game</button><button class="btn" type="button" data-fr="sim">Simulate it</button></div></div>`}
       else if(S.phase==='playoffs')h+=`<div class="frbtns"><button class="go" type="button" data-fr="rest">Simulate the rest of the playoffs</button></div>`;
-      h+=`<div class="frcols"><div><h4>CCL standings</h4>${table()}<p class="frnote">All ${NT} make the playoffs. First place is the conference champion and the No. 1 seed: 1 plays 4, 2 plays 3.</p></div><div>`;
+      else if(S.phase==='state')h+=`<div class="frbtns"><button class="go" type="button" data-fr="state">Go to the state tournament</button></div>`;
+      h+=`<div class="frcols"><div><h4>CCL standings</h4>${table()}<p class="frnote">${FRCFG.sport==='lacrosse'?'First place at the end of the regular season wins the CCL. Then comes the state tournament.':`All ${NT} make the playoffs. First place is the conference champion and the No. 1 seed: 1 plays 4, 2 plays 3.`}</p></div><div>`;
       if(S.po)h+=`<h4>CCL playoffs</h4>${S.conf!=null?`<p class="frnote">${esc(nm(S.conf))} won the regular season and are the No. 1 seed.</p>`:''}${bracket()}`;
       const last=S.res[S.res.length-1];
       if(last&&S.phase==='season')h+=`<h4>Last week</h4><ul class="frres">${last.map(g=>`<li class="${g.a===S.my||g.b===S.my?'me':''}">${esc(ab(g.a))} ${g.sa} – ${g.sb} ${esc(ab(g.b))}</li>`).join('')}</ul>`;
@@ -2816,6 +2825,7 @@ const FR=(()=>{
     else if(k==='sim')simNext();
     else if(k==='rest')simRest();
     else if(k==='next')nextSeason();
+    else if(k==='state'){const b=document.getElementById('tb-state');if(b)b.scrollIntoView({block:'start',behavior:'smooth'})}
     else if(k==='cfg'){editCfg=!editCfg;render()}
     else if(k==='reset'){if(armReset>Date.now()){armReset=0;S=null;try{localStorage.removeItem(KEY)}catch(e){}render()}else{armReset=Date.now()+4000;render();setTimeout(render,4100)}}
   }
@@ -2825,7 +2835,7 @@ const FR=(()=>{
     if(G.pst){S.ps=S.ps||{};for(const r of Object.values(G.pst)){const k=CLUBS[G.clubs[r.team]].abbr,id=k+'|'+r.num+'|'+r.name,e=S.ps[id]||(S.ps[id]={club:k,num:r.num,name:r.name,role:r.role,star:r.star,gp:0,g:0,a:0,sh:0,gb:0,hit:0,sv:0});e.gp++;for(const f in r)if(typeof r[f]==='number'&&f!=='num'&&f!=='team')e[f]=(e[f]||0)+r[f]}}
     const msg=report(G.score[0],G.score[1],G.pkWin),w=G.score[0]===G.score[1]?(G.pkWin!=null?G.pkWin:-1):G.score[0]>G.score[1]?0:1;
     card(w<0?'Final: a draw':`${club(w).name} win`,`${scoreLine()}${G.pkWin!=null?' (won on penalties)'.replace('won',w===0?'won':'lost'):''}. ${msg}${typeof potg==='function'?' '+potg():''}`,[{label:'Back to franchise',fn:()=>{toDemo();renderMenu();render();setTimeout(()=>$('fr').scrollIntoView({block:'start',behavior:'smooth'}),50)}}]);
-    if(S.phase==='done'&&S.champ===S.my)setTimeout(()=>BIGCELE('CCL Champions',`${nm(S.my)} win the CCL`),600);
+    if((S.phase==='done'||S.phase==='state')&&S.champ===S.my&&!S.cclCele&&(S.cclCele=1))setTimeout(()=>BIGCELE('CCL Champions',`${nm(S.my)} win the CCL`),600);
     if(S.phase==='done'){const aw=awards();if(aw[0])setTimeout(()=>say(`And the CCL MVP is ${aw[0].p.name}!`,2),7000)}
     return true;
   }
