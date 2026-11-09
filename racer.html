@@ -85,6 +85,7 @@ html.touch.playing .hud .spd{bottom:140px}
 'use strict';
 const $=id=>document.getElementById(id),root=document.documentElement,TOUCH=matchMedia('(pointer: coarse)').matches;if(TOUCH)root.classList.add('touch');
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t;
+const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 if(!window.THREE){$('ovc').innerHTML='<h2>Could not load</h2><p>The 3D engine did not load. Check your connection and reload the page.</p>';return}
 const T3=THREE;
 /* ---------- seeded random ---------- */
@@ -92,9 +93,12 @@ function hashStr(s){let h=2166136261;for(const c of String(s))h=Math.imul(h^c.ch
 function rng(seed){let a=seed>>>0;return()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const TRACKS=[['Warm Up','Sunny','A1'],['Switchback','Sunny','B7'],['Hop Skip','Sunny','C3'],['Ridge Run','Dusk','D9'],['Boost Lane','Sunny','E2'],['Big Air','Dusk','F5'],['Corkscrew Valley','Sunny','G8'],['Night Owl','Night','H4'],['Long Haul','Dusk','J6'],['Apex Legend','Night','K1']];
 /* ---------- the track: a ribbon in the sky ---------- */
-function makeTrack(code,level){const r=rng(hashStr('apex:'+code)),L=level==null?2+Math.floor(r()*7):level;
-  const W=L<3?21:L<6?19:17,segs=[];const nS=14+L*3;
+const PIECES={S:['Straight',{t:'str',len:45}],L:['Left curve',{t:'turn',len:70,yaw:.8}],R:['Right curve',{t:'turn',len:70,yaw:-.8}],X:['Sharp left',{t:'turn',len:55,yaw:1.35}],Y:['Sharp right',{t:'turn',len:55,yaw:-1.35}],U:['Hill up',{t:'hill',len:60,dy:10}],D:['Hill down',{t:'hill',len:60,dy:-10}],B:['Boost',{t:'boost',len:45}],J:['Jump',{t:'jump',len:22,gap:16,drop:3}]};
+const isBuilt=c=>/^BT[SLRXYUDBJ]{3,60}$/.test(String(c||''));
+function makeTrack(code,level){const r=rng(hashStr('apex:'+code)),built=isBuilt(code),L=built?2:level==null?2+Math.floor(r()*7):level;
+  const W=L<3?21:L<6?19:17,segs=[];const nS=built?0:14+L*3;
   segs.push({t:'str',len:40});
+  if(built)for(const ch of code.slice(2))segs.push(Object.assign({},PIECES[ch][1],{built:true}));
   for(let i=0;i<nS;i++){const x=r();let s;
     if(x<.3)s={t:'turn',len:50+r()*50,yaw:(r()<.5?-1:1)*(.45+r()*1.0)};
     else if(x<.45)s={t:'hill',len:50+r()*40,dy:(r()<.5?-1:1)*(6+r()*10)};
@@ -108,7 +112,7 @@ function makeTrack(code,level){const r=rng(hashStr('apex:'+code)),L=level==null?
   const P=[];let x=0,y=40,z=0,yaw=0,i0=0;const cps=[];let sinceCp=0;
   const tooClose=(px,py,pz)=>{for(let k=0;k<P.length-70;k+=3){const q=P[k];if(Math.abs(q.y-py)<10&&(q.x-px)**2+(q.z-pz)**2<34*34)return true}return false};
   for(let si=0;si<segs.length;si++){const s=segs[si];
-    if(s.t==='turn'){// try the other way if this turn runs into the track
+    if(s.t==='turn'&&!s.built){// try the other way if this turn runs into the track
       const tryEnd=sg=>{let a=yaw,px=x,pz=z;for(let k=0;k<s.len;k++){a+=sg*Math.abs(s.yaw)/s.len;px+=Math.sin(a);pz+=Math.cos(a);if(tooClose(px,y,pz))return false}return true};
       if(!tryEnd(Math.sign(s.yaw))){if(tryEnd(-Math.sign(s.yaw)))s.yaw=-s.yaw;else{s.t='hill';s.dy=14}}}
     const n=Math.round(s.len);
@@ -175,13 +179,59 @@ function buildWorld(tr,themeName){scene.remove(world);world.traverse(o=>{if(o.ge
     const bar=new T3.Mesh(new T3.BoxGeometry(p.w+3.6,1.4,.8),tex?new T3.MeshBasicMaterial({map:tex}):mat);bar.position.set(p.x,p.y,p.z).addScaledVector(p.u,6.4);const M=new T3.Matrix4().makeBasis(p.r,p.u,p.f.clone().negate());bar.quaternion.setFromRotationMatrix(M);grp.add(bar);world.add(grp);return grp};
   for(const i of tr.cps)gates.push({i,g:arch(i,gm.clone()),hit:false});
   arch(P.length-6,new T3.MeshPhongMaterial({color:0xf4f4ee,flatShading:true}),checkTex);arch(4,new T3.MeshPhongMaterial({color:0xffc23d,flatShading:true}));
-  world.add(carMesh=makeCar(0xd0293a,1));world.add(ghostMesh=makeCar(0x9cc8ff,.35));ghostMesh.visible=false;RACE.meshes()}
-function makeCar(color,op,cpu){const g=new T3.Group(),tp=op<1;const mb=new T3.MeshPhongMaterial({color,flatShading:true,transparent:tp,opacity:op,shininess:30}),mc=new T3.MeshPhongMaterial({color:0x22262c,flatShading:true,transparent:tp,opacity:op}),mg=new T3.MeshPhongMaterial({color:0x9cd4ff,flatShading:true,transparent:tp,opacity:tp?op:.85});
+  world.add(carMesh=makeCar(GARAGE.paint(),1,false,GARAGE.shape()));world.add(ghostMesh=makeCar(0x9cc8ff,.35,false,GARAGE.shape()));ghostMesh.visible=false;RACE.meshes()}
+function makeCar(color,op,cpu,shape){if(shape&&shape!=='classic')return makeCar2(color,op,cpu,shape);const g=new T3.Group(),tp=op<1;const mb=new T3.MeshPhongMaterial({color,flatShading:true,transparent:tp,opacity:op,shininess:30}),mc=new T3.MeshPhongMaterial({color:0x22262c,flatShading:true,transparent:tp,opacity:op}),mg=new T3.MeshPhongMaterial({color:0x9cd4ff,flatShading:true,transparent:tp,opacity:tp?op:.85});
   const body=new T3.Mesh(new T3.BoxGeometry(2.1,.7,4.2),mb);body.position.y=.65;g.add(body);const nose=new T3.Mesh(new T3.BoxGeometry(1.9,.4,1),mb);nose.position.set(0,.55,2.4);g.add(nose);
   // an open-top racer: a low windshield and the driver in the seat
   const ws=new T3.Mesh(new T3.BoxGeometry(1.7,.45,.12),mg);ws.position.set(0,1.18,.75);ws.rotation.x=-.35;g.add(ws);const wing=new T3.Mesh(new T3.BoxGeometry(2.2,.12,.6),mc);wing.position.set(0,1.35,-2);g.add(wing);
   for(const[x,z]of[[-1.1,1.4],[1.1,1.4],[-1.1,-1.4],[1.1,-1.4]]){const w=new T3.Mesh(new T3.CylinderGeometry(.45,.45,.4,8),mc);w.rotation.z=Math.PI/2;w.position.set(x,.45,z);g.add(w)}
   const hm=new T3.Mesh(new T3.IcosahedronGeometry(.42,1),new T3.MeshPhongMaterial({color:cpu?0xf4f4ee:0xffc23d,flatShading:true,transparent:tp,opacity:op}));hm.position.set(0,1.45,-.35);g.add(hm);const vz=new T3.Mesh(new T3.BoxGeometry(.6,.18,.1),new T3.MeshPhongMaterial({color:0x111111,transparent:tp,opacity:op}));vz.position.set(0,1.48,.03);g.add(vz);return g}
+function makeCar2(color,op,cpu,shape){const g=new T3.Group(),tp=op<1,M=c=>new T3.MeshPhongMaterial({color:c,flatShading:true,transparent:tp,opacity:op,shininess:30});const mb=M(color),mc=M(0x22262c),mg=M(0x9cd4ff);
+  const box=(w,h,d,m,x,y,z,rx)=>{const b=new T3.Mesh(new T3.BoxGeometry(w,h,d),m);b.position.set(x,y,z);if(rx)b.rotation.x=rx;g.add(b);return b};
+  const wheel=(x,z,r,w)=>{const c=new T3.Mesh(new T3.CylinderGeometry(r,r,w,10),mc);c.rotation.z=Math.PI/2;c.position.set(x,r,z);g.add(c)};
+  if(shape==='wedge'){box(2.2,.45,4.6,mb,0,.55,0);const n=box(2.1,.35,1.6,mb,0,.62,1.9,.32);box(1.6,.4,1.2,mg,0,.95,-.2,-.25);box(2.5,.12,.7,mc,0,1.2,-2.1);box(.12,.5,.4,mc,-1,.95,-2.1);box(.12,.5,.4,mc,1,.95,-2.1);for(const[x,z]of[[-1.15,1.5],[1.15,1.5],[-1.15,-1.5],[1.15,-1.5]])wheel(x,z,.42,.45)}
+  else if(shape==='buggy'){box(1.7,.5,3.2,mb,0,1,0);for(const sx of[-.75,.75]){box(.1,1,.1,mc,sx,1.65,.6);box(.1,1,.1,mc,sx,1.65,-.8)}box(1.6,.1,1.6,mc,0,2.15,-.1);for(const[x,z]of[[-1.2,1.3],[1.2,1.3],[-1.2,-1.3],[1.2,-1.3]])wheel(x,z,.7,.55)}
+  else if(shape==='rocket'){box(1.8,.6,5,mb,0,.65,0);box(1.2,.45,1.4,mb,0,.6,3,.28);box(1.3,.45,1.3,mg,0,1.1,.2,-.3);for(const sx of[-1,1]){box(.12,.9,1.3,mb,sx*1,.95,-1.9);const ex=new T3.Mesh(new T3.CylinderGeometry(.25,.32,.7,8),mc);ex.rotation.x=Math.PI/2;ex.position.set(sx*.45,.7,-2.75);g.add(ex)}for(const[x,z]of[[-1.05,1.6],[1.05,1.6],[-1.05,-1.6],[1.05,-1.6]])wheel(x,z,.45,.4)}
+  const hm=new T3.Mesh(new T3.IcosahedronGeometry(.42,1),new T3.MeshPhongMaterial({color:cpu?0xf4f4ee:0xffc23d,flatShading:true,transparent:tp,opacity:op}));hm.position.set(0,shape==='buggy'?1.65:1.4,shape==='rocket'?.2:-.35);g.add(hm);return g}
+/* ---------- the garage: bodies and paint, bought with Overtime Arcade coins ---------- */
+const GARAGE=(()=>{const SH=[['classic','Classic',0],['wedge','Wedge',150],['buggy','Dune buggy',200],['rocket','Rocket',300]],PA=[['red','Cardinal red',0xd0293a,0],['gold','Gold',0xf2b632,80],['blue','Ice blue',0x4aa3ff,50],['green','Turf green',0x2fbf71,50],['purple','Royal purple',0x7a4bd0,50],['black','Midnight',0x2b2f36,50],['white','Pearl',0xf4f1e6,50]];
+  let S={shape:'classic',paint:'red'};try{S=Object.assign(S,JSON.parse(localStorage.getItem('apex-garage')||'{}'))}catch(e){}
+  const coins=()=>{try{return JSON.parse(localStorage.getItem('overtime-coins')||'null')||{c:0,own:{},earned:0}}catch(e){return{c:0,own:{},earned:0}}};
+  const owns=k=>k==='car-classic'||k==='paint-red'||!!coins().own[k];
+  function buy(k,cost){const d=coins();if(d.own[k])return true;if(d.c<cost)return false;d.c-=cost;d.own[k]=Date.now();try{localStorage.setItem('overtime-coins',JSON.stringify(d))}catch(e){}return true}
+  const save=()=>{try{localStorage.setItem('apex-garage',JSON.stringify(S))}catch(e){}};
+  function html(){const c=coins().c;return`<h2>Garage</h2><p>You have <b>${c}</b> coins. Win races and earn medals for more.</p><h3 style="margin:4px 0 0;text-align:left">Body</h3><div class="trks">${SH.map(([k,n,p])=>`<button class="trk" type="button" data-gs="${k}" style="${S.shape===k?'border-color:#ffc23d':''}"><b>${n}</b><small>${owns('car-'+k)?(S.shape===k?'Driving it':'Owned'):p+' coins'}</small></button>`).join('')}</div>
+    <h3 style="margin:4px 0 0;text-align:left">Paint</h3><div class="trks">${PA.map(([k,n,col,p])=>`<button class="trk" type="button" data-gp="${k}" style="${S.paint===k?'border-color:#ffc23d':''}"><b><span class="medal" style="background:#${col.toString(16).padStart(6,'0')}"></span>${n}</b><small>${owns('paint-'+k)?(S.paint===k?'On your car':'Owned'):p+' coins'}</small></button>`).join('')}</div>
+    <div class="row"><button class="go" type="button" data-a="menu">Done</button></div>`}
+  function click(b){const sh=b.dataset.gs,pa=b.dataset.gp;if(sh){const it=SH.find(x=>x[0]===sh);if(!owns('car-'+sh)&&!buy('car-'+sh,it[2])){note(`You need ${it[2]} coins for the ${it[1]}`);return false}S.shape=sh}
+    if(pa){const it=PA.find(x=>x[0]===pa);if(!owns('paint-'+pa)&&!buy('paint-'+pa,it[3])){note(`You need ${it[3]} coins for ${it[1]}`);return false}S.paint=pa}save();return true}
+  return{html,click,shape:()=>S.shape,paint:()=>(PA.find(x=>x[0]===S.paint)||PA[0])[2]}})();
+/* ---------- the track builder: snap pieces together, test drive, save and share ---------- */
+const BUILDER=(()=>{let parts='SLSRB';try{parts=localStorage.getItem('apex-draft')||parts}catch(e){}let name='';
+  const mine=()=>{try{return JSON.parse(localStorage.getItem('apex-mytracks')||'[]')}catch(e){return[]}},saveMine=L=>{try{localStorage.setItem('apex-mytracks',JSON.stringify(L.slice(0,12)))}catch(e){}};
+  const keep=()=>{try{localStorage.setItem('apex-draft',parts)}catch(e){}};
+  function html(){return`<h2>Track builder</h2><p>Add pieces in order. The track starts and ends with a straight, and you get a checkpoint every few pieces.</p>
+    <div class="row">${Object.entries(PIECES).map(([k,[n]])=>`<button class="btn" type="button" data-bp="${k}">${n}</button>`).join('')}</div>
+    <canvas id="bprev" width="560" height="260" style="width:100%;max-width:560px;justify-self:center;background:#0b0f11;border:1px solid #2b3438;border-radius:10px"></canvas>
+    <p id="bparts" style="text-align:left;color:#efebe2">${[...parts].map((c,i)=>`${i+1}. ${PIECES[c][0]}`).join(' · ')||'No pieces yet'}</p>
+    <div class="row"><input id="bname" maxlength="24" placeholder="Track name" value="${name.replace(/"/g,'')}" aria-label="Track name"><button class="btn" type="button" data-ba="undo">Undo</button><button class="btn" type="button" data-ba="clear">Clear</button></div>
+    <div class="row"><button class="go" type="button" data-ba="test">Test drive</button><button class="btn" type="button" data-ba="save">Save to My tracks</button><button class="btn" type="button" data-ba="share">Copy track code</button><button class="btn" type="button" data-a="menu">Back</button></div>`}
+  function preview(){const cvs=document.getElementById('bprev');if(!cvs)return;const g=cvs.getContext('2d');g.fillStyle='#0b0f11';g.fillRect(0,0,cvs.width,cvs.height);if(parts.length<3){g.fillStyle='#a7afaa';g.font='600 16px sans-serif';g.fillText('Add at least 3 pieces',20,40);return}
+    const T=makeTrack('BT'+parts,2),P=T.P;let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(const p of P){x0=Math.min(x0,p.x);x1=Math.max(x1,p.x);z0=Math.min(z0,p.z);z1=Math.max(z1,p.z)}
+    const k=Math.min((cvs.width-40)/Math.max(1,x1-x0),(cvs.height-40)/Math.max(1,z1-z0)),X=p=>20+(p.x-x0)*k,Y=p=>cvs.height-20-(p.z-z0)*k;
+    g.lineCap='round';g.lineJoin='round';for(let i=1;i<P.length;i++){const a=P[i-1],b=P[i];if(b.gap)continue;g.strokeStyle=b.flag?'#ff8a1f':'#9aa3ad';g.lineWidth=Math.max(3,T.W*k*.8);g.beginPath();g.moveTo(X(a),Y(a));g.lineTo(X(b),Y(b));g.stroke()}
+    g.fillStyle='#ffc23d';g.beginPath();g.arc(X(P[0]),Y(P[0]),6,0,7);g.fill();g.fillStyle='#f4f4ee';g.fillRect(X(P[P.length-1])-5,Y(P[P.length-1])-5,10,10);
+    g.fillStyle='#a7afaa';g.font='600 13px sans-serif';g.fillText(`${Math.round(P.length)} m · ${T.cps.length} checkpoints`,12,18)}
+  async function click(b){const p=b.dataset.bp,a=b.dataset.ba;const nm=document.getElementById('bname');if(nm)name=nm.value.replace(/[<>]/g,'').trim().slice(0,24);
+    if(p){if(parts.length>=60){note('That track is as long as it gets');return}parts+=p;keep();refresh();return}
+    if(a==='undo'){parts=parts.slice(0,-1);keep();refresh();return}if(a==='clear'){parts='';keep();refresh();return}
+    if(parts.length<3){note('Add at least 3 pieces first');return}const code='BT'+parts;
+    if(a==='test'){curIdx=-1;load(code,null,name||'My track','Sunny');return}
+    if(a==='save'){const L=mine().filter(t=>t.code!==code);L.unshift({name:name||('My track '+(L.length+1)),code});saveMine(L);note('Saved to My tracks');return}
+    if(a==='share'){const url=location.origin+location.pathname+'?track='+code;try{if(navigator.share){await navigator.share({title:'Apex Rush track',text:`Race my track${name?' "'+name+'"':''} in Apex Rush`,url});return}}catch(err){if(err&&err.name==='AbortError')return}
+      try{await navigator.clipboard.writeText(url);b.textContent='Link copied!'}catch(err){b.textContent=code}}}
+  function refresh(){showCard(html());preview()}
+  return{open:refresh,click,mine}})();
 /* ---------- the car ---------- */
 let SIM=false;
 const C={s:0,d:0,psi:0,v:0,air:false,p:new T3.Vector3(),vel:new T3.Vector3(),yaw:0,fall:0,boostT:0};
@@ -308,14 +358,18 @@ function hideCard(){$('ov').hidden=true}
 function menu(){let M={};try{M=JSON.parse(localStorage.getItem('apex-medals')||'{}')}catch(e){}
   const best=c=>{try{const b=JSON.parse(localStorage.getItem('apex-best-'+c)||'null');return b?fmt(b.t):'—'}catch(e){return'—'}};
   showCard(`<h2>Apex Rush</h2><div class="row"><button class="btn" type="button" data-mode="race" style="${MODE==='race'?'border-color:#ffc23d;color:#ffc23d':''}">Race 3 drivers</button><button class="btn" type="button" data-mode="trial" style="${MODE==='trial'?'border-color:#ffc23d;color:#ffc23d':''}">Time trial</button></div><p>${MODE==='race'?'Race Viper, Comet and Blitz to the finish. Beat them all for first place.':'Just you, the clock and your ghost. Beat the gold time on all ten tracks.'}</p><div class="trks">${TRACKS.map((t,i)=>`<button class="trk" type="button" data-t="${i}"><b>${i+1}. ${t[0]}</b><small><span class="medal m-${M[t[2]]||'n'}"></span>Best ${best(t[2])}</small></button>`).join('')}</div>
-    <div class="row"><button class="go" type="button" data-a="random">Random track</button><input id="code" maxlength="12" placeholder="Track code" aria-label="Track code" autocomplete="off"><button class="btn" type="button" data-a="code">Race this code</button></div>
+    ${BUILDER.mine().length?`<h3 style="margin:4px 0 0;text-align:left">My tracks</h3><div class="trks">${BUILDER.mine().map((t,i)=>`<button class="trk" type="button" data-my="${i}"><b>${esc(t.name)}</b><small>Best ${best(t.code)}</small></button>`).join('')}</div>`:''}
+    <div class="row"><button class="btn" type="button" data-a="build">Track builder</button><button class="btn" type="button" data-a="garage">Garage</button></div>
+    <div class="row"><button class="go" type="button" data-a="random">Random track</button><input id="code" maxlength="64" placeholder="Track code" aria-label="Track code" autocomplete="off"><button class="btn" type="button" data-a="code">Race this code</button></div>
     <div class="keys"><span><kbd>W</kbd> gas</span><span><kbd>A</kbd><kbd>D</kbd> steer</span><span><kbd>Space</kbd> drift</span><span><kbd>R</kbd> reset</span><span><kbd>Enter</kbd> last checkpoint</span></div>`)}
 let curIdx=-1;
 function startIdx(i){curIdx=i;const t=TRACKS[i];load(t[2],i,t[0],t[1])}
 $('ovc').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;audio();if(b.dataset.mode){MODE=b.dataset.mode;try{localStorage.setItem('apex-mode',MODE)}catch(_){}menu();return}
-  if(b.dataset.t!=null){startIdx(+b.dataset.t);return}const a=b.dataset.a;
+  if(b.dataset.t!=null){startIdx(+b.dataset.t);return}if(b.dataset.my!=null){const t=BUILDER.mine()[+b.dataset.my];if(t){curIdx=-1;load(t.code,null,t.name,'Sunny')}return}
+  if(b.dataset.bp||b.dataset.ba){BUILDER.click(b);return}if(b.dataset.gs||b.dataset.gp){if(GARAGE.click(b)){showCard(GARAGE.html());if(TR){buildWorld(TR,TR.theme);if(G&&G.phase==='menu'){C.s=4.5;place()}}}return}
+  const a=b.dataset.a;if(a==='build'){BUILDER.open();return}if(a==='garage'){showCard(GARAGE.html());return}
   if(a==='random'){curIdx=-1;const c=Math.random().toString(36).slice(2,8).toUpperCase();load(c,null)}
-  else if(a==='code'){const c=($('code').value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');if(!c)return;const ti=TRACKS.findIndex(t=>t[2]===c);if(ti>=0)startIdx(ti);else{curIdx=-1;load(c,null)}}
+  else if(a==='code'){const c=($('code').value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,64);if(!c)return;const ti=TRACKS.findIndex(t=>t[2]===c);if(ti>=0)startIdx(ti);else{curIdx=-1;load(c,null)}}
   else if(a==='retry')load(TR.code,curIdx>=0?curIdx:null,TR.name,TR.theme);
   else if(a==='next'){if(curIdx>=0&&curIdx<TRACKS.length-1)startIdx(curIdx+1);else{curIdx=-1;load(Math.random().toString(36).slice(2,8).toUpperCase(),null)}}
   else if(a==='menu')menu();
@@ -338,7 +392,7 @@ for(const b of document.querySelectorAll('.tc button[data-k]')){const k=b.datase
   for(const t of['pointerup','pointercancel','lostpointercapture'])b.addEventListener(t,()=>{keys[k]=0});b.addEventListener('contextmenu',e=>e.preventDefault())}
 resize();
 const q=new URLSearchParams(location.search).get('track');
-if(q){const c=q.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,12),ti=TRACKS.findIndex(t=>t[2]===c);TR=makeTrack(ti>=0?c:c,ti>=0?ti:null);TR.name=ti>=0?TRACKS[ti][0]:'Shared track · '+c;TR.theme=ti>=0?TRACKS[ti][1]:'Sunny';buildWorld(TR,TR.theme);
+if(q){const c=q.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,64),ti=TRACKS.findIndex(t=>t[2]===c);TR=makeTrack(ti>=0?c:c,ti>=0?ti:null);TR.name=ti>=0?TRACKS[ti][0]:'Shared track · '+c;TR.theme=ti>=0?TRACKS[ti][1]:'Sunny';buildWorld(TR,TR.theme);
   showCard(`<h2>A friend sent you a track</h2><p class="bigt">${TR.name}</p><div class="row"><button class="go" type="button" data-a="retry">Race it</button><button class="btn" type="button" data-a="menu">All tracks</button></div>`);if(ti>=0)curIdx=ti}
 else{TR=makeTrack('A1',0);TR.name='Warm Up';buildWorld(TR,'Sunny');G={phase:'menu',t:0,best:null};C.s=4.5;place();menu()}
 camPos.set(C.p.x,C.p.y+30,C.p.z-40);camLook.copy(C.p);requestAnimationFrame(frame);
