@@ -269,7 +269,7 @@ function sfx(k){if(!AC||!soundOn||G.demo)return;
 /* ---------- players ---------- */
 function mk(team,role,idx){const a=ATTR[role];return{team,role,idx,num:NUMS[role][idx],x:MX,y:MY,vx:0,vy:0,face:0,spd:a.spd*(.97+Math.random()*.06),acc:a.acc,reach:a.reach,hands:a.hands,
   stun:0,checkCD:0,dodgeT:0,dodgeCD:0,catchCD:0,bodyCD:0,scoopCD:0,cutT:0,cutCD:2+Math.random()*3,aiT:Math.random()*.3,drive:0,holdT:0,hist:[],hold:null}}
-function buildTeams(){P=[];for(const t of [0,1]){const ci=G.clubs[t],nm=roster(ci);let n=0;const g=mk(t,'G',0);g.name=RO.n(ci,'G0',nm[n++]);g.num=RO.u(ci,'G0',g.num);g.rat=RO.r(ci,'G0');g.star=starOf(ci,'G0','G',g.rat);{const k=rk(g.rat);if(k>0){g.spd*=1+.15*k;g.acc*=1+.3*k}}P.push(g);for(const r of ['D','M','A'])for(let i=0;i<3;i++){const p=mk(t,r,i);p.name=RO.n(ci,r+i,nm[n++]);p.num=RO.u(ci,r+i,p.num);p.rat=RO.r(ci,r+i);p.star=starOf(ci,r+i,r,p.rat);if(p.star==='Engine'){p.spd*=1.05;p.acc*=1.1}const k=rk(p.rat);if(CLUBS[ci].abbr==='STC'){p.spd*=1.06;p.acc*=1.08;p.hands=Math.min(.99,p.hands+.03)}p.spd*=1+.07*k;p.acc*=1+.1*k;p.hands=Math.min(.99,p.hands+.03*k);P.push(p)}}}
+function buildTeams(){P=[];for(const t of [0,1]){const ci=G.clubs[t],nm=roster(ci);let n=0;const g=mk(t,'G',0);g.name=RO.n(ci,'G0',nm[n++]);g.num=RO.u(ci,'G0',g.num);g.rat=RO.r(ci,'G0');g.star=starOf(ci,'G0','G',g.rat);{const k=rk(g.rat);if(k>0){g.spd*=1+.15*k;g.acc*=1+.3*k}}P.push(g);for(const r of ['D','M','A'])for(let i=0;i<3;i++){const p=mk(t,r,i);p.name=RO.n(ci,r+i,nm[n++]);p.num=RO.u(ci,r+i,p.num);p.rat=RO.r(ci,r+i);p.star=starOf(ci,r+i,r,p.rat);if(p.star==='Engine'){p.spd*=1.05;p.acc*=1.1}const k=rk(p.rat);p.spd*=1+.07*k;p.acc*=1+.1*k;p.hands=Math.min(.99,p.hands+.03*k);P.push(p)}}}
 const find=(t,r,i)=>P.find(p=>p.team===t&&p.role===r&&p.idx===i);
 const goalieOf=t=>find(t,'G',0);
 const markOf=p=>p.role==='G'?null:find(1-p.team,p.role==='D'?'A':p.role==='A'?'D':'M',p.idx);
@@ -1885,7 +1885,7 @@ function makeTourney(o){
   const ccl=()=>{try{return JSON.parse(localStorage.getItem('ccl-'+FRCFG.sport)||'null')}catch(e){return null}};
   const R=o.regions||1,per=o.size/R,REGR=Math.log2(per);
   function start(my){const seed=Math.random()*1e9|0,r=rng(seed),fr=ccl(),champ=fr&&(fr.phase==='done'||fr.phase==='state')?fr.champ:null;
-    const strOf=i=>fr&&fr.str&&fr.str[i]!=null?fr.str[i]:FRCFG.strength?FRCFG.strength(i):.5;
+    const strOf=i=>FRCFG.even?.5:fr&&fr.str&&fr.str[i]!=null?fr.str[i]:FRCFG.strength?FRCFG.strength(i):.5;
     const teams=CCL.map((c,i)=>({ccl:i,str:strOf(i)+(i===champ?.06:0)}));
     const used=new Set(CCL.map(c=>c.abbr)),towns=GTOWNS.slice().sort(()=>r()-.5);
     for(let k=0;teams.length<o.size;k++){const town=towns[k%towns.length]+(k>=towns.length?' North':''),col=GPAL[Math.floor(r()*GPAL.length)];
@@ -1951,7 +1951,7 @@ function makeTourney(o){
   setInterval(()=>{const menu=!$('menu').hidden;box.hidden=!menu||(!!o.franchise&&!o.franchise())},300);
   render();return{gameOver,render,key:o.key,start,reset:()=>{T=null;try{localStorage.removeItem(KEY)}catch(_){}render()},status:()=>({started:!!T,done:!!T&&(T.champ!=null||!alive()),won:!!T&&T.champ===T.me,champ:T&&T.champ!=null?nm(T.champ):null})}}
 // built once the whole game has loaded (the franchise settings are defined further down)
-const TOURNS=[];setTimeout(()=>{TOURNS.push(makeTourney({key:'state',franchise:FRCFG.sport==='lacrosse'?()=>{try{const f=JSON.parse(localStorage.getItem('ccl-lacrosse')||'null');return!!f&&f.phase==='state'}catch(e){return false}}:null,title:'State <span>tournament</span>',short:'State tournament',lc:'state tournament',size:16,rounds:['Regional semifinal','Regional final','State semifinal','State championship'],neutralFrom:2,champTitle:'State Champions',
+const TOURNS=[];setTimeout(()=>{TOURNS.push(makeTourney({key:'state',franchise:FRCFG.stateFr?()=>{try{const f=JSON.parse(localStorage.getItem('ccl-'+FRCFG.sport)||'null');return!!f&&f.phase==='state'}catch(e){return false}}:null,title:'State <span>tournament</span>',short:'State tournament',lc:'state tournament',size:16,rounds:['Regional semifinal','Regional final','State semifinal','State championship'],neutralFrom:2,champTitle:'State Champions',
   intro:'After the CCL season comes the state tournament: 16 of the best teams in the state, one game at a time, win or go home. The higher seed hosts until the state semifinals, which are played at the State Championship site.'}));
 if(FRCFG.sport==='basketball')TOURNS.push(makeTourney({key:'mayhem',title:'March <span>Mayhem</span>',short:'March Mayhem',size:64,regions:4,regionNames:['North','South','East','West'],rounds:['First round','Second round','Sweet 16','Elite 8','Final Four','Championship'],neutralFrom:4,champTitle:'March Mayhem Champions',
   intro:'64 teams, four regions, six rounds. Seeds 1 through 16 in every region, upsets everywhere, and the Final Four and Championship at the State Championship site. You play every one of your games.'}));},0);
@@ -2641,9 +2641,11 @@ const CARDS=(()=>{const KEY='cards-'+CELESPORT,STCI=CLUBS.findIndex(c=>c.abbr===
     const isNew=!D[s.key];D[s.key]=D[s.key]||{n:0,at:Date.now()};D[s.key].n++;save();render();const i=info(s);
     setTimeout(()=>{try{toast(`${isNew?'New card':'Card'}: #${i.num} ${i.name} · ${i.tier[0]}`);coinsAdd(isNew?10:2,isNew?'New player card':'Duplicate card')}catch(e){}if(slots.every(q=>D[q.key]))try{ACH.give('cards')}catch(e){}},1500)});
   render();return{render}})();
+/* ---------- even teams: in lacrosse every school plays at the same level (names stay, ratings and star traits don't change the game) ---------- */
+{const r0=RO.r;RO.r=function(){return null};starOf=function(){return null}}
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
-const FRCFG={sport:'lacrosse',otPts:1,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b;return[frPois(9+d*10),frPois(9-d*10)]}};
+const FRCFG={sport:'lacrosse',stateFr:true,even:true,otPts:1,strength:()=>.5,sim:()=>[frPois(9),frPois(9)]};
 const startGame=$('start').onclick;$('start').onclick=()=>{G.fr=false;startGame()};
 /* ---------- franchise mode: the CCL. 4 schools, 6 conference games (each opponent twice, home and away), all 4 make single-game playoffs, the regular-season champion is the 1 seed ---------- */
 const FR=(()=>{
@@ -2669,7 +2671,7 @@ const FR=(()=>{
   // dynasty: the next season keeps your school, settings, trophies and players (seniors graduate, freshmen join, everyone else improves)
   const FIRSTN=['Jack','Luke','Owen','Ryan','Cole','Nate','Ben','Matt','Drew','Evan','Liam','Max','Sam','Will','Tyler','Gavin','Aiden','Carter','Mason','Connor'],LASTN=['Kelly','Murphy','Brennan','Walsh','Doyle','Novak','Keller','Rossi','Fischer','Burke','Hayes','Quinn','Moran','Sullivan','Ritter','Lang','Dunn','Shea','Becker','Hoffman'];
   function freshman(s,r){const ln=LASTN[Math.floor(r()*LASTN.length)];return{name:s.name&&!/ /.test(s.name)?ln:`${FIRSTN[Math.floor(r()*FIRSTN.length)]} ${ln}`,num:s.num,r:68+Math.floor(r()*9),cls:1,fresh:true}}
-  function nextSeason(){if(FRCFG.sport==='lacrosse'){const st=TOURNS.find(t=>t.key==='state');if(st)st.reset()}const old=S,y=old.year||1,seed=Math.floor(Math.random()*1e9),r=rng(seed+7),me=CLUBS[old.my].abbr;
+  function nextSeason(){if(FRCFG.stateFr){const st=TOURNS.find(t=>t.key==='state');if(st)st.reset()}const old=S,y=old.year||1,seed=Math.floor(Math.random()*1e9),r=rng(seed+7),me=CLUBS[old.my].abbr;
     const tr=old.trophies||{ccl:[],state:[],mayhem:[],awards:[]};if(old.champ===old.my&&!tr.ccl.includes(y))tr.ccl.push(y);for(const a of awards())if(a.p.club===me)tr.awards.push({year:y,t:a.t,name:a.p.name});
     const rc=old.rec[old.my],hist=(old.history||[]).concat([{year:y,w:rc.w,l:rc.l,t:rc.t,champ:old.champ}]);
     const dyn=old.dyn||{slots:{}},grads=[];for(const k in dyn.slots){const s=dyn.slots[k];if(s.cls>=4){if(s.name)grads.push(s.name);dyn.slots[k]=freshman(s,r)}else{s.cls++;s.r=Math.min(120,(s.r||75)+2+Math.floor(r()*4))}}
@@ -2683,7 +2685,7 @@ const FR=(()=>{
     if(S.phase==='done')h+=`<div class="frbtns"><button class="go" type="button" data-fr="next">Start Year ${y+1}</button></div><p class="frnote">Seniors graduate, freshmen join, and everyone who stays gets better.</p>`;
     return h}
   function newSeason(my){
-    if(FRCFG.sport==='lacrosse'){const st=TOURNS.find(t=>t.key==='state');if(st)st.reset()}
+    if(FRCFG.stateFr){const st=TOURNS.find(t=>t.key==='state');if(st)st.reset()}
     const seed=Math.floor(Math.random()*1e9),r=rng(seed+7),cfg=Object.assign({},PEND);WEEKS=cfg.games;
     S={v:3,year:1,trophies:{ccl:[],state:[],mayhem:[],awards:[]},history:[],dyn:{slots:{}},my,cfg,week:0,seed,sched:schedule(seed),res:[],phase:'season',str:CCL.map((c,i)=>FRCFG.strength?FRCFG.strength(i):.38+r()*.24),rec:CCL.map(()=>({w:0,l:0,t:0,pf:0,pa:0,st:''})),po:null,champ:null};
     save();render();
@@ -2696,7 +2698,7 @@ const FR=(()=>{
   }
   function sim(a,b,noTie){
     let[sa,sb]=FRCFG.sim(S.str[a],S.str[b]);
-    if(sa===sb&&(noTie||!FRCFG.ties)){if(Math.random()<.5+(S.str[a]-S.str[b]))sa+=FRCFG.otPts;else sb+=FRCFG.otPts}
+    if(sa===sb&&(noTie||!FRCFG.ties)){if(Math.random()<.5+(FRCFG.even?0:S.str[a]-S.str[b]))sa+=FRCFG.otPts;else sb+=FRCFG.otPts}
     return{a,b,sa,sb};
   }
   const userIn=g=>g[0]===S.my||g[1]===S.my;
@@ -2714,7 +2716,7 @@ const FR=(()=>{
   }
   function seeds(){return[...Array(NT).keys()].sort((x,y)=>{const a=S.rec[x],b=S.rec[y],pa=(a.w+a.t/2)/Math.max(1,a.w+a.l+a.t),pb=(b.w+b.t/2)/Math.max(1,b.w+b.l+b.t);return pb-pa||(b.pf-b.pa)-(a.pf-a.pa)||b.pf-a.pf})}
   function startPlayoffs(){
-    if(FRCFG.sport==='lacrosse'){const sd=seeds();S.conf=sd[0];S.champ=sd[0];S.phase='state';S.po=null;S.stateStarted=false;return}
+    if(FRCFG.stateFr){const sd=seeds();S.conf=sd[0];S.champ=sd[0];S.phase='state';S.po=null;S.stateStarted=false;return}
     const sd=seeds();S.phase='playoffs';S.conf=sd[0];
     S.po={seed:sd,names:['CCL Semifinal','CCL Championship'],rounds:[[[0,3],[1,2]].map(([i,j])=>({a:sd[i],b:sd[j],done:false}))]};
     if(!sd.includes(S.my))S.po.out=true;
@@ -2770,15 +2772,15 @@ const FR=(()=>{
   function settings(c,locked){return chipRow('Games','games',GAMES.map((g,i)=>({v:g,t:`${g} <small>each school ${TIMES[i]}</small>`})),c.games,locked)
     +chipRow('Difficulty','diff',DIFFS.map((d,i)=>({v:i,t:d.label})),c.diff)
     +chipRow(UNITS[0].toUpperCase()+UNITS.slice(1),'len',LENS.map((m,i)=>({v:i,t:`${m} min`})),c.len)}
-  // lacrosse: when the regular season ends, the state tournament starts on its own; when it's over, so is the season
-  function stateSync(){if(!S||S.phase!=='state'||!FRCFG.sport==='lacrosse')return;const st=TOURNS.find(t=>t.key==='state');if(!st)return;const s=st.status();
+  // when the regular season ends, the state tournament starts on its own; when it's over, so is the season
+  function stateSync(){if(!S||S.phase!=='state'||!FRCFG.stateFr)return;const st=TOURNS.find(t=>t.key==='state');if(!st)return;const s=st.status();
     if(!s.started&&!S.stateStarted){S.stateStarted=true;save();st.start(S.my)}else if(s.started&&s.done){S.phase='done';S.stateWon=s.won;S.stateChamp=s.champ;save();if(s.won)setTimeout(()=>say(`${nm(S.my)} are the state champions!`,2),400)}}
   setInterval(()=>{if(S&&S.phase==='state'&&!$('menu').hidden){const was=S.phase;stateSync();if(S.phase!==was)render()}},1000);
   function render(){
     const el=$('frBody');if(!el)return;stateSync();
     if(!PEND)PEND={games:(NT-1)*2,diff:G.diff,len:G[LK]||0};
     let h='';
-    if(!S){h=`<p>Play a ${PEND.games}-game CCL season. You play each of the other ${NT-1} schools ${TIMES[GAMES.indexOf(PEND.games)]}, home and away. ${FRCFG.sport==='lacrosse'?'The best regular-season record wins the CCL. Then everyone heads to the state tournament: 16 teams, win or go home.':`All ${NT} make the playoffs, every round is one game, and the regular-season conference champion gets the No. 1 seed.`} Your progress saves in this browser.</p>
+    if(!S){h=`<p>Play a ${PEND.games}-game CCL season. You play each of the other ${NT-1} schools ${TIMES[GAMES.indexOf(PEND.games)]}, home and away. ${FRCFG.stateFr?'The best regular-season record wins the CCL. Then everyone heads to the state tournament: 16 teams, win or go home.':`All ${NT} make the playoffs, every round is one game, and the regular-season conference champion gets the No. 1 seed.`} Your progress saves in this browser.</p>
       ${settings(PEND,false)}
       <div class="frbtns"><button class="go" type="button" data-fr="new">Start CCL season with ${esc(nm(G.clubs[0]))}</button></div><p class="frnote">Pick your school in the list above first.</p>`}
     else{
@@ -2793,7 +2795,7 @@ const FR=(()=>{
       if(n){const or=S.rec[opp];h+=`<div class="frnext"><span>Next: ${esc(n.label)} vs <b>${esc(nm(opp))}</b> (${or.w}-${or.l}${or.t?'-'+or.t:''})</span><div class="frbtns"><button class="go" type="button" data-fr="play">Play game</button><button class="btn" type="button" data-fr="sim">Simulate it</button></div></div>`}
       else if(S.phase==='playoffs')h+=`<div class="frbtns"><button class="go" type="button" data-fr="rest">Simulate the rest of the playoffs</button></div>`;
       else if(S.phase==='state')h+=`<div class="frbtns"><button class="go" type="button" data-fr="state">Go to the state tournament</button></div>`;
-      h+=`<div class="frcols"><div><h4>CCL standings</h4>${table()}<p class="frnote">${FRCFG.sport==='lacrosse'?'First place at the end of the regular season wins the CCL. Then comes the state tournament.':`All ${NT} make the playoffs. First place is the conference champion and the No. 1 seed: 1 plays 4, 2 plays 3.`}</p></div><div>`;
+      h+=`<div class="frcols"><div><h4>CCL standings</h4>${table()}<p class="frnote">${FRCFG.stateFr?'First place at the end of the regular season wins the CCL. Then comes the state tournament.':`All ${NT} make the playoffs. First place is the conference champion and the No. 1 seed: 1 plays 4, 2 plays 3.`}</p></div><div>`;
       if(S.po)h+=`<h4>CCL playoffs</h4>${S.conf!=null?`<p class="frnote">${esc(nm(S.conf))} won the regular season and are the No. 1 seed.</p>`:''}${bracket()}`;
       const last=S.res[S.res.length-1];
       if(last&&S.phase==='season')h+=`<h4>Last week</h4><ul class="frres">${last.map(g=>`<li class="${g.a===S.my||g.b===S.my?'me':''}">${esc(ab(g.a))} ${g.sa} – ${g.sb} ${esc(ab(g.b))}</li>`).join('')}</ul>`;
