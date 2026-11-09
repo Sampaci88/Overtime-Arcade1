@@ -2217,7 +2217,7 @@ const SKILLS=(()=>{const KEY='skills-best-'+CELESPORT,GOAL={hockey:8,lacrosse:8,
   setInterval(()=>{if(!$('menu').hidden&&G.skills)G.skills=false;const w=G.warm;if(G.skills===true&&w){clk.hidden=false;clk.innerHTML=`${Math.max(0,Math.ceil(60-w.t))}s · <span>${w.goals||0}</span> ${UNITS}`}else clk.hidden=true},200);
   render();return{finish,start}})();
 /* ---------- achievements: badges shared by all five games ---------- */
-const ACH=(()=>{const KEY='overtime-achievements',L=[['first','First W','Win a game'],['shop','Big Spender','Buy something in the shop'],['chal','Challenge Accepted','Beat a friend’s challenge'],['half','Halftime Hero','Make all 3 in a halftime contest'],['career','Legend in the Making','Finish a four-year career'],['timeout','Drew It Up','Win a game after calling a timeout'],['daily','Daily Grinder','Beat a Daily Challenge'],['daily3','On a Roll','Beat the Daily Challenge 3 days in a row'],['created','Made in STC','Play a game with your created player'],['legend','Legend Slayer','Beat the CPU on Legend'],['shutout','Shutout','Win without giving up a score'],['blowout','Statement Win','Win by a big margin'],['hat','Hat Trick','One of your players scores 3 in a game'],['trick','Highlight Reel','Score with a trick shot or skill move'],['clutch','Ice in the Veins','Win it in overtime or score at the buzzer'],['ccl','CCL Champions','Win the CCL in franchise mode'],['state','State Champs','Win the state tournament'],['mayhem','Mayhem Champs','Win March Mayhem'],['rival','Founders Cup','Win the rivalry game'],['skills','Skills Star','Ace a skills challenge'],['weather','All Weather','Win in rain, snow or wind'],['night','Big Night','Win on Senior Night or Homecoming'],['five','Five-Sport Star','Win a game in all five sports']];
+const ACH=(()=>{const KEY='overtime-achievements',L=[['first','First W','Win a game'],['cards','Full Set','Collect every St. Charles player card in a sport'],['shop','Big Spender','Buy something in the shop'],['chal','Challenge Accepted','Beat a friend’s challenge'],['half','Halftime Hero','Make all 3 in a halftime contest'],['career','Legend in the Making','Finish a four-year career'],['timeout','Drew It Up','Win a game after calling a timeout'],['daily','Daily Grinder','Beat a Daily Challenge'],['daily3','On a Roll','Beat the Daily Challenge 3 days in a row'],['created','Made in STC','Play a game with your created player'],['legend','Legend Slayer','Beat the CPU on Legend'],['shutout','Shutout','Win without giving up a score'],['blowout','Statement Win','Win by a big margin'],['hat','Hat Trick','One of your players scores 3 in a game'],['trick','Highlight Reel','Score with a trick shot or skill move'],['clutch','Ice in the Veins','Win it in overtime or score at the buzzer'],['ccl','CCL Champions','Win the CCL in franchise mode'],['state','State Champs','Win the state tournament'],['mayhem','Mayhem Champs','Win March Mayhem'],['rival','Founders Cup','Win the rivalry game'],['skills','Skills Star','Ace a skills challenge'],['weather','All Weather','Win in rain, snow or wind'],['night','Big Night','Win on Senior Night or Homecoming'],['five','Five-Sport Star','Win a game in all five sports']];
   let D=null;try{D=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}D=D||{got:{},sports:{}};const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}};
   const box=menuBox('achbox','');
   function render(){const n=Object.keys(D.got).length;box.innerHTML=`<h2>Achievements <span>${n} of ${L.length}</span></h2><div class="achgrid">${L.map(([id,nm,ds])=>`<div class="ach${D.got[id]?' got':''}"><b>${nm}</b>${ds}</div>`).join('')}</div><p class="frnote">Shared by all five games on this device.</p>`}
@@ -2811,6 +2811,60 @@ const CONTEST=(()=>{
   {const _ew=endWarmup;endWarmup=function(){if(on()&&G.skills===true&&G.warm){SKILLS.finish(G.warm);return}return _ew.apply(this,arguments)}}
   setInterval(()=>{if(C&&!$('menu').hidden){if(!C.over)C.over=true;C=null;document.documentElement.classList.remove('contest');hud.hidden=true}},400);
   render();return{on,start,get C(){return C}}})();
+/* ---------- more ways to play: All-Star Game, practice, pond hockey, box lacrosse ---------- */
+const MORE=(()=>{const STCI=CLUBS.findIndex(c=>c.abbr==='STC'),others=CCL.map((c,i)=>i).filter(i=>i!==STCI);
+  const modes=[['allstar','CCL All-Star Game','St. Charles against the CCL All-Stars: the best of DeSales, Watterson and Hartley on one team.'],['practice','Practice','Shoot, move and learn the controls with no clock and no pressure. Press Enter or Quit when you’re done.']];
+  if(CELESPORT==='hockey')modes.push(['pond','Pond hockey','3 on 3 outdoors with no goalies and small nets. Keep it on the ice: lifted shots don’t count.']);
+  if(CELESPORT==='lacrosse')modes.push(['boxlax','Box lacrosse','5 on 5 plus goalies, boards instead of out of bounds, and a 30-second shot clock.']);
+  let pend=null;G.xmode=null;
+  const box=menuBox('morebox','',e=>{const b=e.target.closest('[data-mm]');if(!b)return;audio();go(b.dataset.mm)});
+  function render(){box.innerHTML=`<h2>More ways <span>to play</span></h2>${modes.map(([k,n,d])=>`<div class="frnext"><span><b>${n}</b> · ${d}</span><div class="frbtns"><button class="go" type="button" data-mm="${k}">Play</button></div></div>`).join('')}`}
+  function go(k){G.fr=false;G.tourn=null;G.tvenue=null;G.daily=null;
+    if(k==='practice'){G.skills='practice';pend=null;startGame();setTimeout(()=>toast('Practice: no clock. Press Enter or Quit when you’re done'),900);return}
+    G.skills=false;if(k==='allstar'){try{setGuest({name:'CCL All-Stars',abbr:'ALL',c:'#1f2a44',t:'#ffc23d'})}catch(e){}G.clubs=[STCI,4];try{renderMenu()}catch(e){}}
+    else G.clubs=[STCI,others[Math.floor(Math.random()*others.length)]];pend=k;setTimeout(()=>{$('start').click()},40)}
+  {const _ng=newGame;newGame=function(demo){if(demo)G.xmode=null;else{G.xmode=pend||null;pend=null}const r=_ng.apply(this,arguments);
+    if(G.xmode==='allstar')setTimeout(()=>{try{callout('CCL All-Star Game','St. Charles vs the All-Stars','#ffc23d');say('Welcome to the CCL All-Star Game! St. Charles takes on the best of the rest of the league.',3);roar(.6,4)}catch(e){}},1500);
+    if(G.xmode==='pond')setTimeout(()=>{try{callout('Pond hockey','3 on 3 · no goalies · keep it on the ice','#9fd3ff')}catch(e){}},1500);
+    if(G.xmode==='boxlax'){boxSetup();setTimeout(()=>{try{callout('Box lacrosse','5 on 5 · boards · 30-second shot clock','#ffc23d')}catch(e){}},1500)}
+    return r}}
+  // practice never ends on its own; Enter takes you back to the menu
+  {const _ew=endWarmup;endWarmup=function(){if(G.skills==='practice'){G.skills=false;toDemo();return}return _ew.apply(this,arguments)}}
+  // All-Stars: the other schools' players fill the All-Star roster
+  const pickClub=k=>{let h=0;for(const ch of String(k))h=(h*31+ch.charCodeAt(0))>>>0;return others[h%others.length]};
+  const defName=(ci,k)=>{try{const s=RCFG.slots(ci).find(x=>x.key===k);return s?s.name:null}catch(e){return null}};
+  {const n0=RO.n,u0=RO.u;RO.n=function(ci,k,def){if(G.xmode==='allstar'&&ci===4){const o=pickClub(k),d=defName(o,k)||def;return n0.call(this,o,k,d)}return n0.apply(this,arguments)};
+    RO.u=function(ci,k,def){if(G.xmode==='allstar'&&ci===4){const o=pickClub(k);return u0.call(this,o,k,def)}return u0.apply(this,arguments)}}
+  // pond hockey: three skaters a side, empty nets, smaller targets
+  if(CELESPORT==='hockey'){const _st=step;step=function(){if(G.xmode==='pond'&&!G.so)for(const p of P)if(!p.boxed)p.active=p.role==='C'||p.role==='LW'||p.role==='RW';return _st.apply(this,arguments)}}
+  // box lacrosse: two players a side come off, the shot clock is 30, and the boards keep the ball in
+  let BOXOUT=[];
+  function boxSetup(){if(CELESPORT!=='lacrosse')return;BOXOUT=[];for(const t of [0,1])for(const r of ['D','M','A']){const p=P.find(q=>q.team===t&&q.role===r&&q.idx===2);if(p){BOXOUT.push(p);P.splice(P.indexOf(p),1)}}REC=[];for(const t of [0,1]){const m=P.find(q=>q.team===t&&q.role==='M'&&q.idx===2);}}
+  if(CELESPORT==='lacrosse'){
+    const _sf=setupFaceoff;setupFaceoff=function(){if(G.xmode!=='boxlax'||!BOXOUT.length)return _sf.apply(this,arguments);for(const p of BOXOUT)P.push(p);try{return _sf.apply(this,arguments)}finally{for(const p of BOXOUT){const i=P.indexOf(p);if(i>=0)P.splice(i,1)}if(ctrl&&!P.includes(ctrl))ctrl=P.find(p=>p.team===0&&p.role==='M')||null}};
+    const _st=step;step=function(){const r=_st.apply(this,arguments);if(G.xmode==='boxlax'&&G.shot>30)G.shot=30;return r};
+    const _oob=checkOOB;checkOOB=function(){if(G.xmode!=='boxlax')return _oob.apply(this,arguments);
+      if(ball.state==='carried'){const c=ball.owner;c.x=clamp(c.x,.3,FL-.3);c.y=clamp(c.y,.3,FWD-.3);return}
+      if(ball.state!=='ground'&&ball.state!=='air')return;if(ball.x>=0&&ball.x<=FL&&ball.y>=0&&ball.y<=FWD)return;
+      const sx=clamp(ball.x,.5,FL-.5),sy=clamp(ball.y,.5,FWD-.5),bx=ball.x<0?5:ball.x>FL?-5:0,by=ball.y<0?5:ball.y>FWD?-5:0;
+      try{sfx('check')}catch(e){}loose(sx,sy,bx,by,ball.lastTeam==null?0:ball.lastTeam)}}
+  render();return{render}})();
+/* ---------- player cards: collect every St. Charles player by playing ---------- */
+const CARDS=(()=>{const KEY='cards-'+CELESPORT,STCI=CLUBS.findIndex(c=>c.abbr==='STC');let D={};try{D=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){D={}}
+  const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}};
+  let slots=[];try{slots=RCFG.slots(STCI)}catch(e){}
+  function info(s){const name=RO.n(STCI,s.key,s.name)||s.name,num=RO.u(STCI,s.key,s.num);let r=null;try{r=RO.r&&RO.r(STCI,s.key)}catch(e){}if(r==null){try{r=STCR.R[s.key]&&STCR.R[s.key].r}catch(e){}}r=r||78;
+    const tier=r>=105?['Legendary','#ffc23d']:r>=95?['Epic','#b47cff']:r>=85?['Rare','#4ea1ff']:['Common','#a7afaa'];return{name,num,r,tier}}
+  const box=menuBox('cardbox','');
+  function render(){const have=slots.filter(s=>D[s.key]).length;
+    box.innerHTML=`<h2>Player cards <span>${have} of ${slots.length}</span></h2><p class="frnote">You can earn a St. Charles card after every game. New cards pay coins. Collect the whole team!</p>
+      <div class="pcards">${slots.map(s=>{const o=D[s.key];if(!o)return`<div class="pcard lock"><b>?</b><small>${esc(s.label)}</small></div>`;const i=info(s);return`<div class="pcard" style="--t:${i.tier[1]}"><span class="pt">${i.tier[0]}</span><b>#${i.num} ${esc(i.name)}</b><small>${esc(s.label)}</small><span class="po">${i.r} OVR</span>${o.n>1?`<span class="pn">×${o.n}</span>`:''}</div>`}).join('')}</div>`}
+  {const css=document.createElement('style');css.textContent=`.pcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px}.pcard{position:relative;border:2px solid var(--t,#3a4452);border-radius:10px;padding:8px;min-height:96px;display:grid;align-content:start;gap:2px;background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(0,0,0,.2));font-size:13px}.pcard b{font-size:14px}.pcard small{opacity:.75}.pcard .pt{font:800 10px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--t)}.pcard .po{font:900 18px "Big Shoulders Display","Arial Narrow",sans-serif;color:var(--t)}.pcard .pn{position:absolute;right:6px;top:6px;font:700 11px system-ui,sans-serif;opacity:.8}.pcard.lock{display:grid;place-items:center;text-align:center;border-style:dashed;opacity:.55}.pcard.lock b{font-size:28px}`;document.head.appendChild(css)}
+  AFTER.push(()=>{if(G.demo||G.skills||!slots.length)return;const won=userWon();if(Math.random()>(won?.9:.6))return;
+    const w=slots.map(s=>{const r=info(s).r;return r>=105?1:r>=95?2:r>=85?4:6}),tot=w.reduce((a,b)=>a+b,0);let x=Math.random()*tot,s=slots[0];for(let i=0;i<slots.length;i++){x-=w[i];if(x<=0){s=slots[i];break}}
+    const isNew=!D[s.key];D[s.key]=D[s.key]||{n:0,at:Date.now()};D[s.key].n++;save();render();const i=info(s);
+    setTimeout(()=>{try{toast(`${isNew?'New card':'Card'}: #${i.num} ${i.name} · ${i.tier[0]}`);coinsAdd(isNew?10:2,isNew?'New player card':'Duplicate card')}catch(e){}if(slots.every(q=>D[q.key]))try{ACH.give('cards')}catch(e){}},1500)});
+  render();return{render}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'football',otPts:3,strength:i=>.38+(RATE[i].ovr-74)/18*.24,sim:(a,b)=>{const d=a-b;return[7*frPois(2.4+d*5)+3*frPois(1.2),7*frPois(2.4-d*5)+3*frPois(1.2)]}};
