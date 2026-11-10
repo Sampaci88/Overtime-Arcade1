@@ -77,10 +77,10 @@ html.touch.playing .pbar{display:flex}
 (()=>{
 'use strict';
 const $=id=>document.getElementById(id),root=document.documentElement,cv=$('cv'),ctx=cv.getContext('2d'),TOUCH=matchMedia('(pointer: coarse)').matches;if(TOUCH)root.classList.add('touch');
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),hyp=Math.hypot,pick=a=>a[Math.floor(Math.random()*a.length)];
+const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),hyp=Math.hypot,pick=a=>a[Math.floor(Math.random()*a.length)];
 /* ---------- the park: one surface you ride on, in meters, y is up ---------- */
 /* ---------- the parks: each one is a single surface you ride on, in meters, y is up ---------- */
-let L=96,COP=4,PARK='park',path=[],PLEN=0,RAILS=[],GAPS=[];
+let L=96,COP=4,PARK='park',path=[],PLEN=0,RAILS=[],GAPS=[];const SIGNX_={park:30,bowl:44};
 function pt(x,y,tag){path.push({x,y,tag:tag||''})}
 function arc(cx,cy,r,a0,a1,n,tag){for(let i=0;i<=n;i++){const a=a0+(a1-a0)*i/n;pt(cx+Math.cos(a)*r,cy+Math.sin(a)*r,tag)}}
 const PARKS={
@@ -96,9 +96,26 @@ const PARKS={
     pt(66-4.1,0);arc(66-4.1,4.1,4.1,Math.PI*1.5,Math.PI*2,18,'qp');pt(66,4.5,'vert')},
     rails:[{name:'Bowl Rail',x0:8,y0:.85,x1:16,y1:.85,kind:'rail'},{name:'Down Rail',x0:30.2,y0:2.5,x1:34,y1:.95,kind:'rail'},{name:'Long Ledge',x0:40,y0:.55,x1:54,y1:.55,kind:'ledge'}],
     gaps:[{name:'Hip Gap',from:[23,25],to:[30.2,35],pts:700},{name:'Rail to Down Rail',rail:true,from:[8,16],to:[30,34],pts:1000},{name:'Down Rail to Ledge',rail:true,from:[30,34],to:[40,54],pts:900}]}};
-function buildPark(id){if(!PARKS[id])id='park';const P0=PARKS[id];PARK=id;L=P0.L;COP=P0.cop;path=[];P0.build();RAILS=P0.rails;GAPS=P0.gaps;
+/* ---------- park builder: line up pieces between two quarter pipes, skate it, save it, share it ---------- */
+const PIECES={F:{n:'Flat',w:8,b(x){}},
+  B:{n:'Funbox',w:13,b(x,o){pt(x+2,0);pt(x+4.5,1.2,'kick');pt(x+5.2,1.2,'top');pt(x+9.8,1.2,'top');pt(x+12.6,0,'down');o.rails.push({name:'Funbox Ledge',x0:x+5.4,y0:1.32,x1:x+9.6,y1:1.32,kind:'ledge'});o.gaps.push({name:'Funbox Jump',from:[x+3.8,x+5.3],to:[x+9.9,x+13],pts:400})}},
+  T:{n:'Table gap',w:13,b(x,o){pt(x+1,0);pt(x+3.6,1.6,'kick');pt(x+4,1.6,'top');pt(x+9,1.6,'top');pt(x+12.2,0,'down');o.gaps.push({name:'Table Jump',from:[x+2.8,x+4.2],to:[x+9.1,x+13],pts:700})}},
+  S:{n:'Stairs + handrail',w:17,b(x,o){pt(x+1,0);pt(x+4.5,1.8,'kick');pt(x+5,1.8,'top');pt(x+8,1.8,'top');pt(x+12,0,'stairs');o.rails.push({name:'Handrail',x0:x+8,y0:2.75,x1:x+12,y1:.95,kind:'rail'});o.gaps.push({name:'Stair Jump',from:[x+7,x+8.4],to:[x+11.6,x+17],pts:600})}},
+  H:{n:'Hip + down rail',w:15,b(x,o){pt(x+1,0);pt(x+4.5,1.5,'kick');pt(x+5,1.5,'top');pt(x+10,1.5,'top');pt(x+14,0,'down');o.rails.push({name:'Down Rail',x0:x+10.2,y0:2.5,x1:x+14,y1:.95,kind:'rail'});o.gaps.push({name:'Hip Jump',from:[x+3,x+5],to:[x+10.2,x+15],pts:700})}},
+  R:{n:'Flat rail',w:10,b(x,o){o.rails.push({name:'Flat Rail',x0:x+1.5,y0:.9,x1:x+8.5,y1:.9,kind:'rail'})}},
+  K:{n:'Kink rail',w:9,b(x,o){o.rails.push({name:'Kink Rail',x0:x+1.5,y0:.75,x1:x+7.5,y1:.75,kind:'rail'})}},
+  L:{n:'Long ledge',w:15,b(x,o){o.rails.push({name:'Long Ledge',x0:x+1,y0:.55,x1:x+14,y1:.55,kind:'ledge'})}}};
+const PCODE=/^SP[FBTSHRKL]{1,10}$/;
+const myParks=()=>{try{return JSON.parse(localStorage.getItem('shred-myparks')||'[]')}catch(e){return[]}};
+function parkName(code){const m=myParks().find(p=>p.code===code);return m?m.name:'Custom park'}
+function customPark(code,name){const ps=code.slice(2).split('');let w=16;for(const c of ps)w+=PIECES[c].w;const Lc=Math.round(w+3+3.6);
+  return{name:(name||parkName(code)).slice(0,18),custom:true,L:Lc,cop:4,rails:[],gaps:[],build(){this.rails.length=0;this.gaps.length=0;pt(0,4,'vert');pt(0,3.6,'vert');arc(3.6,3.6,3.6,Math.PI,Math.PI*1.5,16,'qp');let x=16;for(const c of ps){PIECES[c].b(x,this);x+=PIECES[c].w}
+    pt(Lc-3.6,0);arc(Lc-3.6,3.6,3.6,Math.PI*1.5,Math.PI*2,16,'qp');pt(Lc,4,'vert')}}}
+function buildPark(id){if(!PARKS[id]&&PCODE.test(id||''))PARKS[id]=customPark(id);if(!PARKS[id])id='park';const P0=PARKS[id];PARK=id;L=P0.L;COP=P0.cop;path=[];P0.build();RAILS=P0.rails;GAPS=P0.gaps;if(P0.custom)SIGNX_[id]=Math.round(P0.L/2);
   let acc=0;for(let i=0;i<path.length;i++){if(i)acc+=hyp(path[i].x-path[i-1].x,path[i].y-path[i-1].y);path[i].s=acc}PLEN=acc}
-let parkId='park';try{parkId=localStorage.getItem('shred-park')||'park'}catch(e){}buildPark(parkId);
+let parkId='park';try{parkId=localStorage.getItem('shred-park')||'park'}catch(e){}
+let SHARED=null;{const sp=new URLSearchParams(location.search),c=(sp.get('park')||'').toUpperCase();if(PCODE.test(c)){const nm=(sp.get('n')||'Friend\'s park').replace(/[<>&"]/g,'').slice(0,18)||'Friend\'s park';PARKS[c]=customPark(c,nm);parkId=c;SHARED={code:c,name:nm}}}
+buildPark(parkId);
 function along(s){s=clamp(s,0,PLEN);let i=1;while(i<path.length-1&&path[i].s<s)i++;const a=path[i-1],b=path[i],f=(s-a.s)/((b.s-a.s)||1);return{x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f,tx:(b.x-a.x)/((b.s-a.s)||1),ty:(b.y-a.y)/((b.s-a.s)||1),i,tag:b.tag}}
 function groundAt(x){for(let i=1;i<path.length;i++){const a=path[i-1],b=path[i];if(b.x-a.x>1e-6&&x>=a.x&&x<=b.x){const f=(x-a.x)/(b.x-a.x);return{y:a.y+(b.y-a.y)*f,s:a.s+(b.s-a.s)*f,tag:b.tag,ang:Math.atan2(b.y-a.y,b.x-a.x)}}}return null}
 /* ---------- tricks and achievements ---------- */
@@ -112,7 +129,7 @@ for(const t of Object.values(GRABS))addA('t:'+t[0],t[0],'Land a '+t[0]);
 for(const t of ['50-50','Nosegrind','5-0','Boardslide'])addA('t:'+t,t,'Land a '+t+' grind');
 for(const [d] of SPINS)addA('t:'+d,d+' spin','Land a '+d+(d===900?' on the big ramps':''));
 addA('t:Manual','Manual','Hold a manual');addA('t:Nose Manual','Nose Manual','Hold a nose manual');
-for(const P0 of Object.values(PARKS))for(const g of P0.gaps)addA('g:'+g.name,g.name,'Clear the '+g.name+(P0.name!=='Shred Park'?' at '+P0.name:''));
+for(const P0 of Object.values(PARKS))if(!P0.custom)for(const g of P0.gaps)addA('g:'+g.name,g.name,'Clear the '+g.name+(P0.name!=='Shred Park'?' at '+P0.name:''));
 addA('skate','S.K.A.T.E. Champ','Beat Rival in a Game of S.K.A.T.E.');addA('bowl540','Bowl Rider','Land a 540 at Cardinal Bowl');
 addA('c5','Combo x5','Land a 5-trick combo');addA('c10','Combo x10','Land a 10-trick combo');addA('p10k','Ten Grand','Land a 10,000-point combo');addA('p50k','Fifty Grand','Land a 50,000-point combo');
 addA('grind3','Grind King','Grind for 3 seconds in one go');addA('man5','Wheelie Pop','Manual for 5 seconds in one go');addA('air','Big Air','Get 3 meters above the coping');addA('flipgrab','Flip and Grab','Land a flip and a grab in the same air');
@@ -247,7 +264,7 @@ function resize(){const r=$('stage').getBoundingClientRect();dpr=Math.min(device
 addEventListener('resize',()=>setTimeout(resize,60));
 const X=x=>(x-camX)*Z+cw/2,Y=y=>ch*(TOUCH?.6:.74)-(y-camY)*Z;
 const city=(()=>{const a=[];let x=-20;while(x<L+40){const w=3+Math.random()*6,h=4+Math.random()*9;a.push({x,w,h,c:pick(['#5b7fa6','#6d8fb3','#4f6f94','#7d9cbc']),win:Math.random()<.7});x+=w+.5+Math.random()*2}return a})();
-const SIGNX_={park:30,bowl:44};let SIGNX=30;
+let SIGNX=30;
 function drawWorld(){SIGNX=SIGNX_[PARK]||30;const sky=ctx.createLinearGradient(0,0,0,ch);sky.addColorStop(0,'#5ab0e2');sky.addColorStop(1,'#bfe3f4');ctx.fillStyle=sky;ctx.fillRect(0,0,cw,ch);
   // the city far behind
   for(const b of city){const px=(b.x-camX*.35)*Z*.6+cw/2,base=Y(0)-Z*1.8,w=b.w*Z*.6,h=b.h*Z*.38;if(px+w<0||px>cw)continue;ctx.globalAlpha=.55;ctx.fillStyle=b.c;ctx.fillRect(px,base-h,w,h);if(b.win){ctx.fillStyle='rgba(255,255,230,.35)';for(let yy=base-h+6;yy<base-6;yy+=12)for(let xx=px+4;xx<px+w-4;xx+=10)ctx.fillRect(xx,yy,4,5)}ctx.globalAlpha=1}
@@ -258,7 +275,7 @@ function drawWorld(){SIGNX=SIGNX_[PARK]||30;const sky=ctx.createLinearGradient(0
   ctx.fillStyle='#d6d1c6';ctx.fillRect(X(0)-Z*.6,Y(COP)-Z*.1,Z*.6,ch);ctx.fillRect(X(L),Y(COP)-Z*.1,Z*.6,ch);
   ctx.strokeStyle='#8c877d';ctx.lineWidth=3;ctx.beginPath();for(let i=0;i<path.length;i++){const p=path[i];i?ctx.lineTo(X(p.x),Y(p.y)):ctx.moveTo(X(p.x),Y(p.y))}ctx.stroke();
   // stairs drawn as steps
-  if(PARK==='park'){const a=path.find(p=>p.x===44&&p.tag==='top'),b=path.find(p=>p.tag==='stairs');ctx.fillStyle='#a9a398';ctx.beginPath();const n=6;ctx.moveTo(X(a.x),Y(a.y));for(let k=0;k<n;k++){const x0=a.x+(b.x-a.x)*k/n,x1=a.x+(b.x-a.x)*(k+1)/n,y1=a.y+(b.y-a.y)*(k+1)/n;ctx.lineTo(X(x1),Y(a.y+(b.y-a.y)*k/n));ctx.lineTo(X(x1),Y(y1))}ctx.lineTo(X(a.x),Y(b.y));ctx.closePath();ctx.fill();
+  for(let si=1;si<path.length;si++)if(path[si].tag==='stairs'){const a=path[si-1],b=path[si];ctx.fillStyle='#a9a398';ctx.beginPath();const n=6;ctx.moveTo(X(a.x),Y(a.y));for(let k=0;k<n;k++){const x0=a.x+(b.x-a.x)*k/n,x1=a.x+(b.x-a.x)*(k+1)/n,y1=a.y+(b.y-a.y)*(k+1)/n;ctx.lineTo(X(x1),Y(a.y+(b.y-a.y)*k/n));ctx.lineTo(X(x1),Y(y1))}ctx.lineTo(X(a.x),Y(b.y));ctx.closePath();ctx.fill();
     ctx.strokeStyle='#777168';ctx.lineWidth=2;ctx.stroke()}
   // coping
   ctx.fillStyle='#e8e8e8';for(const cx of[0,L]){ctx.beginPath();ctx.arc(X(cx),Y(COP),Z*.12,0,Math.PI*2);ctx.fill()}
@@ -300,10 +317,43 @@ let last=0;function frame(t){const dt=Math.min(.033,(t-(last||t))/1000);last=t;t
 function showCard(h){$('ovc').innerHTML=h;$('ov').hidden=false;root.classList.remove('playing');grindSound(false);const b=$('ovc').querySelector('.go');if(b)b.focus()}
 function hideCard(){$('ov').hidden=true}
 function menu(){const best=+(localStorage.getItem('shred-best')||0);showCard(`<h2>Shred Park</h2><p>Skate the park, link tricks into combos, and unlock an achievement for every trick.</p>
-  <div class="row">${Object.entries(PARKS).map(([k,p])=>`<button class="btn" type="button" data-park="${k}" style="${parkId===k?'border-color:#ffc23d;color:#ffc23d':''}">${p.name}</button>`).join('')}</div>
+  ${SHARED&&parkId===SHARED.code?`<p><b>A friend sent you a park:</b> ${SHARED.name}. Skate it, or save it to My parks.</p>`:''}<div class="row">${Object.entries(PARKS).filter(([k,p])=>!p.custom||(SHARED&&k===SHARED.code&&!myParks().some(m=>m.code===k))).map(([k,p])=>`<button class="btn" type="button" data-park="${k}" style="${parkId===k?'border-color:#ffc23d;color:#ffc23d':''}">${p.name}</button>`).join('')}<button class="btn" type="button" data-pba="open">Park builder</button>${SHARED&&parkId===SHARED.code&&!myParks().some(m=>m.code===SHARED.code)?'<button class="btn" type="button" data-pba="keep">Save to My parks</button>':''}</div>${myParks().length?`<div class="row"><span style="align-self:center;opacity:.8">My parks:</span>${myParks().map(m=>`<button class="btn" type="button" data-park="${m.code}" style="${parkId===m.code?'border-color:#ffc23d;color:#ffc23d':''}">${esc(m.name)}</button>`).join('')}</div>`:''}
   <div class="row"><button class="go" type="button" data-a="free">Free skate</button><button class="go" type="button" data-a="session">2-minute session</button><button class="go" type="button" data-a="skate">Game of S.K.A.T.E.</button></div><p>${best?`Best session: ${best.toLocaleString()}`:'No sessions yet'} · Achievements: ${ACH.filter(a=>GOT[a.id]).length} of ${ACH.length}</p>
   <div class="keys"><span><kbd>←</kbd><kbd>→</kbd> push, spin, balance</span><span><kbd>Space</kbd> ollie (hold, let go)</span><span><kbd>J</kbd> flip + direction</span><span><kbd>K</kbd> grab + direction</span><span><kbd>L</kbd> hold to grind</span><span><kbd>↓</kbd>/<kbd>↑</kbd> manual</span><span><kbd>R</kbd> reset</span></div>`)}
-$('ovc').addEventListener('click',e=>{const pk=e.target.closest('button[data-park]');if(pk){parkId=pk.dataset.park;try{localStorage.setItem('shred-park',parkId)}catch(_){}buildPark(parkId);menu();return}
+const PBUI=(()=>{let parts='BRT',name='';try{parts=localStorage.getItem('shred-draft')||parts}catch(e){}
+  const keep=()=>{try{localStorage.setItem('shred-draft',parts)}catch(e){}};
+  function html(msg){return `<h2>Park builder</h2><p>Line up to 10 pieces between the two quarter pipes, then skate it. Save it to My parks or send the link to a friend.</p>
+    <div class="row">${Object.entries(PIECES).map(([k,p])=>`<button class="btn" type="button" data-pbp="${k}"${parts.length>=10?' disabled':''}>+ ${p.n}</button>`).join('')}</div>
+    <canvas id="pbcv" width="640" height="130" style="width:100%;max-width:640px;height:auto;background:#bfe3f4;border-radius:10px;display:block;margin:6px auto"></canvas>
+    <p class="bigt" style="font-size:15px">Quarter pipe · ${parts.split('').map(c=>PIECES[c].n).join(' · ')||'(nothing yet)'} · Quarter pipe</p>
+    <div class="row"><input id="pbname" maxlength="18" placeholder="Name your park" aria-label="Park name" value="${esc(name)}" autocomplete="off"><button class="btn" type="button" data-pba="undo">Undo</button><button class="btn" type="button" data-pba="clear">Clear</button></div>
+    ${msg?`<p style="color:#ffc23d">${msg}</p>`:''}
+    <div class="row"><button class="go" type="button" data-pba="skate"${parts?'':' disabled'}>Skate it</button><button class="btn" type="button" data-pba="save"${parts?'':' disabled'}>Save to My parks</button><button class="btn" type="button" data-pba="share"${parts?'':' disabled'}>Share link</button><button class="btn" type="button" data-pba="back">Back</button></div>`}
+  function draw(){const cv=document.getElementById('pbcv');if(!cv||!parts)return;const c=cv.getContext('2d'),P=customPark('SP'+parts),sv=[path,L,COP,RAILS,GAPS];path=[];P.build();const pts=path;path=sv[0];
+    const W=cv.width,H=cv.height,sx=(W-20)/P.L,sy=Math.min(sx,(H-24)/5),X=x=>10+x*sx,Y=y=>H-12-y*sy;c.clearRect(0,0,W,H);
+    c.fillStyle='#9a9a95';c.beginPath();c.moveTo(X(pts[0].x),H);for(const q of pts)c.lineTo(X(q.x),Y(q.y));c.lineTo(X(pts[pts.length-1].x),H);c.closePath();c.fill();
+    c.strokeStyle='#5d5d58';c.lineWidth=2;c.beginPath();pts.forEach((q,i)=>i?c.lineTo(X(q.x),Y(q.y)):c.moveTo(X(q.x),Y(q.y)));c.stroke();
+    c.strokeStyle='#c4161c';c.lineWidth=3;for(const r of P.rails){c.beginPath();c.moveTo(X(r.x0),Y(r.y0));c.lineTo(X(r.x1),Y(r.y1));c.stroke()}}
+  function show(msg){showCard(html(msg));setTimeout(draw,0);const inp=document.getElementById('pbname');if(inp)inp.addEventListener('input',()=>{name=inp.value})}
+  function code(){return 'SP'+parts}
+  function nm(){return (name||'').replace(/[<>&"]/g,'').trim().slice(0,18)||'My park'}
+  function saveIt(c,n){const L0=myParks().filter(m=>m.code!==c);L0.unshift({code:c,name:n});try{localStorage.setItem('shred-myparks',JSON.stringify(L0.slice(0,10)))}catch(e){}if(PARKS[c])PARKS[c].name=n}
+  async function click(b){const k=b.dataset.pbp,a=b.dataset.pba;
+    if(k){if(parts.length<10){parts+=k;keep()}show();return true}
+    if(a==='open'){show();return true}
+    if(a==='undo'){parts=parts.slice(0,-1);keep();show();return true}
+    if(a==='clear'){parts='';keep();show();return true}
+    if(a==='back'){menu();return true}
+    if(a==='keep'&&SHARED){saveIt(SHARED.code,SHARED.name);menu();return true}
+    const c=code();if(!PCODE.test(c))return true;
+    if(a==='save'){saveIt(c,nm());show(`Saved “${esc(nm())}” to My parks.`);return true}
+    if(a==='skate'){PARKS[c]=customPark(c,myParks().some(m=>m.code===c)?parkName(c):nm());parkId=c;try{localStorage.setItem('shred-park',c)}catch(_){}buildPark(c);menu();const f=$('ovc').querySelector('[data-a="free"]');if(f)f.click();return true}
+    if(a==='share'){const url=location.origin+location.pathname+'?park='+c+'&n='+encodeURIComponent(nm());
+      try{if(navigator.share){await navigator.share({title:'Shred Park',text:`Skate my park “${nm()}” in Shred Park`,url});return true}}catch(err){if(err&&err.name==='AbortError')return true}
+      try{await navigator.clipboard.writeText(url);b.textContent='Link copied!'}catch(err){b.textContent='Code: '+c}return true}
+    return false}
+  return{click,show,get parts(){return parts}}})();
+$('ovc').addEventListener('click',e=>{const pbb=e.target.closest('button[data-pbp],button[data-pba]');if(pbb){audio();PBUI.click(pbb);return}const pk=e.target.closest('button[data-park]');if(pk){parkId=pk.dataset.park;try{localStorage.setItem('shred-park',parkId)}catch(_){}buildPark(parkId);menu();return}
   const b=e.target.closest('button[data-a]');if(!b)return;audio();mode=b.dataset.a==='session'?'session':b.dataset.a==='skate'?'skate':'free';buildPark(parkId);reset();hideCard();if(mode==='skate')skStart();else SK=null;if(TOUCH)root.classList.add('playing');setTimeout(resize,30);flash(mode==='session'?'2 minutes. Go!':mode==='skate'?'Game of S.K.A.T.E.':'Free skate',TOUCH?'Push the joystick to get rolling':'Push with → to get rolling')});
 function resetRun(){if(!S)return;if(mode==='skate')skStart();paused=false;$('bPause').textContent='Pause';$('pPause').textContent='Pause';grindSound(false);reset();hideCard();if(TOUCH)root.classList.add('playing');flash(mode==='session'?'Reset: 2 minutes. Go!':'Reset','Back at the start')}
 $('bReset').addEventListener('click',resetRun);$('pReset').addEventListener('click',resetRun);
@@ -311,7 +361,7 @@ function togglePause(){if(!S)return;paused=!paused;$('bPause').textContent=pause
 $('bPause').addEventListener('click',togglePause);$('pPause').addEventListener('click',togglePause);$('bMenu').addEventListener('click',()=>{paused=false;menu()});$('pMenu').addEventListener('click',()=>{paused=false;menu()});
 $('bSound').addEventListener('click',()=>{soundOn=!soundOn;try{localStorage.setItem('shred-sound',soundOn?'on':'off')}catch(e){}$('bSound').textContent='Sound: '+(soundOn?'on':'off');if(!soundOn)grindSound(false)});$('bSound').textContent='Sound: '+(soundOn?'on':'off');
 const KM={ArrowLeft:'left',KeyA:'left',ArrowRight:'right',KeyD:'right',ArrowUp:'up',KeyW:'up',ArrowDown:'down',KeyS:'down',Space:'ollie',KeyJ:'flip',KeyK:'grab',KeyL:'grind'};
-addEventListener('keydown',e=>{if(!$('ov').hidden){if(e.code==='KeyR'&&S&&!e.repeat){resetRun();return}if(e.code==='Enter'&&document.activeElement===document.body){const b=$('ovc').querySelector('.go');if(b)b.click()}return}
+addEventListener('keydown',e=>{if(e.target&&e.target.tagName==='INPUT')return;if(!$('ov').hidden){if(e.code==='KeyR'&&S&&!e.repeat){resetRun();return}if(e.code==='Enter'&&document.activeElement===document.body){const b=$('ovc').querySelector('.go');if(b)b.click()}return}
   const k=KM[e.code];if(k){e.preventDefault();if(!K[k]&&(k==='flip'||k==='grab'))press(k);K[k]=1;audio()}if(e.code==='KeyP')togglePause();if(e.code==='KeyR'&&!e.repeat)resetRun()});
 addEventListener('keyup',e=>{const k=KM[e.code];if(k)K[k]=0});
 addEventListener('blur',()=>{for(const k in K)K[k]=0;joy.x=joy.y=0});
@@ -324,6 +374,49 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&S&&!paused
 resize();renderAch();menu();requestAnimationFrame(frame);
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 window.__shred={get S(){return S},K,joy,update,press,reset,get RAILS(){return RAILS},get path(){return path},get SK(){return SK},buildPark,skStart,setPark:id=>{parkId=id;buildPark(id)},give,GOT,ACH,along,groundAt,setMode:m=>{mode=m}};
+/* ---------- game controllers: an Xbox, PlayStation or Switch controller works like the keyboard; in menus the D-pad or stick moves between buttons and A picks ---------- */
+const PADS=(cfg=>{
+  const held=[new Map(),new Map()],dirs=[new Set(),new Set()],prev=[[],[]],block=[new Set(),new Set()],nav=[null,null],navT=[0,0];let foc=null,wasUI=null,seen=0;
+  const st=document.createElement('style');st.textContent='.padfoc{outline:3px solid #ffd23f!important;outline-offset:3px!important}#padtip{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(10,14,20,.88);color:#fff;font:600 14px/1.35 system-ui,sans-serif;padding:9px 15px;border-radius:10px;z-index:99999;pointer-events:none;transition:opacity .5s;max-width:92vw;text-align:center}';document.head.appendChild(st);
+  function tip(t){let el=document.getElementById('padtip');if(!el){el=document.createElement('div');el.id='padtip';document.body.appendChild(el)}el.textContent=t;el.style.opacity='1';clearTimeout(tip.h);tip.h=setTimeout(()=>{el.style.opacity='0'},4200)}
+  const keyOf=c=>c==='Space'?' ':c.startsWith('Key')?c.slice(3).toLowerCase():c.startsWith('Digit')?c.slice(5):c==='Slash'?'/':c==='Period'?'.':c==='Comma'?',':c.startsWith('Shift')?'Shift':c;
+  function send(type,code){try{document.body.dispatchEvent(new KeyboardEvent(type,{code,key:keyOf(code),bubbles:true,cancelable:true,shiftKey:code.startsWith('Shift')&&type==='keydown'}))}catch(e){}}
+  function releaseAll(i){for(const c of held[i].values())send('keyup',c);held[i].clear();for(const c of dirs[i])send('keyup',c);dirs[i].clear()}
+  const vis=el=>{if(!el||el.disabled)return false;const r=el.getBoundingClientRect();if(r.width<2||r.height<2||r.bottom<-2000||r.top>innerHeight+4000)return false;for(let e=el;e&&e!==document.body;e=e.parentElement){if(e.hidden)return false;const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity===0)return false}return true};
+  function cands(){const roots=(cfg.roots?cfg.roots():[document]).filter(Boolean);const out=[];for(const r of roots)for(const e of r.querySelectorAll('button,a[href],input:not([type=hidden]),select,summary,[tabindex="0"]'))if(vis(e)&&!out.includes(e))out.push(e);return out}
+  function setFoc(el){if(foc)foc.classList.remove('padfoc');foc=el;if(!el)return;el.classList.add('padfoc');try{el.focus({preventScroll:true})}catch(e){}try{el.scrollIntoView({block:'nearest',inline:'nearest'})}catch(e){}}
+  function firstOf(cs){const f=cfg.first&&cfg.first();return f&&cs.includes(f)?f:cs.find(e=>e.matches('.go,#start'))||cs[0]}
+  function move(dx,dy){const cs=cands();if(!cs.length)return;if(!foc||!cs.includes(foc)){setFoc(firstOf(cs));return}
+    if(dx&&(foc.tagName==='SELECT'||(foc.tagName==='INPUT'&&foc.type==='range'))){if(foc.tagName==='SELECT'){const n=foc.options.length;foc.selectedIndex=Math.max(0,Math.min(n-1,foc.selectedIndex+dx))}else{dx>0?foc.stepUp():foc.stepDown()}foc.dispatchEvent(new Event('input',{bubbles:true}));foc.dispatchEvent(new Event('change',{bubbles:true}));return}
+    const a=foc.getBoundingClientRect(),ax=a.left+a.width/2,ay=a.top+a.height/2;let best=null,bs=1e9;
+    for(const e of cs){if(e===foc)continue;const r=e.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+      const along=dx?(dx>0?r.left-a.right:a.left-r.right):(dy>0?r.top-a.bottom:a.top-r.bottom),cen=(x-ax)*dx+(y-ay)*dy;if(cen<=2||along<-Math.min(a.width,a.height)*.5)continue;
+      const ov=dx?Math.min(r.bottom,a.bottom)-Math.max(r.top,a.top):Math.min(r.right,a.right)-Math.max(r.left,a.left),off=ov>0?0:Math.abs(dx?y-ay:x-ax);
+      const s=Math.max(0,along)+off*3+Math.abs(dx?y-ay:x-ax)*.2;if(s<bs){bs=s;best=e}}
+    if(best)setFoc(best)}
+  function choose(){const cs=cands();if(!cs.length)return;if(!foc||!cs.includes(foc)){setFoc(firstOf(cs));return}if(foc.tagName==='INPUT'&&/text|search|number|email/.test(foc.type)){foc.focus();return}foc.click();setTimeout(()=>{if(foc&&!vis(foc))setFoc(null)},60)}
+  const pr=(b,k)=>!!b[k]&&(b[k].pressed||b[k].value>.35);
+  function stick(p){const ax=p.axes||[],b=p.buttons;let x=(pr(b,15)?1:0)-(pr(b,14)?1:0),y=(pr(b,13)?1:0)-(pr(b,12)?1:0);const sx=ax[0]||0,sy=ax[1]||0;if(Math.abs(sx)>.42)x=x||Math.sign(sx);if(Math.abs(sy)>.42)y=y||Math.sign(sy);return{x,y,sx,sy}}
+  function poll(){requestAnimationFrame(poll);let gp=[];try{gp=[...(navigator.getGamepads?navigator.getGamepads():[])].filter(p=>p&&p.connected!==false)}catch(e){}if(!gp.length){if(wasUI===false){releaseAll(0);releaseAll(1)}wasUI=null;return}
+    let ui=false;try{ui=!!cfg.ui()}catch(e){}
+    if(ui!==wasUI){releaseAll(0);releaseAll(1);for(let i=0;i<2;i++){block[i]=new Set();const p=gp[i];if(p)p.buttons.forEach((x,k)=>{if(x.pressed)block[i].add(k)})}if(!ui){setFoc(null);const a=document.activeElement;if(a&&a!==document.body&&a.blur&&a.tagName!=='INPUT')a.blur()}wasUI=ui}
+    const two=!!(cfg.two&&cfg.two());
+    gp.slice(0,2).forEach((p,i)=>{const b=p.buttons,cur=b.map((x,k)=>pr(b,k)),pv=prev[i]||[];prev[i]=cur;for(const k of [...block[i]])if(!cur[k])block[i].delete(k);const edge=k=>cur[k]&&!pv[k]&&!block[i].has(k);
+      if(ui){const s=stick(p);let dx=s.x,dy=s.y;if(dx&&dy){if(Math.abs(s.sx)>Math.abs(s.sy))dy=0;else dx=0}const d=dx||dy?dx+','+dy:null,now=performance.now();
+        if(d&&(d!==nav[i]||now>navT[i])){navT[i]=now+(d!==nav[i]?400:150);move(dx,dy)}nav[i]=d;
+        if(edge(0))choose();if(edge(1)&&cfg.back)cfg.back();if(edge(9)){const s0=cfg.start&&cfg.start();if(s0&&vis(s0))s0.click();else choose()}return}
+      const pl=two?i:0,m=cfg.map(pl,{p,cur,stick:stick(p)})||{},want=new Set(m.dirs||[]);
+      for(const c of dirs[i])if(!want.has(c)){send('keyup',c);dirs[i].delete(c)}for(const c of want)if(!dirs[i].has(c)){send('keydown',c);dirs[i].add(c)}
+      for(let k=0;k<cur.length;k++){if(edge(k)){const c=(m.btn||{})[k];if(c){const dup=[...held[i].values()].includes(c);held[i].set(k,c);if(!dup)send('keydown',c)}}else if(!cur[k]&&held[i].has(k)){const c=held[i].get(k);held[i].delete(k);if(![...held[i].values()].includes(c))send('keyup',c)}}});
+  }
+  addEventListener('gamepadconnected',e=>{seen++;tip(`🎮 Controller ${seen>1?seen+' ':''}connected. ${cfg.help||''}`)});
+  addEventListener('gamepaddisconnected',()=>{releaseAll(0);releaseAll(1);tip('🎮 Controller disconnected')});
+  requestAnimationFrame(poll);
+  return{tip,cands,get foc(){return foc}};
+})({help:'Stick or D-pad moves and pumps, A = ollie, X = flip, Y = grab, B = grind, Start pauses, View/Select resets. In menus, move with the D-pad and press A to pick.',
+  ui:()=>!$('ov').hidden,roots:()=>[$('ov')],first:()=>$('ovc').querySelector('.go'),start:()=>$('ovc').querySelector('.go'),
+  back:()=>{const b=$('ovc').querySelector('[data-a="menu"],[data-a="back"]');if(b)b.click()},
+  map:(pl,{stick:s})=>{const d=[];if(s.y<0)d.push('ArrowUp');if(s.y>0)d.push('ArrowDown');if(s.x<0)d.push('ArrowLeft');if(s.x>0)d.push('ArrowRight');return{dirs:d,btn:{0:'Space',2:'KeyJ',3:'KeyK',1:'KeyL',9:'KeyP',8:'KeyR'}}}});
 })();
 </script>
 </body></html>

@@ -230,7 +230,7 @@ function seeded(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a
 function roster(ci){const r=seeded((ci===4?GUESTSEED:ci)*977+13),pool=[...SURN],out=[];while(out.length<12){const i=Math.floor(r()*pool.length);out.push(pool.splice(i,1)[0])}return out}
 const tag=p=>`#${p.num} ${p.name}`;
 // St. Charles is a step better: quicker skaters, harder shots, softer hands and a sharper goalie
-const isSTC=t=>{const c=CLUBS[G.clubs[t]];return !!c&&c.abbr==='STC'};
+const isSTC=t=>false; // every team is evenly matched
 const akey=r=>r==='G'?'G':r==='C'?'C':r[1]==='W'?'W':'D';
 
 const $=id=>document.getElementById(id);
@@ -2716,9 +2716,63 @@ const CARDS=(()=>{const KEY='cards-'+CELESPORT,STCI=CLUBS.findIndex(c=>c.abbr===
     const isNew=!D[s.key];D[s.key]=D[s.key]||{n:0,at:Date.now()};D[s.key].n++;save();render();const i=info(s);
     setTimeout(()=>{try{toast(`${isNew?'New card':'Card'}: #${i.num} ${i.name} · ${i.tier[0]}`);coinsAdd(isNew?10:2,isNew?'New player card':'Duplicate card')}catch(e){}if(slots.every(q=>D[q.key]))try{ACH.give('cards')}catch(e){}},1500)});
   render();return{render}})();
+/* ---------- game controllers: an Xbox, PlayStation or Switch controller works like the keyboard; in menus the D-pad or stick moves between buttons and A picks ---------- */
+const PADS=(cfg=>{
+  const held=[new Map(),new Map()],dirs=[new Set(),new Set()],prev=[[],[]],block=[new Set(),new Set()],nav=[null,null],navT=[0,0];let foc=null,wasUI=null,seen=0;
+  const st=document.createElement('style');st.textContent='.padfoc{outline:3px solid #ffd23f!important;outline-offset:3px!important}#padtip{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(10,14,20,.88);color:#fff;font:600 14px/1.35 system-ui,sans-serif;padding:9px 15px;border-radius:10px;z-index:99999;pointer-events:none;transition:opacity .5s;max-width:92vw;text-align:center}';document.head.appendChild(st);
+  function tip(t){let el=document.getElementById('padtip');if(!el){el=document.createElement('div');el.id='padtip';document.body.appendChild(el)}el.textContent=t;el.style.opacity='1';clearTimeout(tip.h);tip.h=setTimeout(()=>{el.style.opacity='0'},4200)}
+  const keyOf=c=>c==='Space'?' ':c.startsWith('Key')?c.slice(3).toLowerCase():c.startsWith('Digit')?c.slice(5):c==='Slash'?'/':c==='Period'?'.':c==='Comma'?',':c.startsWith('Shift')?'Shift':c;
+  function send(type,code){try{document.body.dispatchEvent(new KeyboardEvent(type,{code,key:keyOf(code),bubbles:true,cancelable:true,shiftKey:code.startsWith('Shift')&&type==='keydown'}))}catch(e){}}
+  function releaseAll(i){for(const c of held[i].values())send('keyup',c);held[i].clear();for(const c of dirs[i])send('keyup',c);dirs[i].clear()}
+  const vis=el=>{if(!el||el.disabled)return false;const r=el.getBoundingClientRect();if(r.width<2||r.height<2||r.bottom<-2000||r.top>innerHeight+4000)return false;for(let e=el;e&&e!==document.body;e=e.parentElement){if(e.hidden)return false;const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity===0)return false}return true};
+  function cands(){const roots=(cfg.roots?cfg.roots():[document]).filter(Boolean);const out=[];for(const r of roots)for(const e of r.querySelectorAll('button,a[href],input:not([type=hidden]),select,summary,[tabindex="0"]'))if(vis(e)&&!out.includes(e))out.push(e);return out}
+  function setFoc(el){if(foc)foc.classList.remove('padfoc');foc=el;if(!el)return;el.classList.add('padfoc');try{el.focus({preventScroll:true})}catch(e){}try{el.scrollIntoView({block:'nearest',inline:'nearest'})}catch(e){}}
+  function firstOf(cs){const f=cfg.first&&cfg.first();return f&&cs.includes(f)?f:cs.find(e=>e.matches('.go,#start'))||cs[0]}
+  function move(dx,dy){const cs=cands();if(!cs.length)return;if(!foc||!cs.includes(foc)){setFoc(firstOf(cs));return}
+    if(dx&&(foc.tagName==='SELECT'||(foc.tagName==='INPUT'&&foc.type==='range'))){if(foc.tagName==='SELECT'){const n=foc.options.length;foc.selectedIndex=Math.max(0,Math.min(n-1,foc.selectedIndex+dx))}else{dx>0?foc.stepUp():foc.stepDown()}foc.dispatchEvent(new Event('input',{bubbles:true}));foc.dispatchEvent(new Event('change',{bubbles:true}));return}
+    const a=foc.getBoundingClientRect(),ax=a.left+a.width/2,ay=a.top+a.height/2;let best=null,bs=1e9;
+    for(const e of cs){if(e===foc)continue;const r=e.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+      const along=dx?(dx>0?r.left-a.right:a.left-r.right):(dy>0?r.top-a.bottom:a.top-r.bottom),cen=(x-ax)*dx+(y-ay)*dy;if(cen<=2||along<-Math.min(a.width,a.height)*.5)continue;
+      const ov=dx?Math.min(r.bottom,a.bottom)-Math.max(r.top,a.top):Math.min(r.right,a.right)-Math.max(r.left,a.left),off=ov>0?0:Math.abs(dx?y-ay:x-ax);
+      const s=Math.max(0,along)+off*3+Math.abs(dx?y-ay:x-ax)*.2;if(s<bs){bs=s;best=e}}
+    if(best)setFoc(best)}
+  function choose(){const cs=cands();if(!cs.length)return;if(!foc||!cs.includes(foc)){setFoc(firstOf(cs));return}if(foc.tagName==='INPUT'&&/text|search|number|email/.test(foc.type)){foc.focus();return}foc.click();setTimeout(()=>{if(foc&&!vis(foc))setFoc(null)},60)}
+  const pr=(b,k)=>!!b[k]&&(b[k].pressed||b[k].value>.35);
+  function stick(p){const ax=p.axes||[],b=p.buttons;let x=(pr(b,15)?1:0)-(pr(b,14)?1:0),y=(pr(b,13)?1:0)-(pr(b,12)?1:0);const sx=ax[0]||0,sy=ax[1]||0;if(Math.abs(sx)>.42)x=x||Math.sign(sx);if(Math.abs(sy)>.42)y=y||Math.sign(sy);return{x,y,sx,sy}}
+  function poll(){requestAnimationFrame(poll);let gp=[];try{gp=[...(navigator.getGamepads?navigator.getGamepads():[])].filter(p=>p&&p.connected!==false)}catch(e){}if(!gp.length){if(wasUI===false){releaseAll(0);releaseAll(1)}wasUI=null;return}
+    let ui=false;try{ui=!!cfg.ui()}catch(e){}
+    if(ui!==wasUI){releaseAll(0);releaseAll(1);for(let i=0;i<2;i++){block[i]=new Set();const p=gp[i];if(p)p.buttons.forEach((x,k)=>{if(x.pressed)block[i].add(k)})}if(!ui){setFoc(null);const a=document.activeElement;if(a&&a!==document.body&&a.blur&&a.tagName!=='INPUT')a.blur()}wasUI=ui}
+    const two=!!(cfg.two&&cfg.two());
+    gp.slice(0,2).forEach((p,i)=>{const b=p.buttons,cur=b.map((x,k)=>pr(b,k)),pv=prev[i]||[];prev[i]=cur;for(const k of [...block[i]])if(!cur[k])block[i].delete(k);const edge=k=>cur[k]&&!pv[k]&&!block[i].has(k);
+      if(ui){const s=stick(p);let dx=s.x,dy=s.y;if(dx&&dy){if(Math.abs(s.sx)>Math.abs(s.sy))dy=0;else dx=0}const d=dx||dy?dx+','+dy:null,now=performance.now();
+        if(d&&(d!==nav[i]||now>navT[i])){navT[i]=now+(d!==nav[i]?400:150);move(dx,dy)}nav[i]=d;
+        if(edge(0))choose();if(edge(1)&&cfg.back)cfg.back();if(edge(9)){const s0=cfg.start&&cfg.start();if(s0&&vis(s0))s0.click();else choose()}return}
+      const pl=two?i:0,m=cfg.map(pl,{p,cur,stick:stick(p)})||{},want=new Set(m.dirs||[]);
+      for(const c of dirs[i])if(!want.has(c)){send('keyup',c);dirs[i].delete(c)}for(const c of want)if(!dirs[i].has(c)){send('keydown',c);dirs[i].add(c)}
+      for(let k=0;k<cur.length;k++){if(edge(k)){const c=(m.btn||{})[k];if(c){const dup=[...held[i].values()].includes(c);held[i].set(k,c);if(!dup)send('keydown',c)}}else if(!cur[k]&&held[i].has(k)){const c=held[i].get(k);held[i].delete(k);if(![...held[i].values()].includes(c))send('keyup',c)}}});
+  }
+  addEventListener('gamepadconnected',e=>{seen++;tip(`🎮 Controller ${seen>1?seen+' ':''}connected. ${cfg.help||''}`)});
+  addEventListener('gamepaddisconnected',()=>{releaseAll(0);releaseAll(1);tip('🎮 Controller disconnected')});
+  requestAnimationFrame(poll);
+  return{tip,cands,get foc(){return foc}};
+})((()=>{const seen=el=>{if(!el)return false;const r=el.getBoundingClientRect();if(r.width<2||r.height<2)return false;for(let e=el;e&&e!==document.body;e=e.parentElement){if(e.hidden)return false;const cs=getComputedStyle(e);if(cs.display==='none'||cs.visibility==='hidden'||+cs.opacity===0)return false}return true},
+    live=e=>e&&e.id!=='menu'&&seen(e)&&[...e.querySelectorAll('button')].some(seen),
+    ovs=()=>{const d=[...document.querySelectorAll('[role=dialog]')].filter(live);if(d.length)return d;if(!$('menu').hidden)return[];return[...document.querySelectorAll('#card,#call')].filter(live)};
+  const esc=()=>{try{document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true,cancelable:true}))}catch(e){}};
+  const P1D=['KeyW','KeyS','KeyA','KeyD'],P2D=['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'];
+  return{help:"Stick or D-pad moves, A = Space, B = E, X = Q, Start pauses, View/Select calls a timeout. In menus, move with the D-pad and press A to pick.",
+    two:()=>{try{return TWO.on()}catch(e){return false}},
+    ui:()=>!$('menu').hidden||ovs().length>0,
+    roots:()=>{const o=ovs();return o.length?o:[document]},
+    first:()=>{const o=ovs();return o.length?o[o.length-1].querySelector('.go,.primary,button'):$('start')},
+    start:()=>!$('menu').hidden?$('start'):null,back:esc,
+    map:(pl,{stick:s})=>{const D=pl?P2D:P1D,dirs=[];if(s.y<0)dirs.push(D[0]);if(s.y>0)dirs.push(D[1]);if(s.x<0)dirs.push(D[2]);if(s.x>0)dirs.push(D[3]);
+      return{dirs,btn:pl?{0:'Slash',1:'Period',2:'Comma',9:'KeyP'}:{0:'Space',1:'KeyE',2:'KeyQ',9:'KeyP',8:'KeyT'}}}}})());
+/* ---------- even teams: every school plays at the same level (names stay, ratings and star traits don't change the game) ---------- */
+{RO.r=function(){return null};if(typeof starOf==='function')starOf=function(){return null}}
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
-const FRCFG={sport:'hockey',stateFr:true,otPts:1,strength:i=>CLUBS[i].abbr==='STC'?.66:.38+Math.random()*.18,sim:(a,b)=>{const d=a-b;return[frPois(2.9+d*4),frPois(2.9-d*4)]}};
+const FRCFG={sport:'hockey',stateFr:true,even:true,otPts:1,strength:()=>.5,sim:(a,b)=>{const d=0;return[frPois(2.9+d*4),frPois(2.9-d*4)]}};
 const startGame=$('start').onclick;$('start').onclick=()=>{G.fr=false;startGame()};
 /* ---------- franchise mode: the CCL. 4 schools, 6 conference games (each opponent twice, home and away), all 4 make single-game playoffs, the regular-season champion is the 1 seed ---------- */
 const FR=(()=>{
@@ -2743,19 +2797,32 @@ const FR=(()=>{
   }
   // dynasty: the next season keeps your school, settings, trophies and players (seniors graduate, freshmen join, everyone else improves)
   const FIRSTN=['Jack','Luke','Owen','Ryan','Cole','Nate','Ben','Matt','Drew','Evan','Liam','Max','Sam','Will','Tyler','Gavin','Aiden','Carter','Mason','Connor'],LASTN=['Kelly','Murphy','Brennan','Walsh','Doyle','Novak','Keller','Rossi','Fischer','Burke','Hayes','Quinn','Moran','Sullivan','Ritter','Lang','Dunn','Shea','Becker','Hoffman'];
+  // recruiting: when the season ends, each senior's spot gets three recruits to choose from; better recruits cost more recruiting points
+  const RCFIRST=['Brady','Colin','Dylan','Ethan','Finn','Grant','Henry','Isaac','Jake','Kyle','Logan','Miles','Noah','Parker','Reid','Shane','Trey','Wyatt','Zach','Blake'],RCTOWN=['Westerville','Dublin','Hilliard','Worthington','Gahanna','Grove City','Upper Arlington','Pickerington','Delaware','Lancaster','New Albany','Powerville'];
+  {const cs=document.createElement('style');cs.textContent='.rcb{display:inline-flex!important;flex-direction:column;align-items:flex-start!important;gap:2px!important;border-radius:10px!important;padding:7px 11px!important;min-width:0!important;cursor:pointer;color:inherit;font:inherit;text-align:left}.rcb small{opacity:.75;font-size:12px}.rcb[aria-pressed=true]{outline:2px solid #ffd23f;background:rgba(255,210,63,.14)!important}.rcb:disabled{opacity:.4;cursor:default}';document.head.appendChild(cs)}
+  function rcBudget(st){return 3*rcOpen(st).length+(st.champ===st.my?2:0)+(st.stateWon?2:0)}
+  function rcOpen(st){const sl=(st.dyn||{}).slots||{};return Object.keys(sl).filter(k=>sl[k].cls>=4&&sl[k].name).sort()}
+  function recruits(st,k){let h=st.seed||1;for(const ch of k)h=(h*31+ch.charCodeAt(0))>>>0;const r=rng(h),hi=r()<.4?5:4,stars=[hi,3,2];
+    return stars.map(s=>({name:`${RCFIRST[Math.floor(r()*RCFIRST.length)]} ${LASTN[Math.floor(r()*LASTN.length)]}`,stars:s,cost:s,r:{5:79,4:76,3:72,2:68}[s]+Math.floor(r()*4),town:RCTOWN[Math.floor(r()*RCTOWN.length)]}))}
+  function rcSpent(st){let n=0;for(const k in st.recruit||{}){const c=recruits(st,k)[st.recruit[k]];if(c)n+=c.cost}return n}
+  function rcHtml(){const open=rcOpen(S);if(!open.length)return'';const bud=rcBudget(S),sp=rcSpent(S),pos=k=>k.replace(/\d+$/,'');
+    let h=`<h4>Recruiting · ${bud-sp} of ${bud} points left</h4><p class="frnote">Your seniors are graduating. Pick a freshman for each open spot: ★★★★★ recruits cost 5 points, ★★ cost 2. You get 3 points per open spot${S.champ===S.my?', +2 for the CCL title':''}${S.stateWon?', +2 for the state title':''}. Spots you leave empty get a walk-on.${FRCFG.even?' Every team is evenly matched, so recruits change names and class years, not how good the team is.':''}</p>`;
+    for(const k of open){const s=S.dyn.slots[k],cs=recruits(S,k),pick=(S.recruit||{})[k];
+      h+=`<p class="frnote"><b>${esc(pos(k))}</b> · replacing ${esc(s.name)}</p><div class="chips">${cs.map((c,i)=>`<button class="chip rcb" type="button" data-fr="rc" data-rk="${k}" data-ri="${i}" aria-pressed="${pick===i}"${pick!==i&&c.cost>bud-sp?' disabled':''}>${'★'.repeat(c.stars)} ${esc(c.name)}<small>${esc(c.town)} · ${FRCFG.even?'':c.r+' overall · '}${c.cost} pts</small></button>`).join('')}</div>`}
+    return h}
   function freshman(s,r){const ln=LASTN[Math.floor(r()*LASTN.length)];return{name:s.name&&!/ /.test(s.name)?ln:`${FIRSTN[Math.floor(r()*FIRSTN.length)]} ${ln}`,num:s.num,r:68+Math.floor(r()*9),cls:1,fresh:true}}
   function nextSeason(){if(FRCFG.stateFr){const st=TOURNS.find(t=>t.key==='state');if(st)st.reset()}const old=S,y=old.year||1,seed=Math.floor(Math.random()*1e9),r=rng(seed+7),me=CLUBS[old.my].abbr;
     const tr=old.trophies||{ccl:[],state:[],mayhem:[],awards:[]};if(old.champ===old.my&&!tr.ccl.includes(y))tr.ccl.push(y);for(const a of awards())if(a.p.club===me)tr.awards.push({year:y,t:a.t,name:a.p.name});
     const rc=old.rec[old.my],hist=(old.history||[]).concat([{year:y,w:rc.w,l:rc.l,t:rc.t,champ:old.champ}]);
-    const dyn=old.dyn||{slots:{}},grads=[];for(const k in dyn.slots){const s=dyn.slots[k];if(s.cls>=4){if(s.name)grads.push(s.name);dyn.slots[k]=freshman(s,r)}else{s.cls++;s.r=Math.min(120,(s.r||75)+2+Math.floor(r()*4))}}
+    const dyn=old.dyn||{slots:{}},grads=[];for(const k in dyn.slots){const s=dyn.slots[k];if(s.cls>=4){if(s.name)grads.push(s.name);const pi=(old.recruit||{})[k],c=pi!=null?recruits(old,k)[pi]:null;dyn.slots[k]=c?{name:c.name,num:s.num,r:c.r,cls:1,fresh:true,stars:c.stars}:freshman(s,r)}else{s.cls++;s.r=Math.min(120,(s.r||75)+2+Math.floor(r()*4))}}
     WEEKS=old.cfg&&old.cfg.games?old.cfg.games:(NT-1)*2;
     S={v:3,year:y+1,trophies:tr,history:hist,dyn,grads,my:old.my,cfg:old.cfg,week:0,seed,sched:schedule(seed),res:[],phase:'season',str:CCL.map((c,i)=>i===old.my?old.str[i]:(FRCFG.strength?FRCFG.strength(i):.38+r()*.24)),rec:CCL.map(()=>({w:0,l:0,t:0,pf:0,pa:0,st:''})),po:null,champ:null};save();render()}
   function dynHtml(){const tr=S.trophies||{},y=S.year||1,cls=['','Freshman','Sophomore','Junior','Senior'];let h='';
     const cases=[['CCL titles',tr.ccl],['State titles',tr.state],['March Mayhem titles',tr.mayhem]].filter(x=>x[1]&&x[1].length);
     if(y>1||cases.length||(tr.awards||[]).length){h+=`<h4>Dynasty · Year ${y}</h4><ul class="frres">${cases.map(([n,ys])=>`<li><b>${n}</b> · ${ys.length} (${ys.map(v=>'Year '+v).join(', ')})</li>`).join('')}${(tr.awards||[]).slice(-6).map(a=>`<li>Year ${a.year} ${esc(a.t)}: ${esc(a.name)}</li>`).join('')}${(S.history||[]).map(x=>`<li>Year ${x.year}: ${x.w}-${x.l}${x.t?'-'+x.t:''}${x.champ===S.my?' · CCL champions':''}</li>`).join('')}</ul>`;
       if(S.grads&&S.grads.length&&S.week===0)h+=`<p class="frnote">Graduated: ${S.grads.map(esc).join(', ')}. New freshmen joined the roster.</p>`}
-    const sl=Object.values((S.dyn||{}).slots||{}).filter(s=>s.name);if(sl.length)h+=`<details><summary class="frnote">${esc(nm(S.my))} roster: class years${(S.year||1)>1?' and ratings':''}</summary><ul class="frres">${sl.map(s=>`<li>#${s.num!=null?s.num:'?'} ${esc(s.name)} · ${cls[s.cls]||''}${(S.year||1)>1&&s.r?' · '+s.r:''}${s.fresh?' · new':''}</li>`).join('')}</ul></details>`;
-    if(S.phase==='done')h+=`<div class="frbtns"><button class="go" type="button" data-fr="next">Start Year ${y+1}</button></div><p class="frnote">Seniors graduate, freshmen join, and everyone who stays gets better.</p>`;
+    const sl=Object.values((S.dyn||{}).slots||{}).filter(s=>s.name);if(sl.length)h+=`<details><summary class="frnote">${esc(nm(S.my))} roster: class years${(S.year||1)>1?' and ratings':''}</summary><ul class="frres">${sl.map(s=>`<li>#${s.num!=null?s.num:'?'} ${esc(s.name)} · ${cls[s.cls]||''}${(S.year||1)>1&&s.r?' · '+s.r:''}${s.fresh?' · new'+(s.stars?' '+'★'.repeat(s.stars):''):''}</li>`).join('')}</ul></details>`;
+    if(S.phase==='done')h+=rcHtml()+`<div class="frbtns"><button class="go" type="button" data-fr="next">Start Year ${y+1}</button></div><p class="frnote">Seniors graduate, freshmen join, and everyone who stays gets better.</p>`;
     return h}
   function newSeason(my){
     if(FRCFG.stateFr){const st=TOURNS.find(t=>t.key==='state');if(st)st.reset()}
@@ -2884,6 +2951,7 @@ const FR=(()=>{
     else if(k==='sim')simNext();
     else if(k==='rest')simRest();
     else if(k==='next')nextSeason();
+    else if(k==='rc'&&S&&S.phase==='done'){const rk=b.dataset.rk,ri=+b.dataset.ri;S.recruit=S.recruit||{};if(S.recruit[rk]===ri)delete S.recruit[rk];else{const prev=S.recruit[rk];delete S.recruit[rk];const c=recruits(S,rk)[ri];if(c&&rcSpent(S)+c.cost<=rcBudget(S))S.recruit[rk]=ri;else if(prev!=null)S.recruit[rk]=prev}save();render()}
     else if(k==='state'){const b=document.getElementById('tb-state');if(b)b.scrollIntoView({block:'start',behavior:'smooth'})}
     else if(k==='cfg'){editCfg=!editCfg;render()}
     else if(k==='reset'){if(armReset>Date.now()){armReset=0;S=null;try{localStorage.removeItem(KEY)}catch(e){}render()}else{armReset=Date.now()+4000;render();setTimeout(render,4100)}}
