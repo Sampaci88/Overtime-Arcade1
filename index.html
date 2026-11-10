@@ -102,6 +102,19 @@ kbd{flex:none;min-width:62px;text-align:center;font:600 12px/1 var(--body);paddi
 .venues div{background:var(--panel-2);padding:14px 16px;display:grid;gap:4px;min-width:0}
 .venues small{font:700 12px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .venues strong{font:800 22px/1.1 var(--display);text-transform:uppercase;letter-spacing:.02em}
+/* trophy room */
+.tr-top{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.tr-top div{background:var(--panel-2);padding:14px 16px;display:grid;gap:2px}
+.tr-top b{font:900 40px/1 var(--display);color:var(--led);font-variant-numeric:tabular-nums}
+.tr-top small{font:700 12px/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.tr-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:14px;margin-top:14px}
+.tr-grid:empty{display:none}
+.tr-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:grid;gap:6px;align-content:start}
+.tr-card h3{font:900 26px/1 var(--display);margin:0 0 2px}
+.tr-card ul{list-style:none;margin:0;padding:0;display:grid;gap:4px;font-size:14px}
+.tr-card li{display:flex;justify-content:space-between;gap:10px}.tr-card li span{color:var(--muted)}.tr-card li b{text-align:right}
+.tr-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}.tr-chips span{font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:var(--panel-2);color:var(--muted)}.tr-chips span.got{border-color:var(--led);color:var(--led)}
+.tr-empty{color:var(--muted);margin:10px 0 0}
 footer{color:var(--muted);font-size:14px;max-width:72ch;display:grid;gap:8px}
 footer .by{font:800 20px/1.2 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--fg)}
 footer .by b{color:var(--cardinal)}
@@ -267,6 +280,14 @@ footer .by b{color:var(--cardinal)}
   </div>
   </section>
 
+  <section aria-labelledby="trophy-h">
+    <h2 class="section" id="trophy-h">Trophy room</h2>
+    <div class="tr-top" id="trTop"></div>
+    <p class="tr-empty" id="trEmpty" hidden>Nothing here yet. Win games, titles and medals, and they show up here. Everything saves on this device.</p>
+    <div class="tr-grid" id="trGrid"></div>
+    <div class="tr-chips" id="trAch" aria-label="Achievements"></div>
+  </section>
+
   <section aria-labelledby="home-h">
     <h2 class="section" id="home-h">St. Charles home games</h2>
     <div class="venues">
@@ -291,8 +312,35 @@ footer .by b{color:var(--cardinal)}
     </div>
   </section>
 
-  <footer><span class="by">Made by <b>Sam Pacifico</b></span><span>Best on a computer with a keyboard. On a phone, each game shows an on-screen joystick and buttons. Turn the sound on in a game to hear the commentary and the crowd.</span><span><b>Version 38</b> · every team in every sport is now evenly matched, controller support in every game (Xbox, PlayStation or Switch), Dynasty recruiting, Apex Rush weekly track and ghost challenge links, Shred Park park builder, every sport's franchise now goes regular season → CCL champion → state tournament, all lacrosse teams are evenly matched, CCL All-Star Game, practice mode, pond hockey, box lacrosse and player cards in every sport, plus contests (breakaway challenge, fastest shot, 3-point and dunk contests, 2-minute drill), lacrosse franchise goes regular season to state tournament, Apex Rush track builder and garage, Shred Park: Game of S.K.A.T.E. and Cardinal Bowl; new games: Apex Rush (low-poly racing) and Shred Park (skateboarding, with an achievement for every trick); baseball and Beat the Bell removed; coins and a shop (uniforms, Slippery mode, Moon Ball, your own goal banner, hype calls, a sold-out crowd), arcade modes (Turbo, First to, Slippery), challenge links to send friends, halftime contests, a new event every week, Career mode, plus timeouts with play calls (T, or the Timeout button), injuries in franchise mode, student-section signs and chants, a lot more from the announcers, a season recap you can listen to, make your own team, a leaderboard, Create-a-Player, a Daily Challenge, two players in every sport (one keyboard, or one phone or tablet), lacrosse penalties, man-up and multiple overtimes, rosters.txt for all five sports, no more screen flashes in football, plus two players on one keyboard in hockey and lacrosse (Player 2 uses the arrow keys), Dynasty mode (keep playing season after season: seniors graduate, freshmen join, players improve, a trophy case), player stats, Player of the Game and season awards in football, basketball and soccer too, season leaders, team records, St. Charles uniforms, the Founders Cup rivalry with DeSales, weather (rain, snow, wind), skills challenges, achievements, a state tournament after the CCL season (every sport), March Mayhem with 64 teams (basketball), championship celebrations, season awards (MVP, Offensive and Defensive Player of the Year, Goalie of the Year), Senior Night and Homecoming, a highlight reel after every game, game winners and buzzer beaters, between-the-legs (hockey), ankle breakers (basketball), bicycle kicks (soccer), hockey and lacrosse: superstar players (★ Sniper, Brick Wall, Engine, Enforcer), a players-to-watch preview, individual player stats and Player of the Game, a stronger St. Charles in every sport, franchise settings (number of games, difficulty, game length), a realistic post ping, much louder crowds and goal horn, bigger stands, longer cheering, lacrosse body checks knock players down for a few seconds (odd-man rushes), fake shot (F, or Fake on a phone) and trick shots (behind the back, dive, Air Gait), better goalies, player ratings you set in the roster file, much lighter sound so phones stay steady, plus an even stronger St. Charles hockey team, the 4-chime goal horn and goal song, Save &amp; quit, your stats, Bill Bender on the call, fans in the stands and The Cockpit.</span></footer>
+  <footer><span class="by">Made by <b>Sam Pacifico</b></span><span>Best on a computer with a keyboard. On a phone, each game shows an on-screen joystick and buttons. Turn the sound on in a game to hear the commentary and the crowd.</span><span><b>Version 39</b> · Trophy room, play as the goalie (hockey and lacrosse), faceoff battles, bigger championship celebrations with a picture to save, every team in every sport is now evenly matched, controller support in every game (Xbox, PlayStation or Switch), Dynasty recruiting, Apex Rush weekly track and ghost challenge links, Shred Park park builder, every sport's franchise now goes regular season → CCL champion → state tournament, all lacrosse teams are evenly matched, CCL All-Star Game, practice mode, pond hockey, box lacrosse and player cards in every sport, plus contests (breakaway challenge, fastest shot, 3-point and dunk contests, 2-minute drill), lacrosse franchise goes regular season to state tournament, Apex Rush track builder and garage, Shred Park: Game of S.K.A.T.E. and Cardinal Bowl; new games: Apex Rush (low-poly racing) and Shred Park (skateboarding, with an achievement for every trick); baseball and Beat the Bell removed; coins and a shop (uniforms, Slippery mode, Moon Ball, your own goal banner, hype calls, a sold-out crowd), arcade modes (Turbo, First to, Slippery), challenge links to send friends, halftime contests, a new event every week, Career mode, plus timeouts with play calls (T, or the Timeout button), injuries in franchise mode, student-section signs and chants, a lot more from the announcers, a season recap you can listen to, make your own team, a leaderboard, Create-a-Player, a Daily Challenge, two players in every sport (one keyboard, or one phone or tablet), lacrosse penalties, man-up and multiple overtimes, rosters.txt for all five sports, no more screen flashes in football, plus two players on one keyboard in hockey and lacrosse (Player 2 uses the arrow keys), Dynasty mode (keep playing season after season: seniors graduate, freshmen join, players improve, a trophy case), player stats, Player of the Game and season awards in football, basketball and soccer too, season leaders, team records, St. Charles uniforms, the Founders Cup rivalry with DeSales, weather (rain, snow, wind), skills challenges, achievements, a state tournament after the CCL season (every sport), March Mayhem with 64 teams (basketball), championship celebrations, season awards (MVP, Offensive and Defensive Player of the Year, Goalie of the Year), Senior Night and Homecoming, a highlight reel after every game, game winners and buzzer beaters, between-the-legs (hockey), ankle breakers (basketball), bicycle kicks (soccer), hockey and lacrosse: superstar players (★ Sniper, Brick Wall, Engine, Enforcer), a players-to-watch preview, individual player stats and Player of the Game, a stronger St. Charles in every sport, franchise settings (number of games, difficulty, game length), a realistic post ping, much louder crowds and goal horn, bigger stands, longer cheering, lacrosse body checks knock players down for a few seconds (odd-man rushes), fake shot (F, or Fake on a phone) and trick shots (behind the back, dive, Air Gait), better goalies, player ratings you set in the roster file, much lighter sound so phones stay steady, plus an even stronger St. Charles hockey team, the 4-chime goal horn and goal song, Save &amp; quit, your stats, Bill Bender on the call, fans in the stands and The Cockpit.</span></footer>
 </div>
+<script>
+/* trophy room: reads what every game saved on this device */
+(()=>{const get=k=>{try{return JSON.parse(localStorage.getItem(k)||'null')}catch(e){return null}},esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const SP=[['hockey','Hockey',[['breakaway','Breakaway challenge','goals']]],['lacrosse','Lacrosse',[['speed','Fastest shot','mph']]],['basketball','Basketball',[['three','3-point contest','pts'],['dunk','Dunk contest','pts']]],['football','Football',[['drill','2-minute drill','sec left']]],['soccer','Soccer',[]]];
+  const ACH=[['first','First W'],['cards','Full Set'],['shop','Big Spender'],['chal','Challenge Accepted'],['half','Halftime Hero'],['career','Legend in the Making'],['timeout','Drew It Up'],['daily','Daily Grinder'],['daily3','On a Roll'],['created','Made in STC'],['legend','Legend Slayer'],['shutout','Shutout'],['blowout','Statement Win'],['hat','Hat Trick'],['trick','Highlight Reel'],['clutch','Ice in the Veins'],['ccl','CCL Champions'],['state','State Champs'],['mayhem','Mayhem Champs'],['rival','Founders Cup'],['skills','Skills Star'],['weather','All Weather'],['night','Big Night'],['five','Five-Sport Star']];
+  let ccl=0,state=0,mayhem=0,cups=0,cards=0,any=false;const cardsH=[];
+  for(const[k,name,cs]of SP){const f=get('ccl-'+k)||{},tr=f.trophies||{},y=f.year||1;const c=(tr.ccl||[]).slice(),s=(tr.state||[]).slice(),m=(tr.mayhem||[]).slice();
+    if(f.my!=null&&f.champ===f.my&&(f.phase==='done'||f.phase==='state')&&!c.includes(y))c.push(y);if(f.stateWon&&!s.includes(y))s.push(y);
+    const riv=get('rivalry-'+k)||{stc:0,sfd:0,tie:0},cd=Object.keys(get('cards-'+k)||{}).length,rows=[];
+    ccl+=c.length;state+=s.length;mayhem+=m.length;cups+=riv.stc||0;cards+=cd;
+    if(c.length)rows.push(['CCL titles',`${c.length} (Year ${c.join(', ')})`]);if(s.length)rows.push(['State titles',`${s.length} (Year ${s.join(', ')})`]);if(m.length)rows.push(['March Mayhem titles',String(m.length)]);
+    if(f.my!=null)rows.push(['Franchise',`Year ${y}`]);if(riv.stc||riv.sfd||riv.tie)rows.push(['Founders Cup vs DeSales',`${riv.stc}-${riv.sfd}${riv.tie?'-'+riv.tie:''}`]);
+    if(cd)rows.push(['Player cards',String(cd)]);for(const[ck,cn,u]of cs){const v=localStorage.getItem('contest-'+k+'-'+ck);if(v!=null&&v!==''&&isFinite(+v))rows.push([cn,`${Math.round(+v*10)/10} ${u}`])}
+    const awards=(tr.awards||[]).length;if(awards)rows.push(['Season awards',String(awards)]);
+    if(rows.length){any=true;cardsH.push(`<div class="tr-card"><h3>${esc(name)}</h3><ul>${rows.map(([a,b])=>`<li><span>${esc(a)}</span><b>${esc(b)}</b></li>`).join('')}</ul></div>`)}}
+  const med=get('apex-medals')||{},mc={g:0,s:0,b:0};for(const v of Object.values(med))if(mc[v]!=null)mc[v]++;
+  if(mc.g+mc.s+mc.b){any=true;cardsH.push(`<div class="tr-card"><h3>Apex Rush</h3><ul><li><span>Gold medals</span><b>${mc.g}</b></li><li><span>Silver medals</span><b>${mc.s}</b></li><li><span>Bronze medals</span><b>${mc.b}</b></li></ul></div>`)}
+  const sk=Object.keys(get('shred-ach')||{}).length,sb=+(localStorage.getItem('shred-best')||0);
+  if(sk||sb){any=true;cardsH.push(`<div class="tr-card"><h3>Shred Park</h3><ul><li><span>Trick achievements</span><b>${sk}</b></li>${sb?`<li><span>Best 2-minute session</span><b>${sb.toLocaleString()}</b></li>`:''}</ul></div>`)}
+  const A=(get('overtime-achievements')||{}).got||{},an=ACH.filter(([id])=>A[id]).length,coin=get('overtime-coins')||{};if(an)any=true;
+  const top=[['CCL titles',ccl],['State titles',state],['Founders Cups',cups],['Achievements',`${an}/${ACH.length}`],['Player cards',cards],['Apex golds',mc.g],['Coins earned',coin.earned||0]];if(mayhem)top.splice(2,0,['March Mayhem',mayhem]);
+  document.getElementById('trTop').innerHTML=top.map(([a,b])=>`<div><b>${esc(b)}</b><small>${esc(a)}</small></div>`).join('');
+  document.getElementById('trGrid').innerHTML=cardsH.join('');
+  document.getElementById('trAch').innerHTML=ACH.map(([id,n])=>`<span class="${A[id]?'got':''}">${A[id]?'★ ':''}${esc(n)}</span>`).join('');
+  document.getElementById('trEmpty').hidden=any;})();
+
+</script>
 <script>
 // St. Charles names come from rosters.txt (edited on GitHub by the site's owner) and go to the games through the Play links
 (()=>{
