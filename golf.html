@@ -94,6 +94,7 @@ html.touch #mini{top:calc(104px + env(safe-area-inset-top,0px));bottom:auto;widt
 html.touch.playing .pbar{display:flex}
 .pbar button{min-height:34px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(20,28,40,.85);color:#fff;font:700 13px var(--body)}
 #confetti{position:absolute;inset:0;pointer-events:none;z-index:7}
+.shotbar{position:absolute;left:12px;bottom:118px;display:flex;flex-wrap:wrap;gap:4px;max-width:44%;pointer-events:auto}.shotbar button{min-height:28px;padding:0 9px;border-radius:7px;border:1px solid rgba(255,255,255,.28);background:rgba(10,16,22,.7);color:#fff;font:700 12px var(--body);cursor:pointer}.shotbar button[aria-pressed="true"]{background:var(--led);color:#1a1405;border-color:var(--led)}.shotbar button:disabled{opacity:.35;cursor:default}html.touch .shotbar{display:none}
 #stage:fullscreen{width:100vw;height:100vh;max-height:none;aspect-ratio:auto;border-radius:0;border:0}#stage:-webkit-full-screen{width:100vw;height:100vh;max-height:none;border-radius:0}
 #mini{pointer-events:auto;cursor:crosshair}#hLand{font-weight:800!important}html.touch #bFull{display:none}
 #stage canvas.gl{cursor:crosshair}
@@ -121,7 +122,7 @@ html.touch.playing .pbar{display:flex}
       <div class="tl"><div class="hole" id="hHole">Hole 1</div><div class="sm" id="hHoleSub"></div><div class="pl" id="hPlayer">Blake Yoakam</div><div class="sm" id="hScore"></div></div>
       <div class="tr"><div class="wind"><i id="hWindA"></i><span id="hWind">0 MPH</span></div><div class="sm" id="hPin"></div><div class="sm" id="hLie"></div></div>
       <div class="note" id="hNote"></div><div class="sub" id="hSub"></div>
-      <div class="clubbox" id="clubbox"><b id="hClub">Driver</b><span id="hCarry"></span><span id="hLand"></span><span id="hSpin"></span></div>
+      <div class="shotbar" id="shotbar"></div><div class="clubbox" id="clubbox"><b id="hClub">Driver</b><span id="hCarry"></span><span id="hLand"></span><span id="hSpin"></span></div>
       <div class="meter" id="meter"><div class="snap" id="mSnap"></div><div class="fill" id="mFill"></div><div class="zero"></div><div class="full"></div><div class="pw" id="mPw"></div><div class="tgt" id="mTgt"></div><div class="mk" id="mMk"></div><div class="lab" id="mLab">SPACE TO SWING</div></div>
       <canvas id="mini" width="264" height="392"></canvas>
     </div>
@@ -137,7 +138,7 @@ html.touch.playing .pbar{display:flex}
   </div>
   <div class="info">
     <section><h2>How to play</h2><ul><li>Aim with <kbd>A</kbd> <kbd>D</kbd> (hold <kbd>Shift</kbd> for fine aim), or just click or tap where you want to hit it, on the course or on the map. <kbd>P</kbd> aims at the pin. Pick a club with <kbd>W</kbd> <kbd>S</kbd>.</li><li><b>Swing:</b> press <kbd>Space</kbd> to start, press again to set the power, then once more when the marker comes back to the white line. Early slices, late hooks.</li><li>Watch the wind, the lie and the slope of the green. The arrows on the green show which way it breaks.</li></ul></section>
-    <section><h2>Shots</h2><ul><li><kbd>Q</kbd>/<kbd>E</kbd> backspin or topspin: backspin stops it on the green, topspin rolls it out.</li><li>Rough costs distance, sand costs more (a sand wedge helps). Water and out of bounds cost a stroke.</li><li><kbd>F</kbd> shot shape: draw, fade, punch (low, under trees) or flop (high and soft, wedges only).</li><li><kbd>V</kbd> overhead view, <kbd>R</kbd> replay your last shot, <kbd>Tab</kbd> scorecard.</li></ul></section>
+    <section><h2>Shots</h2><ul><li><kbd>Q</kbd>/<kbd>E</kbd> backspin or topspin: backspin stops it on the green, topspin rolls it out.</li><li>Rough costs distance, sand costs more (a sand wedge helps). Water and out of bounds cost a stroke.</li><li><kbd>F</kbd> (or the shot buttons) to shape it: draw curves right to left, fade left to right, big draw and big fade bend it around doglegs, punch flies low under trees, flop goes high and soft (wedges only). The dashed line shows the curve.</li><li><kbd>V</kbd> overhead view, <kbd>R</kbd> replay your last shot, <kbd>Tab</kbd> scorecard.</li></ul></section>
     <section><h2>Modes</h2><p>Stroke play for up to four golfers on one device, a tournament against a full field, a Daily 9 that's the same for everyone, a long drive contest and closest to the pin. Three courses, all original.</p></section>
   </div>
 </div>
@@ -157,7 +158,7 @@ const GRAV=10.72,KD=.0042,KL=.0042,KS=.15,BALLR=.1;
 const CLUBS=[['Driver',250,11,.55],['3 Wood',228,13,.65],['5 Wood',212,15,.72],['4 Iron',196,17,.8],['5 Iron',184,19,.85],['6 Iron',172,21,.9],['7 Iron',160,24,.95],['8 Iron',148,27,1],['9 Iron',136,30,1.05],['Pitching Wedge',122,34,1.12],['Gap Wedge',106,38,1.18],['Sand Wedge',90,42,1.25],['Lob Wedge',72,47,1.3],['Putter',0,0,0]];
 const PUTTER=13;
 // shot shapes: id, name, launch speed, launch angle and spin multipliers
-const SHAPES=[['normal','Normal',1,1,1],['draw','Draw',1,1,1],['fade','Fade',1,1,1],['punch','Punch',.97,.5,.55],['flop','Flop',.95,1.5,1.4]];
+const SHAPES=[['normal','Normal',1,1,1],['draw','Draw',1,1,1],['fade','Fade',1,1,1],['bigdraw','Big draw',1,1,1],['bigfade','Big fade',1,1,1],['punch','Punch',.97,.5,.55],['flop','Flop',.95,1.5,1.4]];
 function flySim(v0,ang,sp){let y=0,z=0,a=ang*Math.PI/180,vy=v0*Math.sin(a),vz=v0*Math.cos(a),t=0,s=sp;const dt=1/240;
   while(t<15){const v=hyp(vy,vz),lx=0,ly=vz/v,lz=-vy/v;vy+=(-GRAV-KD*v*vy+KL*s*v*v*ly)*dt;vz+=(-KD*v*vz+KL*s*v*v*lz)*dt;y+=vy*dt;z+=vz*dt;t+=dt;s*=Math.exp(-dt/7);if(y<0&&vy<0)break}return z}
 const V0=CLUBS.map(([n,c,a,s])=>{if(!c)return 0;let lo=10,hi=150;for(let i=0;i<34;i++){const m=(lo+hi)/2;if(flySim(m,a,s)<c)lo=m;else hi=m}return lo});
@@ -168,23 +169,30 @@ const SURF={T:{n:'Tee box',pw:1,rest:.28,slide:.45,mu:.26},F:{n:'Fairway',pw:1,r
 /* ---------- courses: all original ---------- */
 const PARS=[4,4,3,5,4,4,3,4,5,4,3,4,5,4,4,3,4,5];
 const COURSES={
-  hills:{name:'Cardinal Hills',blurb:'Rolling parkland, tall trees, a creek or two.',seed:1847,hills:4.2,elev:12,trees:1,water:.3,fwBunk:.7,wind:12,width:40,desert:false,sky:0xd3ebf8,skyTop:0x3f8fdb,glow:0xfff1c9,fog:0xcfe6f2,cut:0x4f9a40,pine:.55,far:0x6f9a86,water:0x2a78ad,tree:[0x2f6b35,0x3a7a3c,0x4b8a3f],trunk:0x6b4a2f,rough:[0x3f8a37,0x438f3b],fw:[0x5fae4a,0x57a443]},
-  lakes:{name:'Lakeside Links',blurb:'Wide open, lots of water, and the wind blows.',seed:5521,hills:2.2,elev:4,trees:.35,water:.85,fwBunk:.6,wind:20,width:44,desert:false,sky:0xf6d4a8,skyTop:0x5f80c8,glow:0xffbe7a,fog:0xf0d6b4,cut:0x6aa646,pine:.2,far:0x8c9a8e,water:0x2f86b8,tree:[0x3d6e3a,0x51803f],trunk:0x5c4330,rough:[0x6f9b4a,0x76a34e],fw:[0x7dbb52,0x74b24c]},
-  canyon:{name:'Canyon Ridge',blurb:'Desert target golf: big drops, sand everywhere, cactus.',seed:9133,hills:6,elev:24,trees:.6,water:.15,fwBunk:.4,wind:14,width:36,desert:true,sky:0xf1e0c2,skyTop:0x4b98e0,glow:0xfff0c8,fog:0xe9d5b0,cut:0x5e9f45,pine:0,far:0xbf7448,water:0x2f8fb0,tree:[0x4f7f3c,0x5d8d45],trunk:0x4f7f3c,rough:[0xc9a46b,0xd1ad74],fw:[0x6bb14f,0x62a748]}};
+  hills:{name:'Cardinal Hills',blurb:'Rolling parkland, tall trees, a creek or two.',seed:1847,hills:4.2,elev:12,trees:1,water:.3,fwBunk:.7,wind:12,width:40,desert:false,sky:0xd3ebf8,skyTop:0x3f8fdb,glow:0xfff1c9,fog:0xcfe6f2,cut:0x4f9a40,pine:.55,far:0x6f9a86,water:0x2a78ad,tree:[0x2f6b35,0x3a7a3c,0x4b8a3f],pals:[[0x2f6b35,0x3a7a3c,0x4b8a3f],[0xc8682a,0xd99a2b,0x9c3a22,0x7a8a3a],[0x264f2c,0x2d5a33,0x1f4627],[0x8fbf5a,0xa3c96a,0x7fb24f]],birch:3,trunk:0x6b4a2f,rough:[0x3f8a37,0x438f3b],fw:[0x5fae4a,0x57a443]},
+  lakes:{name:'Lakeside Links',blurb:'Wide open, lots of water, and the wind blows.',seed:5521,hills:2.2,elev:4,trees:.35,water:.85,fwBunk:.6,wind:20,width:44,desert:false,sky:0xf6d4a8,skyTop:0x5f80c8,glow:0xffbe7a,fog:0xf0d6b4,cut:0x6aa646,pine:.2,far:0x8c9a8e,water:0x2f86b8,tree:[0x3d6e3a,0x51803f],pals:[[0x3d6e3a,0x51803f],[0x6f9a4a,0x7fa856,0x5d8a3e],[0xd08a2e,0xb85a24,0x8a9a3a]],trunk:0x5c4330,rough:[0x6f9b4a,0x76a34e],fw:[0x7dbb52,0x74b24c]},
+  canyon:{name:'Canyon Ridge',blurb:'Desert target golf: big drops, sand everywhere, cactus.',seed:9133,hills:6,elev:24,trees:.6,water:.15,fwBunk:.4,wind:14,width:36,desert:true,sky:0xf1e0c2,skyTop:0x4b98e0,glow:0xfff0c8,fog:0xe9d5b0,cut:0x5e9f45,pine:0,far:0xbf7448,water:0x2f8fb0,tree:[0x4f7f3c,0x5d8d45],pals:[[0x4f7f3c,0x5d8d45],[0x5a7a3a,0x6d8f47],[0x3f6e36,0x4f7f3c]],trunk:0x4f7f3c,rough:[0xc9a46b,0xd1ad74],fw:[0x6bb14f,0x62a748]},
+  links:{name:'Seaside Cliffs',blurb:'Ocean cliffs along every hole, howling wind, pot bunkers and almost no trees.',seed:7310,hills:3.2,elev:9,trees:.22,water:.3,fwBunk:.9,wind:24,width:37,desert:false,ocean:true,scrub:true,sky:0xdfeaf2,skyTop:0x4d86c4,glow:0xfff3d8,fog:0xd9e4ea,cut:0x6e9a44,pine:0,far:0x7c8f86,water:0x1f6f9e,tree:[0x55703a,0x5f7a40],pals:[[0x55703a,0x5f7a40],[0x6b7f45,0x7a8a50]],trunk:0x5c4a36,rough:[0x9a9d55,0xa3a35c],fw:[0x6aa84a,0x63a044]}};
 /* ---------- hole designs: every hole on every course has its own layout and name ---------- */
 const DESIGNS={
   hills:[['straight','First Tee'],['doglegR','The Elbow'],['twotier','Two Tiers'],['double','S-Curve'],['creek','Creekside'],['tree','Big Oak'],['carry','Over the Pond'],['narrow','The Chute'],['split','Risk and Reward'],
-    ['doglegL','Left Turn'],['punchbowl','Punchbowl'],['drivable','Short Fuse'],['lakeL','Lakeview'],['bunkers','Pot Luck'],['elevated','The Drop'],['peninsula','Peninsula'],['cape','The Cape'],['waste','The Long Walk']],
+    ['banana','Long Bend'],['punchbowl','Punchbowl'],['drivable','Short Fuse'],['lakeL','Lakeview'],['cornerTrees','Oak Corner'],['elevated','The Drop'],['peninsula','Peninsula'],['cape','The Cape'],['horseshoe','The Horseshoe']],
   lakes:[['lakeR','Shoreline'],['bunkers','Pot Bunkers'],['island','Island Time'],['creek','Two Creeks'],['cape','The Point'],['split','Fork in the Road'],['peninsula','The Jetty'],['doglegL','Harbor Bend'],['lakeL','Long Lake'],
-    ['drivable','Go For It'],['carry','Full Carry'],['straight','Wind Tunnel'],['double','The Snake'],['doglegR','Marsh Turn'],['tree','Lone Willow'],['twotier','Upper Deck'],['narrow','Reed Row'],['waste','The Dunes']],
-  canyon:[['elevated','Canyon Drop'],['waste','Sandy Wash'],['carry','The Gorge'],['double','Snake Trail'],['doglegR','Mesa Turn'],['bunkers','Rattlesnake Pots'],['punchbowl','The Bowl'],['narrow','Slot Canyon'],['split','Two Trails'],
-    ['tree','Lone Saguaro'],['island','The Oasis'],['drivable','Quick Draw'],['lakeL','Mirage Lake'],['cape','Cliff Edge'],['straight','Sun Runway'],['twotier','High Shelf'],['doglegL','Coyote Bend'],['creek','Dry Creek']]};
+    ['drivable','Go For It'],['carry','Full Carry'],['straight','Wind Tunnel'],['horseshoe','Around the Lake'],['banana','Shore Curve'],['tree','Lone Willow'],['twotier','Upper Deck'],['narrow','Reed Row'],['waste','The Dunes']],
+  canyon:[['elevated','Canyon Drop'],['waste','Sandy Wash'],['carry','The Gorge'],['zigzag','Switchbacks'],['banana','Canyon Arc'],['bunkers','Rattlesnake Pots'],['punchbowl','The Bowl'],['narrow','Slot Canyon'],['split','Two Trails'],
+    ['tree','Lone Saguaro'],['island','The Oasis'],['drivable','Quick Draw'],['lakeL','Mirage Lake'],['cape','Cliff Edge'],['straight','Sun Runway'],['twotier','High Shelf'],['cornerTrees','Cactus Corner'],['creek','Dry Creek']],
+  links:[['cliffL','Cliff Walk'],['bunkers','Sea Pots'],['island','The Rock'],['horseshoe','Around the Bay'],['banana','Seawall Curve'],['cape','Over the Inlet'],['carry','Ocean Carry'],['doglegR','Gull Turn'],['double','Tidal Snake'],
+    ['narrow','Dune Alley'],['peninsula','Lighthouse'],['drivable','Sea Breeze'],['zigzag','Zig Zag'],['split','High or Low'],['cornerTrees','Cypress Corner'],['twotier','The Shelf'],['doglegL','Harbor Wall'],['straight','Last Wave']]};
 function makeHole(cid,i,seedOverride){const C=COURSES[cid],r=rng((seedOverride!=null?seedOverride:C.seed*101)+i*7919),par=PARS[i%18],D=DESIGNS[cid][i%18],tp=D[0],desert=C.desert;
   let L=par===3?140+Math.round(r()*65):par===4?345+Math.round(r()*95):490+Math.round(r()*70);
-  if(tp==='drivable')L=285+Math.round(r()*30);else if(tp==='island')L=125+Math.round(r()*30);else if(tp==='carry')L=160+Math.round(r()*40);else if(tp==='double')L=530+Math.round(r()*40);else if(tp==='punchbowl')L=140+Math.round(r()*35);else if(tp==='twotier')L=165+Math.round(r()*35);else if(tp==='peninsula')L=145+Math.round(r()*30);
+  if(tp==='drivable')L=285+Math.round(r()*30);else if(tp==='island')L=125+Math.round(r()*30);else if(tp==='carry')L=160+Math.round(r()*40);else if(tp==='double')L=530+Math.round(r()*40);else if(tp==='punchbowl')L=140+Math.round(r()*35);else if(tp==='twotier')L=165+Math.round(r()*35);else if(tp==='peninsula')L=145+Math.round(r()*30);else if(tp==='horseshoe')L=par===5?445+Math.round(r()*30):350+Math.round(r()*30);else if(tp==='banana')L=par===5?470+Math.round(r()*40):360+Math.round(r()*50);else if(tp==='zigzag')L=480+Math.round(r()*40);else if(tp==='cornerTrees')L=370+Math.round(r()*45);
   // the line of the hole: a cubic curve from the tee to the green
   let P1={x:(r()-.5)*8,z:L*.33},P2={x:(r()-.5)*10,z:L*.66},P3={x:(r()-.5)*12,z:L},side=r()<.5?-1:1;
-  if(tp==='doglegL'||tp==='doglegR'||tp==='cape'){side=tp==='doglegR'?-1:tp==='doglegL'?1:side;const dg=side*(34+r()*14),zc=Math.min(L*.6,255);P1={x:0,z:zc*.9};P2={x:dg*.35,z:zc*1.05};P3={x:dg,z:L}}
+  if(tp==='doglegL'||tp==='doglegR'||tp==='cape'||tp==='cornerTrees'){side=tp==='doglegR'?-1:tp==='doglegL'?1:side;const th=(42+r()*22)*Math.PI/180,zc=Math.min(L*.58,250),l2=L-zc;P1={x:0,z:zc*.96};P2={x:0,z:zc*1.02};P3={x:side*l2*Math.sin(th)*1.15,z:zc+l2*Math.cos(th)}}
+  else if(tp==='banana'){P1={x:side*L*.12,z:L*.33};P2={x:side*L*.36,z:L*.64};P3={x:side*L*.66,z:L*.86}}
+  else if(tp==='horseshoe'){P1={x:0,z:L*.66};P2={x:side*L*.58,z:L*.66};P3={x:side*L*.58,z:L*.16}}
+  else if(tp==='zigzag'){P1={x:side*64,z:L*.3};P2={x:-side*64,z:L*.62};P3={x:side*12,z:L}}
+  else if(tp==='cliffL'){side=1;P1.x*=.5;P2.x*=.5}
   else if(tp==='double'){P1={x:side*36,z:L*.3};P2={x:-side*36,z:L*.68};P3={x:(r()-.5)*8,z:L}}
   else if(tp==='narrow'||tp==='straight'||tp==='tree'||tp==='creek'){P1.x*=.4;P2.x*=.4;P3.x*=.5}
   const CL=[];for(let k=0;k<=64;k++){const t=k/64,u=1-t,a=3*u*u*t,b=3*u*t*t,c=t*t*t;CL.push({x:a*P1.x+b*P2.x+c*P3.x,z:a*P1.z+b*P2.z+c*P3.z})}
@@ -196,7 +204,8 @@ function makeHole(cid,i,seedOverride){const C=COURSES[cid],r=rng((seedOverride!=
   if(tp==='island'){G.rx=G.rz=12.5+r()*1.5}else if(tp==='twotier'){G.rx=11+r()*2;G.rz=20+r()*4;G.tier=(r()<.5?1:-1)*(.55+r()*.2)}else if(tp==='punchbowl'){G.rx=14+r()*2;G.rz=15+r()*3;G.bowl=true}else if(tp==='drivable'){G.rx=11+r()*2;G.rz=13+r()*2}else if(tp==='split'||tp==='double'){G.rx=15+r()*3;G.rz=13+r()*3}
   {const sa=r()*6.283,m=.006+r()*.011;G.sx=Math.sin(sa)*m;G.sz=Math.cos(sa)*m}
   const pr=.15+.45*r(),pa=r()*6.283,pin={x:G.x+Math.cos(pa)*pr*G.rx*Math.cos(ang)+Math.sin(pa)*pr*G.rz*Math.sin(ang),z:G.z-Math.cos(pa)*pr*G.rx*Math.sin(ang)+Math.sin(pa)*pr*G.rz*Math.cos(ang)};
-  const B=[],Wt=[],trees=[],fwW=C.width*(.92+r()*.16)*(tp==='narrow'?.62:tp==='split'?1.45:tp==='drivable'?1.1:1);
+  if(tp!=='island'){G.rx*=.92;G.rz*=.92}
+  const B=[],Wt=[],trees=[],fwW=C.width*(.8+r()*.14)*(tp==='narrow'?.6:tp==='split'?1.45:tp==='drivable'?1.05:tp==='cornerTrees'?.85:1);
   const at=s=>ptAt(CL,acc,clamp(s,0,gEnd)),wet=!desert,pond=(o)=>{if(wet)Wt.push(o);else B.push(Object.assign(o,{waste:1}))};
   // greenside bunkers
   const nb=tp==='island'?0:tp==='peninsula'?1:tp==='drivable'?4:par===3?2+(r()<.5?1:0):1+Math.round(r()*2);
@@ -217,15 +226,22 @@ function makeHole(cid,i,seedOverride){const C=COURSES[cid],r=rng((seedOverride!=
   if(tp==='drivable'&&wet&&r()<.7){const sx=Math.cos(ang),sz=-Math.sin(ang);pond({x:G.x+sx*(G.rx+14)*side,z:G.z+sz*(G.rx+14)*side,a:10,b:G.rz*1.4,rot:ang})}
   if(tp==='narrow'){const q=at(250);B.push({x:q.x+q.nx*(fwW/2+2)*side,z:q.z+q.nz*(fwW/2+2)*side,a:2.5,b:7,rot:q.a})}
   if(tp==='double'){for(const s of[gEnd*.3,gEnd*.68]){const q=at(s),o=s<gEnd/2?side:-side;B.push({x:q.x+q.nx*(fwW/2+3)*o,z:q.z+q.nz*(fwW/2+3)*o,a:3.5,b:9,rot:q.a})}}
+  if(tp==='cornerTrees'){const zc=Math.min(L*.58,250);for(let s=90;s<=zc+35;s+=6)for(let k=0;k<3;k++){const q=at(s),off=fwW/2+3+k*7+r()*4;trees.push({x:q.x+q.nx*off*side,z:q.z+q.nz*off*side,r:desert?1:3.4+r()*1.2,h:desert?5+r()*2:14+r()*5,k:r()})}}
+  if(tp==='banana'){for(let s=120;s<gEnd-60;s+=9){const q=at(s),off=fwW/2+4+r()*8;trees.push({x:q.x+q.nx*off*side,z:q.z+q.nz*off*side,r:desert?1:3.2+r(),h:desert?5:13+r()*5,k:r()})}const q=at(gEnd*.55);B.push({x:q.x-q.nx*(fwW/2+3)*side,z:q.z-q.nz*(fwW/2+3)*side,a:3.5,b:12,rot:q.a})}
+  if(tp==='horseshoe'){const s1=at(gEnd*.25),s2=at(gEnd*.75),cx=(s1.x+s2.x)/2,cz=(s1.z+s2.z)/2,sp=hyp(s1.x-s2.x,s1.z-s2.z);const ap=at(gEnd*.5),zTop=ap.z-fwW/2-14,zBot=Math.min(s1.z,s2.z)-30,bz=Math.max(14,(zTop-zBot)/2);Wt.push({x:cx,z:zBot+bz,a:Math.max(14,sp/2-fwW/2-12),b:bz,rot:0})}
+  if(tp==='zigzag'){for(const s of[gEnd*.32,gEnd*.62]){const q=at(s);for(const o of[-1,1])B.push({x:q.x+q.nx*(fwW/2+3)*o,z:q.z+q.nz*(fwW/2+3)*o,a:3,b:7,rot:q.a})}}
   if(tp==='elevated'&&par>3){const q=at(250);B.push({x:q.x+q.nx*(fwW/2+3)*side,z:q.z+q.nz*(fwW/2+3)*side,a:3.5,b:9,rot:q.a})}
+  if(par>3&&!['straight','doglegL','doglegR','narrow','double','elevated','bunkers','zigzag'].includes(tp)){const q=at(235+r()*30),o=r()<.5?-1:1;B.push({x:q.x+q.nx*(fwW/2+2.5)*o,z:q.z+q.nz*(fwW/2+2.5)*o,a:3,b:8,rot:q.a})}
+  // the ocean runs along every Seaside hole, below the cliffs
+  if(C.ocean&&tp!=='island'&&tp!=='horseshoe'){const os=tp==='cliffL'?1:(i%2?1:-1);for(let s=-60;s<=gEnd+80;s+=55){const q=at(s);Wt.push({x:q.x+q.nx*(fwW/2+34+95)*os,z:q.z+q.nz*(fwW/2+34+95)*os,a:95,b:58,rot:q.a,ocean:1})}}
   const E=tp==='elevated'?-(desert?22+r()*10:15+r()*8):(r()-.45)*C.elev*(tp==='island'||tp==='peninsula'?.3:1);
   const H={cid,i,par,L,CL,acc,gEnd,G,pin,B,W:Wt,trees,tp,hname:D[1],fwW,fwStart:par===3?Math.max(20,L-40):tp==='drivable'?90:70+r()*40,fwPh:r()*6,
-    hp:[r()*6,r()*6,r()*6,r()*6,r()*6],E,wind:{s:Math.round(r()*C.wind),a:r()*6.283},C,name:''};
-  H.tee={x:0,z:0};
+    hp:[r()*6,r()*6,r()*6,r()*6,r()*6],E,pal:Math.floor(r()*((C.pals||[0]).length)),wind:{s:Math.round(r()*C.wind),a:r()*6.283},C,name:''};
+  H.tee={x:0,z:0};H.birch=C.birch!=null&&H.pal===C.birch;
   // trees line the rough: thick on the narrow holes, sparse by the lakes; never in the fairway, the hazards or the tee shot
   const dens=tp==='narrow'?1.9:tp==='island'||tp==='carry'||tp==='peninsula'?.6:1,nt=Math.round((L/3.2)*C.trees*dens),inner=tp==='narrow'?3:8;
   for(let k=0;k<nt*3&&trees.length<nt+8;k++){const along=r()*(gEnd+30)-10,q=at(Math.max(0,along)),sd=r()<.5?-1:1,off=fwW/2+inner+r()*44,x=q.x+q.nx*off*sd,z=q.z+q.nz*off*sd;
-    if(hyp(x-G.x,z-G.z)<Math.max(G.rx,G.rz)+10||hyp(x,z)<14)continue;if(Wt.some(w=>ndE(w,x,z)<1.3)||B.some(b=>ndE(b,x,z)<1.4))continue;const h=desert?3+r()*3:10+r()*8;trees.push({x,z,r:desert?.9:3+r()*1.6,h,k:r()})}
+    if(hyp(x-G.x,z-G.z)<Math.max(G.rx,G.rz)+10||hyp(x,z)<14)continue;if(Wt.some(w=>ndE(w,x,z)<1.3)||B.some(b=>ndE(b,x,z)<1.4))continue;const h=desert?3+r()*3:C.scrub?2.5+r()*2.5:10+r()*8;trees.push({x,z,r:desert?.9:C.scrub?1.6+r():3+r()*1.6,h,k:r()})}
   return H}
 function ptAt(CL,acc,s){let k=1;while(k<CL.length-1&&acc[k]<s)k++;const a=CL[k-1],b=CL[k],f=clamp((s-acc[k-1])/Math.max(1e-6,acc[k]-acc[k-1]),0,1),dx=b.x-a.x,dz=b.z-a.z,l=hyp(dx,dz)||1;return{x:lerp(a.x,b.x,f),z:lerp(a.z,b.z,f),nx:dz/l,nz:-dx/l,a:Math.atan2(dx,dz)}}
 function ndE(e,x,z){const c=Math.cos(e.rot),s=Math.sin(e.rot),dx=x-e.x,dz=z-e.z,u=dx*s+dz*c,v=dx*c-dz*s;return Math.sqrt((v/e.a)**2+(u/e.b)**2)}
@@ -238,7 +254,7 @@ function hAt(x,z){const H=HOLE;let h=hBase(x,z);
   if(G.bowl&&dg<2.9)h+=2.6*ss(1.05,1.55,dg)*ss(2.9,1.95,dg);
   const dt=hyp(x,z);if(dt<9)h=lerp(h,H.th,ss(9,5,dt));
   for(const b of H.B){const n=ndE(b,x,z);if(n<1.25){const dep=b.waste?.25:b.pot?.7:.5;h-=n<1?dep*(1-n*n)+.08:.08*(1.25-n)/.25}}
-  for(const w of H.W){const n=ndE(w,x,z);if(n<1.25){let k=ss(1.25,.85,n);if(w.island)k*=ss(1.12,1.4,dg);h=lerp(h,Math.min(h,w.wl-1),k)}}
+  for(const w of H.W){const n=ndE(w,x,z);if(w.ocean){if(n<1.06)h=lerp(h,Math.min(h,w.wl-3),ss(1.06,.93,n));continue}if(n<1.25){let k=ss(1.25,.85,n);if(w.island)k*=ss(1.12,1.4,dg);h=lerp(h,Math.min(h,w.wl-1),k)}}
   return h}
 function surfInfo(x,z){const H=HOLE;for(const w of H.W)if(ndE(w,x,z)<.92&&!(w.island&&ndG(H.G,x,z)<1.16))return{s:'W'};for(const b of H.B){const n=ndE(b,x,z);if(n<1)return{s:'B',lip:n>.84}}
   const dg=ndG(H.G,x,z);if(dg<1)return{s:'G'};if(dg<1.12)return{s:'X'};if(Math.abs(x)<4.5&&Math.abs(z)<4.5)return{s:'T'};
@@ -246,7 +262,7 @@ function surfInfo(x,z){const H=HOLE;for(const w of H.W)if(ndE(w,x,z)<.92&&!(w.is
   const w=H.fwW/2*(.86+.28*Math.sin(n.s*.018+H.fwPh));if(n.d<w&&n.s>H.fwStart&&n.s<H.gEnd-H.G.rz*.7)return{s:'F',n,w};return{s:H.C.desert&&n.d>w+6?'D':'R',n,w}}
 function surfAt(x,z){return surfInfo(x,z).s}
 function grad(x,z){const e=.06;return{x:(hAt(x+e,z)-hAt(x-e,z))/(2*e),z:(hAt(x,z+e)-hAt(x,z-e))/(2*e)}}
-function prepHole(H){HOLE=H;H.gh=0;H.th=0;H.gh=hBase(H.G.x,H.G.z)+.4;H.th=hBase(0,0);for(const w of H.W)w.wl=Math.min(hBase(w.x,w.z),hBase(w.x+w.a*.7,w.z),hBase(w.x-w.a*.7,w.z))-.5}
+function prepHole(H){HOLE=H;H.gh=0;H.th=0;H.gh=hBase(H.G.x,H.G.z)+.4;H.th=hBase(0,0);for(const w of H.W)w.wl=Math.min(hBase(w.x,w.z),hBase(w.x+w.a*.7,w.z),hBase(w.x-w.a*.7,w.z))-(w.ocean?7:.5);const oc=H.W.filter(w=>w.ocean);H.sea=null;if(oc.length){let m=1e9;for(let s=-60;s<=H.gEnd+80;s+=12){const q=ptAt(H.CL,H.acc,Math.max(0,Math.min(H.gEnd,s)));for(let o=-130;o<=130;o+=10)m=Math.min(m,hBase(q.x+q.nx*o,q.z+q.nz*o))}H.sea=m-4}for(const w of oc)w.wl=H.sea}
 /* ---------- the scene ---------- */
 const QUAL=(()=>{const q=store.get('golf-gfx',null);return['ultra','high','med','low'].includes(q)?q:(TOUCH?'med':'high')})();
 const UP=new T3.Vector3(0,1,0);
@@ -364,34 +380,35 @@ function buildHole(H){prepHole(H);scene.remove(world);world.traverse(o=>{if(o.ge
   let minX=0,maxX=0;for(const p of H.CL){minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x)}minX-=120;maxX+=120;const minZ=-70,maxZ=H.gEnd+80,st=QUAL==='ultra'?1.2:QUAL==='high'?1.6:QUAL==='med'?2.2:3;
   const nx=Math.ceil((maxX-minX)/st)+1,nz=Math.ceil((maxZ-minZ)/st)+1,pos=new Float32Array(nx*nz*3),col=new Float32Array(nx*nz*3),uv=new Float32Array(nx*nz*2),c=new T3.Color();
   const rough=C.rough.map(K),cut=K(C.cut),fw=C.fw.map(K),grn=[K(0x80d466),K(0x74ca5c)],fringe=K(0x68bd52),sand=K(C.desert?0xebd59d:0xf0e2b6),lip=K(C.desert?0xcdb077:0xd2bf8c),tee=K(0x70c258),bed=K(0x2f5f58),ob=K(C.desert?0xb08a57:0x2f6a2c),des=K(0xd2ad72),path=K(0xc4bfb2);
-  const pathSide=H.i%2?1:-1,pathOff=H.fwW/2+16;
+  const pathSide=H.i%2?1:-1,pathOff=H.fwW/2+16,OC=H.W.filter(w=>w.ocean),rock=[K(0x8c8070),K(0x9d917e)];
   for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const x=minX+i*st,z=minZ+j*st,k=(j*nx+i)*3,inf=surfInfo(x,z),s=inf.s;pos[k]=x;pos[k+1]=hAt(x,z);pos[k+2]=z;uv[(j*nx+i)*2]=x/5;uv[(j*nx+i)*2+1]=z/5;
-    if(s==='F')c.copy(fw[Math.floor(inf.n.s/11)&1]);else if(s==='G')c.copy(grn[(Math.floor((x+z)/3.2)+Math.floor((x-z)/3.2))&1]);else if(s==='X')c.copy(fringe);else if(s==='B')c.copy(inf.lip?lip:sand);else if(s==='T')c.copy(tee);else if(s==='W')c.copy(bed);else if(s==='O')c.copy(ob);
+    if(s==='F')c.copy(fw[Math.floor(inf.n.s/11)&1]);else if(s==='G')c.copy(grn[(Math.floor((x+z)/3.2)+Math.floor((x-z)/3.2))&1]);else if(s==='X')c.copy(fringe);else if(s==='B')c.copy(inf.lip?lip:sand);else if(s==='T')c.copy(tee);else if(s==='W')c.copy(bed);else if(OC.length&&OC.some(w=>ndE(w,x,z)<1.07))c.copy(rock[(i+j)%3?0:1]);else if(s==='O')c.copy(ob);
     else{const n=inf.n;if(n&&Math.abs(n.lat-pathSide*pathOff)<1.4&&n.s>30&&n.s<H.gEnd-30)c.copy(path);else if(n&&inf.w&&n.d<inf.w+3.6)c.copy(cut);else if(s==='D')c.copy(des).lerp(rough[1],((i*7+j*13)%5)/14);else c.copy(rough[(i*3+j*5)%7<3?0:1])}
+    if(OC.length&&H.sea!=null){const bd=Math.min(i,nx-1-i,j,nz-1-j)*st;if(bd<16){pos[k+1]=lerp(H.sea-3,pos[k+1],ss(3,16,bd));c.copy(rock[(i+j)%3?0:1])}}
     col[k]=c.r;col[k+1]=c.g;col[k+2]=c.b}
   const idx=[];for(let j=0;j<nz-1;j++)for(let i=0;i<nx-1;i++){const a=j*nx+i,b=a+1,d=a+nx,e=d+1;idx.push(a,d,b,b,d,e)}
   const g=new T3.BufferGeometry();g.setAttribute('position',new T3.BufferAttribute(pos,3));g.setAttribute('color',new T3.BufferAttribute(col,3));g.setAttribute('uv',new T3.BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
   const terr=new T3.Mesh(g,QUAL==='ultra'||QUAL==='high'?new T3.MeshStandardMaterial({vertexColors:true,map:grassTex,roughness:.93,metalness:0}):new T3.MeshLambertMaterial({vertexColors:true,map:grassTex}));terr.receiveShadow=QUAL!=='low';world.add(terr);terrMesh=terr;
   let lo=1e9;for(let k=1;k<pos.length;k+=3*37)lo=Math.min(lo,pos[k]);
-  const sk=new T3.Mesh(new T3.PlaneGeometry(9000,9000),new T3.MeshLambertMaterial({color:C.desert?0xb9925c:0x3d7a35}));sk.rotation.x=-Math.PI/2;sk.position.set((minX+maxX)/2,lo-5,(minZ+maxZ)/2);world.add(sk);
+  const sk=new T3.Mesh(new T3.PlaneGeometry(9000,9000),C.ocean?new T3.MeshPhongMaterial({color:C.water,specular:0xffffff,shininess:120,envMap:cubeRT.texture,reflectivity:.5,combine:T3.MixOperation,normalMap:rippleTex,normalScale:new T3.Vector2(.3,.3)}):new T3.MeshLambertMaterial({color:C.desert?0xb9925c:0x3d7a35}));sk.rotation.x=-Math.PI/2;sk.position.set((minX+maxX)/2,C.ocean&&H.sea!=null?H.sea:lo-5,(minZ+maxZ)/2);if(C.ocean){sk.userData.water=1;sk.receiveShadow=QUAL!=='low'}world.add(sk);
   // far hills (or mesas in the canyon) so the world has a horizon
   {const rr=rng(H.i*31+7),cx=(minX+maxX)/2,cz=(minZ+maxZ)/2,mat=new T3.MeshLambertMaterial({color:C.desert?C.far:0x3f6b3c});
-    for(let k=0;k<(C.desert?16:28);k++){const a=k/(C.desert?16:28)*6.283+rr()*.2,d=C.desert?1150+rr()*600:850+rr()*450,w=C.desert?140+rr()*260:220+rr()*300,h=C.desert?60+rr()*150:35+rr()*75;let m;
+    for(let k=0;k<(C.desert?16:C.ocean?9:28);k++){const a=k/(C.desert?16:28)*6.283+rr()*.2,d=C.desert?1150+rr()*600:850+rr()*450,w=C.desert?140+rr()*260:220+rr()*300,h=C.desert?60+rr()*150:35+rr()*75;let m;
       if(C.desert){m=new T3.Mesh(new T3.CylinderGeometry(w*.72,w,h,7),mat);m.position.set(cx+Math.sin(a)*d,lo-6+h/2,cz+Math.cos(a)*d)}else{m=new T3.Mesh(new T3.SphereGeometry(1,14,8,0,Math.PI*2,0,Math.PI/2),mat);m.scale.set(w,h,w*.8);m.position.set(cx+Math.sin(a)*d,lo-8,cz+Math.cos(a)*d)}
       m.rotation.y=rr()*6;world.add(m)}}
-  for(const w of H.W){const m=new T3.Mesh(new T3.CircleGeometry(1,56),new T3.MeshPhongMaterial({color:C.water,specular:0xffffff,shininess:160,envMap:cubeRT.texture,reflectivity:.55,combine:T3.MixOperation,normalMap:rippleTex,normalScale:new T3.Vector2(.35,.35),transparent:true,opacity:.93}));m.rotation.x=-Math.PI/2;m.scale.set(w.a*.97,w.b*.97,1);m.receiveShadow=QUAL!=='low';m.userData.water=1;
+  for(const w of H.W){if(w.ocean)continue;const m=new T3.Mesh(new T3.CircleGeometry(1,56),new T3.MeshPhongMaterial({color:C.water,specular:0xffffff,shininess:160,envMap:cubeRT.texture,reflectivity:.55,combine:T3.MixOperation,normalMap:rippleTex,normalScale:new T3.Vector2(.35,.35),transparent:true,opacity:.93}));m.rotation.x=-Math.PI/2;m.scale.set(w.a*.97,w.b*.97,1);m.receiveShadow=QUAL!=='low';m.userData.water=1;
     const foam=new T3.Mesh(new T3.RingGeometry(.94,1,72),new T3.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.3,depthWrite:false}));foam.rotation.x=-Math.PI/2;foam.position.y=.03;foam.scale.set(w.a*.97,w.b*.97,1);
     const holder=new T3.Group();holder.position.set(w.x,w.wl,w.z);holder.rotation.y=w.rot;holder.add(m,foam);world.add(holder);m.userData.water=1}
   // trees: layered pines and leafy hardwoods (saguaros and rocks in the canyon)
-  const n=H.trees.length,M4=new T3.Matrix4(),q=new T3.Quaternion(),S3=new T3.Vector3(),P3=new T3.Vector3(),cl=new T3.Color(),tr=rng(H.i*977+5);
+  const PAL=(C.pals&&C.pals[H.pal])||C.tree,n=H.trees.length,M4=new T3.Matrix4(),q=new T3.Quaternion(),S3=new T3.Vector3(),P3=new T3.Vector3(),cl=new T3.Color(),tr=rng(H.i*977+5);
   const mk=(geo,mat,count)=>{const cap=Math.max(1,count),im=new T3.InstancedMesh(geo,mat,cap);im.instanceColor=new T3.InstancedBufferAttribute(new Float32Array(cap*3).fill(1),3);im.castShadow=QUAL!=='low';im.count=0;world.add(im);return im};
   const put=(im,x,y,z,sx,sy,sz,color,ry)=>{q.setFromAxisAngle(UP,ry||0);P3.set(x,y,z);S3.set(sx,sy,sz);M4.compose(P3,q,S3);im.setMatrixAt(im.count,M4);if(color!=null){cl.set(color);im.setColorAt(im.count,cl)}im.count++};
   if(n&&C.desert){const body=mk(new T3.CylinderGeometry(.34,.42,1,10),new T3.MeshLambertMaterial(),n),top=mk(new T3.SphereGeometry(.36,10,8),new T3.MeshLambertMaterial(),n),arm=mk(new T3.CylinderGeometry(.2,.24,1,8),new T3.MeshLambertMaterial(),n*2),elb=mk(new T3.SphereGeometry(.22,8,6),new T3.MeshLambertMaterial(),n*2);
-    H.trees.forEach(t=>{const y=hAt(t.x,t.z);t.y=y;const gc=new T3.Color(C.tree[Math.floor(tr()*C.tree.length)]).offsetHSL(0,0,(tr()-.5)*.08).getHex();put(body,t.x,y+t.h/2,t.z,1,t.h,1,gc);put(top,t.x,y+t.h,t.z,1,1,1,gc);
+    H.trees.forEach(t=>{const y=hAt(t.x,t.z);t.y=y;const gc=new T3.Color(PAL[Math.floor(tr()*PAL.length)]).offsetHSL(0,0,(tr()-.5)*.08).getHex();put(body,t.x,y+t.h/2,t.z,1,t.h,1,gc);put(top,t.x,y+t.h,t.z,1,1,1,gc);
       for(const s of[-1,1]){const ah=t.h*(.25+tr()*.2),ay=y+t.h*(.35+tr()*.2);put(elb,t.x+s*.5,ay,t.z,1,1,1,gc);put(arm,t.x+s*.62,ay+ah/2,t.z,1,ah,1,gc)}});
     const nr=Math.round(H.L/9),rock=mk(new T3.DodecahedronGeometry(1,0),new T3.MeshLambertMaterial({flatShading:true}),nr);for(let k=0;k<nr;k++){const along=tr()*H.gEnd,qq=ptAt(H.CL,H.acc,along),side=tr()<.5?-1:1,off=H.fwW/2+12+tr()*45,x=qq.x+qq.nx*off*side,z=qq.z+qq.nz*off*side,s=.5+tr()*1.8;put(rock,x,hAt(x,z)+s*.3,z,s*1.3,s,s,new T3.Color(0x9b6a46).offsetHSL(0,0,(tr()-.5)*.15).getHex(),tr()*6)}}
-  else if(n){const trunk=mk(new T3.CylinderGeometry(.16,.28,1,8),new T3.MeshLambertMaterial({color:C.trunk}),n),cone=mk(new T3.ConeGeometry(1,1,10),new T3.MeshLambertMaterial(),n*3),blob=mk(new T3.IcosahedronGeometry(1,1),new T3.MeshLambertMaterial({flatShading:true}),n*3);
-    H.trees.forEach(t=>{const y=hAt(t.x,t.z);t.y=y;const pine=t.k<C.pine,base=new T3.Color(C.tree[Math.floor(tr()*C.tree.length)]).offsetHSL((tr()-.5)*.03,0,(tr()-.5)*.08);
+  else if(n){const trunk=mk(new T3.CylinderGeometry(.16,.28,1,8),new T3.MeshLambertMaterial({color:H.birch?0xe8e4da:C.trunk}),n),cone=mk(new T3.ConeGeometry(1,1,10),new T3.MeshLambertMaterial(),n*3),blob=mk(new T3.IcosahedronGeometry(1,1),new T3.MeshLambertMaterial({flatShading:true}),n*3);
+    H.trees.forEach(t=>{const y=hAt(t.x,t.z);t.y=y;const pine=t.k<C.pine,base=new T3.Color(PAL[Math.floor(tr()*PAL.length)]).offsetHSL((tr()-.5)*.03,0,(tr()-.5)*.08);
       put(trunk,t.x,y+t.h*(pine?.2:.24),t.z,1,t.h*(pine?.4:.48),1,null);
       if(pine){[[.3,1,.42],[.5,.78,.36],[.68,.55,.32]].forEach(([fy,fr,fh])=>put(cone,t.x,y+t.h*(fy+fh/2),t.z,t.r*fr,t.h*fh,t.r*fr,base.getHex(),tr()*6))}
       else{put(blob,t.x,y+t.h*.62,t.z,t.r*1.05,t.r*.92,t.r*1.05,base.getHex(),tr()*6);put(blob,t.x+t.r*.45,y+t.h*.5,t.z+t.r*.2,t.r*.72,t.r*.64,t.r*.72,base.clone().offsetHSL(0,0,.04).getHex(),tr()*6);put(blob,t.x-t.r*.38,y+t.h*.78,t.z-t.r*.22,t.r*.6,t.r*.55,t.r*.6,base.clone().offsetHSL(0,0,.07).getHex(),tr()*6)}})}
@@ -488,7 +505,7 @@ function careerFinish(me){const ev=EVENTS[CAR.ev],d=me.total-parThru(me),all=[{m
   saveC();return{txt:`${txt} · +${mine.pts} points · +${coins} coins`,season,place}}
 const FIELD=[['Cole Hartigan',.9],['Mason Whitfield',.85],['Theo Brandt',.8],['Luca Ferreira',.78],['Owen Kessler',.72],['Rory Callahan',.7],['Jonah Pierce',.65],['Wes Dalton',.6],['Caleb Moreau',.55],['Grant Ashford',.5],['Eli Navarro',.45]];
 function holeFor(){if(S.mode==='ld')return longHole();if(S.mode==='ctp')return ctpHole();
-  if(S.mode==='daily'){const d=today(),cs=['hills','lakes','canyon'],cid=cs[hashStr(d)%3];const H=makeHole(cid,S.hole,hashStr('daily'+d));H.name=`Daily 9 · ${COURSES[cid].name}`;return H}
+  if(S.mode==='daily'){const d=S.dailyDate||today(),cs=['hills','lakes','canyon','links'],cid=cs[hashStr(d)%4];const H=makeHole(cid,S.hole,hashStr('daily'+d));H.name=`Daily 9 · ${COURSES[cid].name}`;return H}
   const H=makeHole(S.course,S.hole);H.name=S.evName?`${S.evName} · ${COURSES[S.course].name}`:COURSES[S.course].name;return H}
 function longHole(){const H=makeHole('lakes',3,4242);H.par=0;H.name='Long drive';H.fwW=70;H.fwStart=150;H.W=[];H.B=[];H.trees=H.trees.filter(t=>Math.abs(near(H,t.x,t.z).d)>48);H.wind={s:Math.round(Math.random()*12),a:Math.random()*6.283};return H}
 function ctpHole(){let H=null;for(let s=8080;s<8200;s++){H=makeHole('lakes',2,s);if(H.L>=145&&H.L<=170&&H.W.length)break}H.par=0;H.name='Closest to the pin';H.wind={s:Math.round(Math.random()*12),a:Math.random()*6.283};if(!H.W.length){const G=H.G,d=G.rz+10;H.W.push({x:G.x-Math.sin(G.rot)*d,z:G.z-Math.cos(G.rot)*d,a:20,b:9,rot:G.rot})}return H}
@@ -501,6 +518,8 @@ function startHole(){const H=holeFor();H.gallery=S.mode==='tour'||S.mode==='care
 /* ---------- per-shot setup ---------- */
 let aim=0,club=0,spin=0,meter=null,viewTop=false,shape=0;
 function shapeOK(k){const id=SHAPES[k][0];if(club===PUTTER)return k===0;if(id==='flop')return club>=9&&club<=12;return true}
+function shotBar(){const el=$('shotbar');if(!el)return;const show=S&&S.phase==='aim'&&club!==PUTTER;el.style.display=show?'':'none';if(!show)return;const key=club+'|'+shape;if(el.dataset.k===key)return;el.dataset.k=key;el.innerHTML=SHAPES.map((s,k)=>`<button type="button" data-shape="${k}" aria-pressed="${k===shape}"${shapeOK(k)?'':' disabled'}>${s[1]}</button>`).join('')}
+$('shotbar').addEventListener('click',e=>{const b=e.target.closest('[data-shape]');if(!b||!S||S.phase!=='aim'||meter)return;const k=+b.dataset.shape;if(shapeOK(k)){shape=k;hud()}});
 function shapeStep(){if(!S||S.phase!=='aim'||meter||club===PUTTER)return;let k=shape;for(let i=0;i<5;i++){k=(k+1)%SHAPES.length;if(shapeOK(k))break}shape=k;hud()}
 function pinDist(b){return hyp(HOLE.pin.x-b.x,HOLE.pin.z-b.z)}
 function setupShot(){const p=cur(),b=p.ball;b.y=hAt(b.x,b.z);b.lie=b.lie||surfAt(b.x,b.z);const d=pinDist(b),onG=b.lie==='G'||(b.lie==='X'&&d<22);
@@ -528,8 +547,11 @@ function meterTick(dt){if(!meter)return;const D=DIFF[S.diff];if(meter.st===1){me
 let follow=0;
 function launchBall(pw,e){const p=cur(),b=p.ball,SH=SHAPES[shape],shid=SH[0];
   const [n,carry,ang,sf]=CLUBS[club],lf=lieF(b.lie,club),v0=SH[2]*V0[club]*Math.pow(CM(),.77)*Math.sqrt(lf)*(pw<=1?Math.pow(pw,.62):1+(pw-1)*.45),bs=sf*(1-spin*.35*(1+.15*SK('spin')))*(b.lie==='R'?.7:b.lie==='B'?.8:1)*SH[4];
-  const est=CLUBS[club][1]*lf*CM()*Math.min(1,pw),bend=shid==='draw'?1:shid==='fade'?-1:0,dir=aim+e*.25-bend*.00027*est,la=(ang*SH[3]+(b.lie==='B'?4:0)-spin*1.2)*Math.PI/180;
-  return{x:b.x,y:b.y+.02,z:b.z,vx:Math.sin(dir)*Math.cos(la)*v0,vy:Math.sin(la)*v0,vz:Math.cos(dir)*Math.cos(la)*v0,roll:false,sp:bs,side:e*4.5+bend*.1,spinAdj:spin,shape:shid,carry:0,maxY:b.y,trees:0,lastDry:{x:b.x,z:b.z}}}
+  const bend={draw:.45,fade:-.45,bigdraw:.85,bigfade:-.85}[shid]||0,la=(ang*SH[3]+(b.lie==='B'?4:0)-spin*1.2)*Math.PI/180,sp=bs*(bend>0?.9:bend<0?1.1:1);
+  const mk=dir=>({x:b.x,y:b.y+.02,z:b.z,vx:Math.sin(dir)*Math.cos(la)*v0,vy:Math.sin(la)*v0,vz:Math.cos(dir)*Math.cos(la)*v0,roll:false,sp,side:e*4.5+bend,spinAdj:spin,shape:shid,carry:0,maxY:b.y,trees:0,lastDry:{x:b.x,z:b.z}});
+  // a draw starts out to the right and curves back; a fade the other way. Start it off-line so it comes down where you aimed (the dashed line shows the bend)
+  let off=0;if(bend){const L=predictLand({...mk(aim),side:bend},true),dz=L.z-b.z,dx=L.x-b.x;if(hyp(dx,dz)>5)off=Math.atan2(dx,dz)-aim}
+  return mk(aim-off+e*.25)}
 function fire(pw,acc){const p=cur(),b=p.ball,D=DIFF[S.diff],putt=club===PUTTER,snap=D.snap+.006*SK('acc');let e;
   if(putt&&acc==null){const PE={am:0,pro:.01,tour:.02}[S.diff]*(1-.15*SK('putt'));e=(Math.random()-.5)*2*PE}
   else{e=-acc;if(Math.abs(e)<snap)e=0;else e=e-Math.sign(e)*snap;e*=1-.07*SK('acc');if(club>=9&&club<=12)e*=1-.1*SK('short');if(putt)e*=1-.1*SK('putt');if(pw>1)e*=1+(pw-1)*6}
@@ -753,7 +775,7 @@ function showCard(h,cls){document.querySelector('.hud').style.visibility=S&&S.ph
 function hideCard(){$('ov').hidden=true;document.querySelector('.hud').style.visibility='';if(TOUCH&&S&&S.phase!=='done')root.classList.add('playing');setTimeout(resize,30)}
 function bestTxt(cid){const b=store.get('golf-best',{});const v=b[cid+'-18'];return v!=null?`Best 18: ${v} (${v-72>0?'+':''}${v-72===0?'E':v-72})`:'No rounds yet'}
 function menu(){S=null;golfer.visible=false;lockerView=false;const n=cfg.names;
-  showCard(`<h2>Pin High</h2><p>Real golf on three original courses. Read the wind, pick a club, nail the swing.</p>
+  showCard(`<h2>Pin High</h2><p>Real golf on four original courses. Read the wind, pick a club, nail the swing.</p>
   <div class="row lockbtn"><button class="btn" type="button" data-a="locker">🔒 ${esc(n[0]||'Blake Yoakam')}’s locker · Level ${lvlOf(PRO.xp).L}${ptsLeft()>0?` · <b style="color:var(--led)">${ptsLeft()} point${ptsLeft()>1?'s':''} to spend</b>`:''}</button></div>
   <h3>Golfers</h3><div class="names">${n.map((v,k)=>`<div><i style="background:${PCSS[k]}"></i><input data-n="${k}" maxlength="22" value="${esc(v)}" aria-label="Golfer ${k+1} name">${k?`<button class="btn" type="button" data-rm="${k}" aria-label="Remove golfer ${k+1}">✕</button>`:''}</div>`).join('')}${n.length<4?'<button class="btn" type="button" data-a="addp">+ Add a golfer</button>':''}</div>
   <h3>Course</h3><div class="row">${Object.entries(COURSES).map(([k,c])=>`<button class="chip" type="button" data-course="${k}" aria-pressed="${cfg.course===k}">${c.name}<small>${bestTxt(k)}</small></button>`).join('')}</div>
@@ -827,7 +849,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-(las
     if(flowPts){flowPts.visible=aiming&&club===PUTTER;if(flowPts.visible){const G=HOLE.G,R=Math.max(G.rx,G.rz),a=flowPts.geometry.attributes.position.array,D=flowPts.userData.d;for(let k=0;k<D.length;k++){const o=D[k];o.l-=dt;if(o.l<=0||ndG(G,o.x,o.z)>1){for(let tr=0;tr<8;tr++){o.x=G.x+(Math.random()*2-1)*R;o.z=G.z+(Math.random()*2-1)*R;if(ndG(G,o.x,o.z)<.97)break}o.l=1+Math.random()*2.2}const gr=grad(o.x,o.z);o.x-=gr.x*55*dt;o.z-=gr.z*55*dt;a[k*3]=o.x;a[k*3+1]=hAt(o.x,o.z)+.03;a[k*3+2]=o.z}flowPts.geometry.attributes.position.needsUpdate=true}}
     
     if(noteT>0){noteT-=dt;if(noteT<=0){$('hNote').textContent='';$('hSub').textContent=''}}
-    hud();meterDraw();drawMini()}
+    hud();meterDraw();drawMini();shotBar()}
   drawConf(dt);partsTick(dt);rippleTex.offset.x+=dt*.012;rippleTex.offset.y+=dt*.007;camTick(dt);
   // the sky and the sun travel with the camera; shadows follow the action
   sky.position.copy(cam.position);sunSprite.position.copy(cam.position).addScaledVector(SUND,5200);
@@ -857,7 +879,78 @@ addEventListener('resize',resize);resize();
     if(foc){foc.style.outline='';foc=null}
     keys.left=x<0?1:0;keys.right=x>0?1:0;if(edge(0))swingPress();if(edge(4)||edge(13)&&false)clubStep(1);if(edge(5))clubStep(-1);if(edge(12))clubStep(-1);if(edge(13))clubStep(1);if(edge(2))spinStep(-1);if(edge(1))spinStep(1);if(edge(3))toggleView();if(edge(6)||edge(7))shapeStep();if(edge(10)||edge(11))replayKey();if(edge(8))scorecard();if(edge(9))pauseMenu()}
   addEventListener('gamepadconnected',()=>note('','🎮 Controller: stick aims, A swings, LB/RB or D-pad picks a club, X/B spin, Y view',3.5));requestAnimationFrame(poll)})();
-window.__golf={readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
+/* ---------- weather and time of day ---------- */
+const WX={clear:{n:'Clear',ic:'☀️'},fog:{n:'Morning fog',ic:'🌫️'},sunset:{n:'Sunset',ic:'🌇'},rain:{n:'Rain',ic:'🌧️'},night:{n:'Night',ic:'🌙'}};
+const WXD={sund:SUND.clone(),hemi:hemi.intensity,hc:hemi.color.clone(),hg:hemi.groundColor.clone(),sun:sun.intensity,sc:sun.color.clone(),exp:renderer.toneMappingExposure,surf:JSON.parse(JSON.stringify(SURF))};
+const stars=(()=>{const n=900,pos=new Float32Array(n*3),r=rng(5);for(let i=0;i<n;i++){const a=r()*6.283,e=.08+r()*1.45,R=5200;pos[i*3]=Math.cos(a)*Math.cos(e)*R;pos[i*3+1]=Math.sin(e)*R;pos[i*3+2]=Math.sin(a)*Math.cos(e)*R}
+  const g=new T3.BufferGeometry();g.setAttribute('position',new T3.BufferAttribute(pos,3));const m=new T3.Points(g,new T3.PointsMaterial({color:0xffffff,size:2,sizeAttenuation:false,fog:false,transparent:true,opacity:.85,depthWrite:false,toneMapped:false}));m.visible=false;m.renderOrder=-2;sky.add(m);return m})();
+const rain=(()=>{const n=QUAL==='low'?500:QUAL==='med'?900:1600,pos=new Float32Array(n*6),g=new T3.BufferGeometry();g.setAttribute('position',new T3.BufferAttribute(pos,3));
+  const m=new T3.LineSegments(g,new T3.LineBasicMaterial({color:0xc9d6e2,transparent:true,opacity:.42,depthWrite:false}));m.frustumCulled=false;m.visible=false;scene.add(m);
+  const P=[];for(let i=0;i<n;i++)P.push({x:(Math.random()-.5)*90,y:Math.random()*40,z:(Math.random()-.5)*90,v:28+Math.random()*10});
+  function tick(dt){if(!m.visible)return;const c=cam.position,w=HOLE&&HOLE.wind?HOLE.wind:{s:0,a:0},wx=Math.sin(w.a)*w.s*.03,wz=Math.cos(w.a)*w.s*.03;
+    for(let i=0;i<n;i++){const p=P[i];p.y-=p.v*dt;if(p.y<-6){p.y=34+Math.random()*6;p.x=(Math.random()-.5)*90;p.z=(Math.random()-.5)*90}
+      const x=c.x+p.x,y=c.y+p.y-8,z=c.z+p.z,k=i*6;pos[k]=x;pos[k+1]=y;pos[k+2]=z;pos[k+3]=x+wx;pos[k+4]=y+1.1;pos[k+5]=z+wz}g.attributes.position.needsUpdate=true}
+  return{m,tick}})();
+let rainLoop=null;function rainSound(on){try{if(rainLoop){rainLoop.stop();rainLoop=null}if(!on||!AC||!soundOn)return;const b=AC.createBuffer(1,AC.sampleRate*2,AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  const s=AC.createBufferSource();s.buffer=b;s.loop=true;const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=1500;const g=AC.createGain();g.gain.value=.05;s.connect(f);f.connect(g);g.connect(AC.destination);s.start();rainLoop=s}catch(e){}}
+function pickWx(){const c=cfg.wx||'random';if(c!=='random'&&WX[c])return c;const r=S&&(S.mode==='daily'||S.mode==='career')?rng(hashStr((S.mode==='daily'?(S.dailyDate||today()):'car'+(CAR?CAR.season*10+CAR.ev:0))+'wx'))():Math.random();
+  return r<.42?'clear':r<.57?'fog':r<.75?'sunset':r<.88?'rain':'night'}
+function lightTowers(H){const C=K3=>new T3.Color(K3),pole=new T3.CylinderGeometry(.25,.4,24,6),head=new T3.BoxGeometry(4,1.6,.8),pm=new T3.MeshLambertMaterial({color:0x6d747c}),hm=new T3.MeshBasicMaterial({color:0xfffbe8});
+  const glow=new T3.SpriteMaterial({map:sunSprite.material.map,color:0xfff3d0,transparent:true,opacity:.9,depthWrite:false,blending:T3.AdditiveBlending,fog:false});
+  for(let s=40;s<H.gEnd+40;s+=85)for(const o of[-1,1]){const q=ptAt(H.CL,H.acc,Math.min(s,H.gEnd)),x=q.x+q.nx*(H.fwW/2+34)*o,z=q.z+q.nz*(H.fwW/2+34)*o;if(surfAt(x,z)==='W')continue;const y=hAt(x,z);
+    const p=new T3.Mesh(pole,pm);p.position.set(x,y+12,z);const h=new T3.Mesh(head,hm);h.position.set(x,y+24.5,z);h.rotation.y=q.a;const sp=new T3.Sprite(glow);sp.scale.set(26,26,1);sp.position.set(x,y+24.5,z);world.add(p,h,sp)}}
+function applyWx(H){const w=(S&&S.wx)||'clear',C=H.C;
+  SUND.copy(WXD.sund);hemi.intensity=WXD.hemi;hemi.color.copy(WXD.hc);hemi.groundColor.copy(WXD.hg);sun.intensity=WXD.sun;sun.color.copy(WXD.sc);renderer.toneMappingExposure=WXD.exp;
+  for(const k in WXD.surf)Object.assign(SURF[k],WXD.surf[k]);stars.visible=false;rain.m.visible=false;sunSprite.visible=true;sunSprite.scale.set(1100,1100,1);sunSprite.material.color.set(0xffffff);
+  for(const m of clouds){m.visible=true;m.material.color.set(0xffffff)}rainSound(false);
+  const fogC=(c,n,f)=>{scene.fog=new T3.Fog(c,n,f);scene.fog.color.convertSRGBToLinear()},lc=(o,c)=>{o.set(c);o.convertSRGBToLinear()};
+  if(w==='clear')return;
+  if(w==='fog'){SUND.set(-.75,.3,-.6).normalize();paintSky(0xa9c2d6,0xe4e8ea,0xfff0d0);fogC(0xdde3e6,25,QUAL==='low'?420:520);hemi.intensity=.75;sun.intensity=.85;lc(sun.color,0xfff0dc);for(const m of clouds)m.visible=false;sunSprite.scale.set(700,700,1)}
+  if(w==='sunset'){SUND.set(.32,.2,.92).normalize();paintSky(0x34518f,0xffad72,0xff7f3a);fogC(0xeeae86,320,QUAL==='low'?1300:2000);hemi.intensity=.48;lc(hemi.color,0xffd8bb);sun.intensity=1.55;lc(sun.color,0xffa860);renderer.toneMappingExposure=.98;for(const m of clouds)m.material.color.set(0xffc9a0)}
+  if(w==='rain'){paintSky(0x6b7783,0xa9b2ba,0xc2c8cd);fogC(0xa3acb4,90,QUAL==='low'?700:900);hemi.intensity=.78;sun.intensity=.5;sunSprite.visible=false;for(const m of clouds)m.material.color.set(0x8a939c);rain.m.visible=true;rainSound(true);
+    for(const k of['T','F','R','D','X'])if(SURF[k]){SURF[k].mu*=1.4;SURF[k].rest*=.75}SURF.G.mu*=1.22;SURF.G.rest*=.8;if(!H._wxw){H._wxw=1;H.wind.s+=5}}
+  if(w==='night'){SUND.set(.12,.96,.18).normalize();paintSky(0x050b1d,0x18284a,0x2b3d66);fogC(0x0c1630,230,QUAL==='low'?1100:1500);hemi.intensity=.34;lc(hemi.color,0x9fb4ff);lc(hemi.groundColor,0x1c2e1c);sun.intensity=1.05;lc(sun.color,0xeef3ff);
+    renderer.toneMappingExposure=1.02;stars.visible=true;for(const m of clouds)m.visible=false;sunSprite.scale.set(260,260,1);sunSprite.material.color.set(0xdfe8ff);SUND.set(-.5,.55,.67).normalize();lightTowers(H);SUND.set(.12,.96,.18).normalize()}
+  lin(world)}
+{const _bh=buildHole;buildHole=function(H){const r=_bh.apply(this,arguments);try{applyWx(H);if(S&&S.wx&&S.wx!=='clear'){if(H.W.length){const w=H.W[0];updateEnv(w.x,w.wl+2,w.z)}else updateEnv(H.G.x,hAt(H.G.x,H.G.z)+3,H.G.z)}}catch(e){console.warn(e)}return r}}
+{const _sh=startHole;startHole=function(){if(S&&!S.wx){S.wx=pickWx();if(S.wx!=='clear')setTimeout(()=>{if(S)note(WX[S.wx].ic+' '+WX[S.wx].n,{fog:'Thick fog this morning. Trust your yardages.',sunset:'Golden hour. The sun is low and in your eyes.',rain:'Rain: soft fairways, slow greens, less roll.',night:'Under the lights tonight.'}[S.wx],2.6)},900)}return _sh.apply(this,arguments)}}
+{const _pt=partsTick;partsTick=function(dt){_pt.apply(this,arguments);rain.tick(dt)}}
+{const _m=menu;menu=function(){rainSound(false);const r=_m.apply(this,arguments);try{const row=document.createElement('div');row.className='row';row.innerHTML=`<span style="color:var(--muted);font-size:14px">Weather:</span>${[['random','Random'],...Object.entries(WX).map(([k,v])=>[k,v.n])].map(([k,t])=>`<button class="chip" type="button" data-wx="${k}" aria-pressed="${(cfg.wx||'random')===k}">${t}</button>`).join('')}<span style="color:var(--muted);font-size:14px;margin-left:10px">Announcer:</span>${[['on','On'],['off','Off']].map(([k,t])=>`<button class="chip" type="button" data-voice="${k}" aria-pressed="${(cfg.voice||'on')===k}">${t}</button>`).join('')}`;
+  const g=$('ovc').querySelector('[data-gfx]');if(g)g.closest('.row').before(row)}catch(e){}if(S===null&&HOLE&&HOLE.C){applyWx(HOLE)}return r}}
+$('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-wx],[data-voice]');if(!b)return;if(b.dataset.wx){cfg.wx=b.dataset.wx;saveCfg();menu()}else{cfg.voice=b.dataset.voice;saveCfg();menu();if(cfg.voice==='on')say('Announcer on.',true)}});
+
+/* ---------- the booth and the gallery ---------- */
+let sayT=0;function say(txt,force){if((cfg.voice||'on')!=='on'||!soundOn)return;try{const ss=window.speechSynthesis;if(!ss)return;const now=performance.now();if(!force&&now-sayT<1800)return;sayT=now;ss.cancel();const u=new SpeechSynthesisUtterance(txt);u.rate=1.04;u.pitch=.95;u.volume=.9;
+  const v=ss.getVoices().filter(v=>/^en/i.test(v.lang));const pref=v.find(v=>/Daniel|Google UK English Male|Alex|Fred|Male/i.test(v.name))||v[0];if(pref)u.voice=pref;ss.speak(u)}catch(e){}}
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+function crowd(kind,big){if(!AC||!soundOn)return;const vol=(S&&S.H&&S.H.gallery?1:.55)*(big?1.3:1),t=AC.currentTime;
+  const voice=(f0,f1,dur,form,delay)=>{const o=AC.createOscillator(),bp=AC.createBiquadFilter(),g=AC.createGain();o.type='sawtooth';o.frequency.setValueAtTime(f0,t+delay);o.frequency.linearRampToValueAtTime(f1,t+delay+dur);bp.type='bandpass';bp.frequency.value=form;bp.Q.value=4;
+    g.gain.setValueAtTime(.0001,t+delay);g.gain.linearRampToValueAtTime(.022*vol,t+delay+dur*.3);g.gain.exponentialRampToValueAtTime(.0005,t+delay+dur);o.connect(bp);bp.connect(g);g.connect(AC.destination);o.start(t+delay);o.stop(t+delay+dur+.05)};
+  if(kind==='ooh')for(let i=0;i<14;i++){const b=140+Math.random()*120;voice(b,b*1.35,1.3+Math.random()*.4,480+Math.random()*120,Math.random()*.15)}
+  if(kind==='aww')for(let i=0;i<14;i++){const b=170+Math.random()*120;voice(b,b*.7,1.2+Math.random()*.4,760+Math.random()*120,Math.random()*.15)}
+  if(kind==='roar'){for(let i=0;i<18;i++){const b=160+Math.random()*160;voice(b,b*1.15,2+Math.random(),900+Math.random()*300,Math.random()*.2)}noise(2.4,1100,.5,.12*vol);sfx.clap(big?90:50)}}
+function annLie(p,tot,lie,why){const n=(p.name||'').split(' ').pop()||'Blake';
+  if(why==='water')return pick(['Oh no. That one found the water.','Splash. That is going to cost a stroke.','Wet. That will hurt.']);
+  if(why==='ob')return pick(['That is out of bounds.','Way off line. Out of bounds.']);
+  const d=pinDist(p.ball)*3;if(lie!=='G'&&lie!=='X'&&d>0){}
+  if(d<10)return pick([`What a shot! ${Math.round(d)} feet away.`,`Oh, that is tight! Great shot by ${n}.`,'Stuck it! Right at the flag.']);
+  if(p.strokes===1&&HOLE.par>3){if(lie==='F')return tot>=290?pick([`Big drive! ${Math.round(tot)} yards, right down the middle.`,'Crushed it. In the fairway.']):pick(['Right down the middle.','Fairway. Good start.','Found the short grass.']);
+    if(lie==='B')return pick(['Into the bunker off the tee.','That one finds the sand.']);if(lie==='R'||lie==='D')return pick(['Missed the fairway. In the rough.','That is in the thick stuff.','A little off line. Rough.'])}
+  if(lie==='G')return d<25?pick(['On the green. A good look at birdie.','Nice. Putting for it.']):'On the green.';
+  if(lie==='B')return pick(['Bunker. Tricky shot coming up.','In the sand.']);return ''}
+{const _sr=shotReport;shotReport=function(why){const p=cur(),wasPutt=S&&S.shotClub===PUTTER,before=p?p.strokes:0;const r=_sr.apply(this,arguments);try{if(!S||S.mode==='ld'||S.mode==='ctp'){if(S&&S.mode==='ctp'&&why==='rest'&&p.ball.lie==='G'&&pinDist(p.ball)*3<8){crowd('ooh');say(`${Math.round(pinDist(p.ball)*3)} feet. What a shot.`)}return r}
+  const n=(p.name||'').split(' ').pop()||'Blake';
+  if(why==='holed'){const d=p.strokes-HOLE.par,fromFar=S.shotStart?hyp(S.shotStart.x-HOLE.pin.x,S.shotStart.z-HOLE.pin.z)*3:0;
+    if(p.strokes===1){crowd('roar',1);say(`Hole in one! ${p.name} has made an ace!`,true)}
+    else if(d<=-2){crowd('roar',1);say(pick([`Eagle! What a hole for ${n}!`,'Eagle! The crowd loves it!']),true)}
+    else if(!wasPutt){crowd('roar');say(pick(['It goes in! Holed it from off the green!','In the hole! Unbelievable!']),true)}
+    else if(fromFar>=25){crowd('roar',d<0);say(pick([`${n} drains it from ${Math.round(fromFar)} feet!`,`Long putt, dead center! ${d<0?'Birdie!':''}`]),true)}
+    else if(d===-1){crowd('roar');say(pick(['Birdie!',`Birdie for ${n}.`,'Knocks it in for birdie!']),true)}
+    else if(d===0){sfx.clap(14);say(pick(['Par.','Solid par.','Saves par.']))}
+    else if(d===1)say(pick(['Bogey.','That is a bogey.']));else say(d===2?'Double bogey.':'Tough hole.')}
+  else if(why==='rest'&&wasPutt){const ft=pinDist(p.ball)*3;if(ft<4&&S.shotStart&&hyp(S.shotStart.x-HOLE.pin.x,S.shotStart.z-HOLE.pin.z)*3>6){crowd('aww');say(pick(['Oh, so close!','Just misses!','Lipped out!']))}}
+  else{const lie=p.ball.lie,txt=annLie(p,hyp(S.ball.x-S.shotStart.x,S.ball.z-S.shotStart.z),lie,why);if(why==='water'||why==='ob')crowd('aww');else if(lie==='G'&&pinDist(p.ball)*3<10)crowd('ooh');if(txt)say(txt)}}catch(e){}return r}}
+window.__golf={applyWx,WX,say,crowd,get rainOn(){return rain.m.visible},readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 lin(scene);menu();requestAnimationFrame(frame);
 })();
