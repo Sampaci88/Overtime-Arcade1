@@ -404,14 +404,14 @@ function reactLag(d){
   const base=d.pos==='DL'?.07:d.pos==='LB'?.12:d.pos==='CB'?.14:.16;
   return base*(!G.demo&&d.team===1?Math.max(.6,diff().lag/.3):.67);
 }
-function pursue(d,c,dt){let t=dist(d,c)/d.spd;for(let k=0;k<4;k++)t=Math.min(2.4,hyp(c.x+c.vx*t-d.x,c.y+c.vy*t-d.y)/(d.spd*1.06));seek(d,c.x+c.vx*t*.95,c.y+c.vy*t*.95,dt,1.15,.15)}
+function pursue(d,c,dt){let t=dist(d,c)/d.spd;for(let k=0;k<4;k++)t=Math.min(2.4,hyp(c.x+c.vx*t-d.x,c.y+c.vy*t-d.y)/(d.spd*1.06));seek(d,c.x+c.vx*t*.95,c.y+c.vy*t*.95,dt,1.2,.15)}
 function floatText(p,text,col){fx.push({x:p.x,y:p.y,text,t:0,col:col||'#ffffff'})}
 
 /* ---------- blocking ---------- */
 function engage(b,d,kind){
   if(b.eng||d.eng||d.stun>0)return;
   b.eng=d;d.eng=b;d.blocked=true;d.engKind=kind;
-  let s=kind==='pass'?1.25+Math.random()*1.9:kind==='run'?1.35+Math.random()*1.8:.35+Math.random()*.7;
+  let s=kind==='pass'?1.25+Math.random()*1.9:kind==='run'?1.15+Math.random()*1.6:.35+Math.random()*.7;
   if(b.pos==='RB'||b.pos==='WR')s*=.6;
   s*=Math.pow(b.str/d.str,.8);
   if(!G.demo)s*=.78;
@@ -423,10 +423,10 @@ function engUpdate(dt){
   for(const d of P){
     if(!d.blocked||!d.eng)continue;
     const b=d.eng,tgt=c||(ball.state==='air'&&!ball.snap?ball.to:R('QB'));
-    d.shed-=dt*(c&&openField()&&dist(c,d)>7?2:1);if(c&&d.engKind!=='pass'&&dist(c,d)<2.2&&Math.random()<dt*1.3)d.shed=0;
+    d.shed-=dt*(c&&openField()&&dist(c,d)>7?2:1);if(c&&d.engKind!=='pass'&&dist(c,d)<2.5&&Math.random()<dt*1.8)d.shed=0;
     if(d.shed<=0){release(d);continue}
     let dx=tgt.x-d.x,dy=tgt.y-d.y;const dl=hyp(dx,dy)||1;dx/=dl;dy/=dl;
-    let push=d.engKind==='pass'?.5+(d.str-b.str)*1.4:d.engKind==='run'?-.7+(d.str-b.str)*1.5:.2+(d.str-b.str);
+    let push=d.engKind==='pass'?.5+(d.str-b.str)*1.4:d.engKind==='run'?-.55+(d.str-b.str)*1.5:.2+(d.str-b.str);
     d.vx=dx*push;d.vy=dy*push;d.x+=d.vx*dt;d.y+=d.vy*dt;
     const k=Math.min(1,dt*10);b.x+=(d.x+dx*1.05-b.x)*k;b.y+=(d.y+dy*1.05-b.y)*k;b.vx=d.vx;b.vy=d.vy;
     b.face=Math.atan2(-dy,-dx);d.face=Math.atan2(dy,dx);
@@ -598,7 +598,7 @@ function manMove(d,dt,lag){
   const r=d.tgt;if(!r){decel(d,dt);return}
   if(T>.9&&r.job!=='route'&&!(G.oCall.type==='run')){d.job='rush';return} // green dog: his man stayed in to block
   const h=histOf(r,lag*.8),cush=(d.pos==='CB'||d.pos==='S')?.3:.2;
-  seek(d,h.x+h.vx*.6+(MID>h.x?.35:-.35),h.y+h.vy*.6+cush,dt,1.07,.35);
+  seek(d,h.x+h.vx*.6+(MID>h.x?.35:-.35),h.y+h.vy*.6+cush,dt,1.1,.35);
 }
 
 /* ---------- ball carrier ---------- */
@@ -639,7 +639,7 @@ function deflect(s){
     if(ball.h<2.85&&hyp(d.x-ball.x,d.y-ball.y)<.85){
       ball.checked.add(d);const r=Math.random(),u=isUserP(ball.intended);
       if(r<.07){intercept(d);return}
-      if(r<.3){resolve('inc',{text:`Batted down by ${d.name} #${d.num}.`,head:'Batted down'});return}
+      if(r<.36){resolve('inc',{text:`Batted down by ${d.name} #${d.num}.`,head:'Batted down'});return}
     }
   }
 }
@@ -654,9 +654,9 @@ function arrive(){
   let df=null,dd=99;for(const p of P)if(p.side==='D'&&!p.blocked&&p.stun<=0){let d=hyp(p.x-to.x,p.y-to.y);if(p===ctrl&&isUserP(p))d-=.25;if(p.diveT>0)d-=.4;if(d<dd){dd=d;df=p}}
   const roll=Math.random(),you=isUserP(r);
   if(dr<=2.3){
-    if(dd<=2.6&&dd<dr+1.5){const pc=clamp(.6+(dd-dr)*.22,.22,.86),pi=dd<.8?.14:.05;
+    if(dd<=2.6&&dd<dr+1.5){const pc=clamp(.55+(dd-dr)*.22,.2,.84),pi=dd<.8?.14:.05;
       if(roll<pc)catchBy(r);else if(roll<pc+pi)intercept(df);else if(dd<1&&!G.demo&&!G.tryMode&&Math.random()<.14){const on=Math.min(99,Math.max(G.ballOn+1,to.y-10));resolve('pen',{ballOn:on,down:1,togo:Math.min(10,100-on),head:'Flag: pass interference',text:`Pass interference on ${df.name} #${df.num}. Automatic first down at the spot of the foul.`})}else resolve('inc',{text:`Pass broken up by ${df.name} #${df.num}.`,head:'Broken up'})}
-    else{if(roll<.9-Math.max(0,dr-1.4)*.16)catchBy(r);else resolve('inc',{text:`Dropped by ${r.name} #${r.num}.`})}
+    else{if(roll<.87-Math.max(0,dr-1.4)*.16)catchBy(r);else resolve('inc',{text:`Dropped by ${r.name} #${r.num}.`})}
   }else if(dd<=1.2){if(roll<.4)intercept(df);else resolve('inc',{text:`Broken up by ${df.name} #${df.num}.`})}
   else resolve('inc',{text:`Incomplete, intended for ${it.name} #${it.num}.`});
 }
@@ -731,20 +731,20 @@ function checkCarrier(dt){
   let near=0;for(const d of P)if(d.side!==c.side&&dist(d,c)<1.8)near++;
   for(const d of P){
     if(d.side===c.side||d.stun>0||d.tryCD>0)continue;
-    const dd=dist(d,c),reach=d.diveT>0?2.1:d.blocked?1.05:1.65;
+    const dd=dist(d,c),reach=d.diveT>0?2.1:d.blocked?1.05:1.75;
     if(dd>reach)continue;
     d.tryCD=.7;
-    let p=d.tkl+.3+(!G.demo?(d.team===1?diff().tkl:.05):0)+(near-1)*.1+(d===ctrl&&!G.demo?.12:0);
+    let p=d.tkl+.36+(!G.demo?(d.team===1?diff().tkl:.05):0)+(near-1)*.1+(d===ctrl&&!G.demo?.12:0);
     if(pocket)p+=.12;
     if(d.blocked)p*=.22;
-    if(c.jukeT>0)p*=.7;
+    if(c.jukeT>0)p*=.76;
     const fwd=(d.x-c.x)*c.vx+(d.y-c.y)*c.vy;
     if(c.stiffT>0&&fwd>0)p*=.72;
     if(fwd<0&&hyp(c.vx,c.vy)>7)p*=.85;
     if(d.diveT>0)p+=.08;
     p=clamp(p,.08,.97);
     if(Math.random()<p){G.pend={d,sack:pocket&&!G.thrown,near,t:.3};d.vx=c.vx*.6;d.vy=c.vy*.6;return}
-    d.stun=d===ctrl?.3:d.diveT>0?.7:.32;d.diveT=0;d.vx*=.3;d.vy*=.3;c.vx*=.7;c.vy*=.7;floatText(c,'Broken tackle','#ffd23f');
+    d.stun=d===ctrl?.3:d.diveT>0?.7:.32;d.diveT=0;d.vx*=.3;d.vy*=.3;c.vx*=.6;c.vy*=.6;floatText(c,'Broken tackle','#ffd23f');
   }
 }
 function tackled(c,d,sack,near,big){
