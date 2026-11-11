@@ -483,7 +483,7 @@ function launchShot(p){
   if(kind==='jumper'||kind==='ft'){gr=gradeOf(s);pr*=gr.mul;if(s.user||p.team===0&&!G.auto)G.grade={text:gr.g.toUpperCase(),col:gr.col,t:0,p}}
   if(kind!=='ft'){
     const de=kind==='jumper'?(c.dd+Math.min(s.dd0,12))/2:c.dd,jmp=c.jump&&c.dd<3;
-    const cm=kind==='jumper'?(de<2.5?(jmp?.6:.7):de<4.5?(jmp?.8:.87):de<7?.96:1.08):(c.dd<3?(jmp?.66:.8):1);
+    const cm=kind==='jumper'?(de<2.5?(jmp?.52:.62):de<4.5?(jmp?.72:.8):de<7?.92:1.04):(c.dd<3?(jmp?.58:.72):c.dd<5?.88:1);
     pr*=cm;if(p.streak>=3)pr*=1.06;
   }
   if(!G.demo&&!G.auto&&t===1)pr*=diff().acc;
@@ -870,19 +870,19 @@ function defAI(p,dt){
   const t=p.team,rim=ownRim(t),man=p.man,h=ball.owner,dmul=!G.demo&&!G.auto&&t===1?diff().def:1;
   let tg;
   if(h&&h.team!==t&&backcourt(h)&&man!==h){const s=defSpot(p);tg={x:(s.x+man.x)/2,y:(s.y+man.y)/2}}
-  else if(h&&h===man){const ux=rim.x-man.x,uy=rim.y-man.y,L2=hyp(ux,uy)||1,gap=(L2>30?6:3.2)/clamp(dmul,.7,1.3);tg={x:man.x+ux/L2*gap,y:man.y+uy/L2*gap}}
-  else{const ux=rim.x-man.x,uy=rim.y-man.y,L2=hyp(ux,uy)||1,db=dist(man,ball),gap=clamp(db*.28,3,11)/clamp(dmul,.7,1.3);tg={x:man.x+ux/L2*gap+(ball.x-man.x)*.12,y:man.y+uy/L2*gap+(ball.y-man.y)*.12}}
+  else if(h&&h===man){const ux=rim.x-man.x,uy=rim.y-man.y,L2=hyp(ux,uy)||1,gap=(L2>30?5:2.6)/clamp(dmul,.7,1.3);tg={x:man.x+ux/L2*gap,y:man.y+uy/L2*gap}}
+  else{const ux=rim.x-man.x,uy=rim.y-man.y,L2=hyp(ux,uy)||1,db=dist(man,ball),gap=clamp(db*.25,2.5,10)/clamp(dmul,.7,1.3);tg={x:man.x+ux/L2*gap+(ball.x-man.x)*.12,y:man.y+uy/L2*gap+(ball.y-man.y)*.12}}
   // help on a drive
   if(h&&h.team!==t&&h!==man){const hd=hyp(rim.x-h.x,rim.y-h.y),hdef=P.find(q=>q.team===t&&q.man===h);
-    if(hd<15&&hdef&&hyp(rim.x-hdef.x,rim.y-hdef.y)>hd+.5){let helper=null,bd=1e9;for(const q of P)if(q.team===t&&q!==hdef){const d=dist(q,h);if(d<bd){bd=d;helper=q}}if(helper===p)tg={x:h.x+(rim.x-h.x)/hd*2.5,y:h.y+(rim.y-h.y)/hd*2.5}}}
+    if(hd<18&&hdef&&hyp(rim.x-hdef.x,rim.y-hdef.y)>hd-.5){let helper=null,bd=1e9;for(const q of P)if(q.team===t&&q!==hdef){const d=dist(q,h);if(d<bd){bd=d;helper=q}}if(helper===p)tg={x:h.x+(rim.x-h.x)/hd*2,y:h.y+(rim.y-h.y)/hd*2}}}
   // contest the shooter
   const sh=P.find(q=>q.team!==t&&q.shot&&q.shot.kind!=='ft'&&!q.shot.launched);
   if(sh&&dist(p,sh)<9&&(sh===man||dist(p,sh)<5)){tg={x:sh.x+(rim.x-sh.x)*.08,y:sh.y+(rim.y-sh.y)*.08};
-    const d=dist(p,sh);if(d<4.6&&p.z===0&&!p.jumped&&((sh.shot.kind==='jumper'&&sh.shot.t>.16)||(sh.shot.kind!=='jumper'&&sh.shot.t>.08))){p.jumped=true;if(Math.random()<(.3+p.blk*.35)*dmul)jump(p,12.5)}}
+    const d=dist(p,sh);if(d<5&&p.z===0&&!p.jumped&&((sh.shot.kind==='jumper'&&sh.shot.t>.16)||(sh.shot.kind!=='jumper'&&sh.shot.t>.08))){p.jumped=true;if(Math.random()<(.4+p.blk*.4)*dmul)jump(p,12.5)}}
   else p.jumped=false;
-  seek(p,tg.x,tg.y,dt,(h===man?.95:.85)*clamp(dmul,.8,1.15),2);
+  seek(p,tg.x,tg.y,dt,(h===man?1:.9)*clamp(dmul,.8,1.15),2);
   turnTo(p,Math.atan2((h||ball).y-p.y,(h||ball).x-p.x),dt,8);
-  if(h&&h===man&&h.team!==t&&p!==ctrl&&dist(p,h)<3.6&&p.stlCD<=0&&Math.random()<.005*dmul)tryStealOn(p,h,false);
+  if(h&&h===man&&h.team!==t&&p!==ctrl&&dist(p,h)<3.6&&p.stlCD<=0&&Math.random()<.007*dmul)tryStealOn(p,h,false);
 }
 function reboundAI(p,dt){
   const tz=predict();let tg;
