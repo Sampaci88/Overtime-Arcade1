@@ -265,6 +265,8 @@ function surfInfo(x,z){const H=HOLE;for(const w of H.W)if(ndE(w,x,z)<.92&&!(w.is
   const n=near(H,x,z);if(n.d>66||z<-25||n.s>H.gEnd+40)return{s:'O',n};
   const w=H.fwW/2*(.86+.28*Math.sin(n.s*.018+H.fwPh));if(n.d<w&&n.s>H.fwStart&&n.s<H.gEnd-H.G.rz*.7)return{s:'F',n,w};return{s:H.C.desert&&n.d>w+6?'D':'R',n,w}}
 function surfAt(x,z){return surfInfo(x,z).s}
+// off the green, small bumps in the ground shouldn't kick a well-struck ball sideways
+function fairGrad(x,z,s){const g=grad(x,z);if(s==='G'||s==='X')return g;const k=s==='F'||s==='T'?.35:.5;return{x:g.x*k,z:g.z*k}}
 function grad(x,z){const e=.06;return{x:(hAt(x+e,z)-hAt(x-e,z))/(2*e),z:(hAt(x,z+e)-hAt(x,z-e))/(2*e)}}
 function prepHole(H){HOLE=H;H.gh=0;H.th=0;H.gh=hBase(H.G.x,H.G.z)+.4;H.th=hBase(0,0);for(const w of H.W)w.wl=Math.min(hBase(w.x,w.z),hBase(w.x+w.a*.7,w.z),hBase(w.x-w.a*.7,w.z))-(w.ocean?7:.5);const oc=H.W.filter(w=>w.ocean);H.sea=null;if(oc.length){let m=1e9;for(let s=-60;s<=H.gEnd+80;s+=12){const q=ptAt(H.CL,H.acc,Math.max(0,Math.min(H.gEnd,s)));for(let o=-130;o<=130;o+=10)m=Math.min(m,hBase(q.x+q.nx*o,q.z+q.nz*o))}H.sea=m-4}for(const w of oc)w.wl=H.sea}
 /* ---------- the scene ---------- */
@@ -552,7 +554,7 @@ let follow=0;
 function launchBall(pw,e){const p=cur(),b=p.ball,SH=SHAPES[shape],shid=SH[0];
   const [n,carry,ang,sf]=CLUBS[club],lf=lieF(b.lie,club),v0=SH[2]*V0[club]*Math.pow(CM(),.77)*Math.sqrt(lf)*(pw<=1?Math.pow(pw,.62):1+(pw-1)*.45),bs=sf*(1-spin*.35*(1+.15*SK('spin')))*(b.lie==='R'?.7:b.lie==='B'?.8:1)*SH[4]*CSPIN();
   const bend={draw:.45,fade:-.45,bigdraw:.85,bigfade:-.85}[shid]||0,la=(ang*SH[3]+(b.lie==='B'?4:0)-spin*1.2)*Math.PI/180,sp=bs*(bend>0?.9:bend<0?1.1:1);
-  const mk=dir=>({x:b.x,y:b.y+.02,z:b.z,vx:Math.sin(dir)*Math.cos(la)*v0,vy:Math.sin(la)*v0,vz:Math.cos(dir)*Math.cos(la)*v0,roll:false,sp,side:e*4.5+bend,spinAdj:spin,shape:shid,carry:0,maxY:b.y,trees:0,lastDry:{x:b.x,z:b.z}});
+  const mk=dir=>({x:b.x,y:b.y+.02,z:b.z,vx:Math.sin(dir)*Math.cos(la)*v0,vy:Math.sin(la)*v0,vz:Math.cos(dir)*Math.cos(la)*v0,roll:false,sp,side:e*4.5+bend,spinAdj:spin,shape:shid,aimDir:aim,carry:0,maxY:b.y,trees:0,lastDry:{x:b.x,z:b.z}});
   // a draw starts out to the right and curves back; a fade the other way. Start it off-line so it comes down where you aimed (the dashed line shows the bend)
   let off=0;if(bend){const L=predictLand({...mk(aim),side:bend},true),dz=L.z-b.z,dx=L.x-b.x;if(hyp(dx,dz)>5)off=Math.atan2(dx,dz)-aim}
   return mk(aim-off+e*.25)}
@@ -593,9 +595,9 @@ function stepBall(dt){const B=S.ball,H=HOLE;if(!B)return;
       else if(rel<=base&&d<.45&&B.trees<4){B.vx*=-.35;B.vz*=-.35;B.trees++;sfx.tree()}}
     if(B.treeCD>0)B.treeCD-=dt;
     const g=hAt(B.x,B.z);
-    if(B.y<=g){B.y=g;const s=surfAt(B.x,B.z);if(!B.carry){B.carry=hyp(B.x-S.shotStart.x,B.z-S.shotStart.z);B.land={x:B.x,z:B.z};const vh=hyp(B.vx,B.vz)||1;if(s==='B')burst(B.x,g,B.z,'sand',16,B.vx/vh,B.vz/vh,.7);else if(s==='W')burst(B.x,g,B.z,'water',36,0,0,1);else if(s!=='G')burst(B.x,g,B.z,'dust',5,B.vx/vh,B.vz/vh,.4)}
+    if(B.y<=g){B.y=g;const s=surfAt(B.x,B.z);if(!B.carry){B.carry=hyp(B.x-S.shotStart.x,B.z-S.shotStart.z);B.land={x:B.x,z:B.z};if(B.aimDir!=null&&B.trees===0){const ux=Math.sin(B.aimDir),uz=Math.cos(B.aimDir),along=B.vx*ux+B.vz*uz,lat=B.vx*uz-B.vz*ux,k=.35;B.vx=ux*along+uz*lat*k;B.vz=uz*along-ux*lat*k}const vh=hyp(B.vx,B.vz)||1;if(s==='B')burst(B.x,g,B.z,'sand',16,B.vx/vh,B.vz/vh,.7);else if(s==='W')burst(B.x,g,B.z,'water',36,0,0,1);else if(s!=='G')burst(B.x,g,B.z,'dust',5,B.vx/vh,B.vz/vh,.4)}
       if(s==='W'){return endBall('water')}if(s==='O'){return endBall('ob')}
-      const P=SURF[s],gr=grad(B.x,B.z),nl=hyp(gr.x,1,gr.z),nx=-gr.x/nl,ny=1/nl,nz=-gr.z/nl,vn=B.vx*nx+B.vy*ny+B.vz*nz;
+      const P=SURF[s],gr=fairGrad(B.x,B.z,s),nl=hyp(gr.x,1,gr.z),nx=-gr.x/nl,ny=1/nl,nz=-gr.z/nl,vn=B.vx*nx+B.vy*ny+B.vz*nz;
       let tx=B.vx-vn*nx,ty=B.vy-vn*ny,tz=B.vz-vn*nz;let slide=P.slide;if(s==='G'||s==='X')slide*=clamp(1-1.1*(B.sp-.5),.1,1.2);if(B.spinAdj>0)slide=Math.min(1,slide+.12);
       // hole it on the fly
       if(hyp(B.x-H.pin.x,B.z-H.pin.z)<.13&&-vn<16){return endBall('holed')}
@@ -605,7 +607,7 @@ function stepBall(dt){const B=S.ball,H=HOLE;if(!B)return;
     return}
   // rolling along the ground
   const s=surfAt(B.x,B.z);if(s==='W')return endBall('water');if(s==='O')return endBall('ob');
-  const P=SURF[s],gr=grad(B.x,B.z),v=hyp(B.vx,B.vz);
+  const P=SURF[s],gr=fairGrad(B.x,B.z,s),v=hyp(B.vx,B.vz);
   const ox=B.x,oz=B.z;
   let ax=-5/7*GRAV*gr.x,az=-5/7*GRAV*gr.z;if(v>1e-4){ax-=P.mu*GRAV*B.vx/v;az-=P.mu*GRAV*B.vz/v}
   const nvx=B.vx+ax*dt,nvz=B.vz+az*dt;
