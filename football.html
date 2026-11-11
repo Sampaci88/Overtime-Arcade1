@@ -402,9 +402,9 @@ function freeRusher(q,rad){let best=null,bd=rad;for(const d of P)if(d.side!==q.s
 function sep(r){let m=99;for(const d of P)if(d.side==='D'&&!d.blocked&&d.job!=='rush'){m=Math.min(m,hyp(d.x+d.vx*.35-(r.x+r.vx*.35),d.y+d.vy*.35-(r.y+r.vy*.35)))}return m}
 function reactLag(d){
   const base=d.pos==='DL'?.07:d.pos==='LB'?.12:d.pos==='CB'?.14:.16;
-  return base*(!G.demo&&d.team===1?Math.max(.6,diff().lag/.25):.75);
+  return base*(!G.demo&&d.team===1?Math.max(.45,diff().lag/.3):.75);
 }
-function pursue(d,c,dt){let t=dist(d,c)/d.spd;for(let k=0;k<4;k++)t=Math.min(2.4,hyp(c.x+c.vx*t-d.x,c.y+c.vy*t-d.y)/(d.spd*1.06));seek(d,c.x+c.vx*t*.95,c.y+c.vy*t*.95,dt,1.1,.15)}
+function pursue(d,c,dt){let t=dist(d,c)/d.spd;for(let k=0;k<4;k++)t=Math.min(2.4,hyp(c.x+c.vx*t-d.x,c.y+c.vy*t-d.y)/(d.spd*1.06));seek(d,c.x+c.vx*t*.95,c.y+c.vy*t*.95,dt,1.12,.15)}
 function floatText(p,text,col){fx.push({x:p.x,y:p.y,text,t:0,col:col||'#ffffff'})}
 
 /* ---------- blocking ---------- */
@@ -414,7 +414,7 @@ function engage(b,d,kind){
   let s=kind==='pass'?1.25+Math.random()*1.9:kind==='run'?.9+Math.random()*1.6:.35+Math.random()*.7;
   if(b.pos==='RB'||b.pos==='WR')s*=.6;
   s*=Math.pow(b.str/d.str,.8);
-  if(!G.demo)s*=d.team===1?diff().shed:.88;
+  if(!G.demo)s*=d.team===1?diff().shed*.85:.88;
   d.shed=s;
 }
 function release(d){const b=d.eng;if(b){b.eng=null;b.stun=.35}d.eng=null;d.blocked=false}
@@ -505,7 +505,7 @@ function cpuQB(q,dt,ds){
   q.readCD-=dt;
   const rt=pl.readT*(!G.demo&&q.team===1?diff().read:1);
   if(T<rt||q.readCD>0)return;q.readCD=.12;
-  const el=T-rt,prog=Math.floor(el/.5),thr=Math.max(1.1,2.5-.45*el);
+  const el=T-rt,prog=Math.floor(el/.45),thr=Math.max(.95,2.25-.45*el);
   for(let i=0;i<=Math.min(prog,pl.reads.length-1);i++){const r=R(pl.reads[i]);if(!r||r.job!=='route')continue;if(sep(r)>=thr){throwTo(q,r,r.y-q.y>24);return}}
   const press=fr&&dist(fr,q)<1.9;
   if(press||el>3.2){
@@ -520,7 +520,7 @@ function throwTo(q,r,lobbed){
   for(let k=0;k<5;k++){px=r.x+r.vx*t0;py=r.y+r.vy*t0;t0=hyp(px-q.x,py-q.y)/sp}
   const fr=freeRusher(q,2.2),moving=hyp(q.vx,q.vy)>2.5;
   const mul=!G.demo&&q.team===1?diff().qbErr:1;
-  const e=(.45+hyp(px-q.x,py-q.y)*.02+(fr?.9:0)+(moving?.4:0))*mul*(isUserP(q)?.55:1);
+  const e=(.45+hyp(px-q.x,py-q.y)*.02+(fr?.9:0)+(moving?.4:0))*mul*(isUserP(q)?.8:.9);
   const ex=gauss()*e*.7,ey=gauss()*e*.7;px+=ex;py+=ey;
   const Tf=hyp(px-q.x,py-q.y)/sp;
   ball={state:'air',from:{x:q.x,y:q.y},to:{x:px,y:py},t:0,T:Math.max(.2,Tf),peak:lobbed?6.5:Math.min(2.2,.4+Tf*.8),intended:r,x:q.x,y:q.y,h:2,checked:new Set(),ex,ey};
@@ -653,10 +653,10 @@ function arrive(){
   let r=null,dr=99;for(const p of P)if(p.side==='O'&&(p.pos==='WR'||p.pos==='TE'||p.pos==='RB')){const d=hyp(p.x-to.x,p.y-to.y);if(d<dr){dr=d;r=p}}
   let df=null,dd=99;for(const p of P)if(p.side==='D'&&!p.blocked&&p.stun<=0){let d=hyp(p.x-to.x,p.y-to.y);if(p===ctrl&&isUserP(p))d-=.25;if(p.diveT>0)d-=.4;if(d<dd){dd=d;df=p}}
   const roll=Math.random(),you=isUserP(r);
-  if(dr<=(you?2.8:2.1)){
-    if(dd<=1.5&&dd<dr+.8){const pc=you?clamp(.6+(dd-dr)*.32,.3,.9):clamp(.5+(dd-dr)*.32,.22,.86),pi=you?(dd<.7?.1:.04):dd<.7?.14:.07;
+  if(dr<=(you?2.35:2.3)){
+    if(dd<=1.5&&dd<dr+.8){const pc=you?clamp(.5+(dd-dr)*.32,.25,.86):clamp(.52+(dd-dr)*.32,.24,.88),pi=you?(dd<.7?.13:.06):dd<.7?.12:.06;
       if(roll<pc)catchBy(r);else if(roll<pc+pi)intercept(df);else if(dd<1&&!G.demo&&!G.tryMode&&Math.random()<.14){const on=Math.min(99,Math.max(G.ballOn+1,to.y-10));resolve('pen',{ballOn:on,down:1,togo:Math.min(10,100-on),head:'Flag: pass interference',text:`Pass interference on ${df.name} #${df.num}. Automatic first down at the spot of the foul.`})}else resolve('inc',{text:`Pass broken up by ${df.name} #${df.num}.`,head:'Broken up'})}
-    else{if(roll<(you?.95-Math.max(0,dr-1.6)*.14:.93-Math.max(0,dr-1.2)*.2))catchBy(r);else resolve('inc',{text:`Dropped by ${r.name} #${r.num}.`})}
+    else{if(roll<(you?.92-Math.max(0,dr-1.4)*.16:.94-Math.max(0,dr-1.4)*.16))catchBy(r);else resolve('inc',{text:`Dropped by ${r.name} #${r.num}.`})}
   }else if(dd<=1.2){if(roll<.4)intercept(df);else resolve('inc',{text:`Broken up by ${df.name} #${df.num}.`})}
   else resolve('inc',{text:`Incomplete, intended for ${it.name} #${it.num}.`});
 }
@@ -734,12 +734,12 @@ function checkCarrier(dt){
     const dd=dist(d,c),reach=d.diveT>0?2:d.blocked?1:1.55;
     if(dd>reach)continue;
     d.tryCD=.7;
-    let p=d.tkl+.22+(!G.demo?(d.team===1?diff().tkl:.05):0)+(near-1)*.1+(d===ctrl&&!G.demo?.12:0);
+    let p=d.tkl+.22+(c.team===0&&d.team===1&&!G.demo?.06:0)+(!G.demo?(d.team===1?diff().tkl:.05):0)+(near-1)*.1+(d===ctrl&&!G.demo?.12:0);
     if(pocket)p+=.12;
     if(d.blocked)p*=.3;
-    if(c.jukeT>0)p*=.6;
+    if(c.jukeT>0)p*=c.team===0&&!G.demo?.72:.6;
     const fwd=(d.x-c.x)*c.vx+(d.y-c.y)*c.vy;
-    if(c.stiffT>0&&fwd>0)p*=.65;
+    if(c.stiffT>0&&fwd>0)p*=c.team===0&&!G.demo?.75:.65;
     if(fwd<0&&hyp(c.vx,c.vy)>7)p*=.85;
     if(d.diveT>0)p+=.08;
     p=clamp(p,.08,.97);
@@ -2976,6 +2976,55 @@ const BIGWIN=(()=>{let LAST=null,raf=0;
     if(typeof say==='function')setTimeout(()=>{try{say(pick([`${col.name||'They'} are your ${title.replace(/^The /,'')}! Raise the banner, this one lives forever!`,`Hold that trophy up high! ${title}!`,`Look at that celebration! They'll be talking about this one for years.`]),3)}catch(e){}},4200)}
   {const _b=BIGCELE;BIGCELE=function(title,sub){const r=_b.apply(this,arguments);try{enhance(title,sub)}catch(e){}return r}}
   return{enhance,picture,get LAST(){return LAST}}})();
+/* ---------- how you play: every snap, offense only, defense only, key plays, or simulate the whole game ---------- */
+const PMODE=(()=>{const MODES=[['all','Every snap','play the whole game'],['off','Offense only','their drives are simulated'],['def','Defense only','your drives are simulated'],['key','Key plays','3rd and 4th downs, the red zone and the end of each half'],['sim','Simulate','see the final score in seconds']];
+  let mi=0;try{mi=Math.max(0,MODES.findIndex(m=>m[0]===localStorage.getItem('fb-pmode')))}catch(e){}
+  const mode=()=>G.simRest?'sim':MODES[mi][0];
+  {const wrap=document.createElement('div');wrap.className='pick';wrap.innerHTML='<h2>How you play</h2><div class="chips" id="pickM"></div>';const s=$('pickS');if(s&&s.closest('.pick'))s.closest('.pick').after(wrap)}
+  {const _rm=renderMenu;renderMenu=function(){const r=_rm.apply(this,arguments);try{chips($('pickM'),MODES.map(m=>({plain:1,html:`${m[1]} <small>${m[2]}</small>`})),mi,i=>{mi=i;try{localStorage.setItem('fb-pmode',MODES[i][0])}catch(e){}renderMenu()})}catch(e){}return r}}
+  // do you play this snap?
+  function yours(){if(G.demo||G.tryMode)return true;try{if(P2ON())return true}catch(e){}const m=mode();if(m==='all')return true;if(m==='sim')return false;if(G.q===5)return true;
+    if(m==='off')return G.poss===0;if(m==='def')return G.poss===1;
+    return G.down>=3||G.ballOn>=80||((G.q===2||G.q>=4)&&G.clock<=120)}
+  // one simulated snap, using the same rules as the real game
+  const ab=t=>club(t).abbr;
+  function post(pre,txt,sec){logIt(pre,txt);G.simLog.push(txt);if(G.q!==5){G.clock-=sec;if(G.clock<=0)return quarterEnd()}return'ok'}
+  function kickoffAfter(scorer){kickoffTo(1-scorer);G.ballX=MID}
+  function snapSim(){const O=G.poss,D=1-O,pre=`${ab(O)} · ${ddText()} at ${spotText()}`;G.simPlays++;
+    if(G.down===4||(fgOption()&&G.clock<=10&&(G.q===2||G.q>=4))){const ch=G.down===4?cpuFourth():'fg';
+      if(ch==='punt'){const net=clamp(40+gauss()*5,25,60),land=G.ballOn+net,on=land>=100?20:100-land;changePoss(on);G.ballX=MID;return post(pre,`${ab(O)} punts${land>=100?' into the end zone. Touchback':`, ${Math.round(net)} net yards`}.`,9)}
+      if(ch==='fg'){const d=fgDist(),good=Math.random()<fgProb(d);if(good){G.score[O]+=3;kickoffAfter(O)}else{changePoss(Math.max(20,100-(G.ballOn-7)));G.ballX=MID}return post(pre,`${ab(O)} ${d}-yard field goal is ${good?'good':'no good'}.${good?` ${scoreLine()}`:''}`,6)}}
+    const call=cpuOffCall(),run=call.type==='run',hard=O===0?1:1+(G.diff-1)*.06,r=Math.random();let gain=0,kind="play",sec=22+Math.random()*6;
+    if(run){if(r<.012)kind='fumble';else{gain=Math.round(3.4/hard+gauss()*3.3);if(Math.random()<.045)gain+=8+Math.round(Math.random()*28);gain=Math.max(-4,gain)}}
+    else{if(r<.065){kind='sack';gain=-Math.round(4+Math.random()*5)}else if(r<.065+.03*hard){kind='int'}else if(r<.43*hard){kind='inc';sec=7}else{gain=Math.round(Math.max(1,(5+Math.abs(gauss())*8.5+gauss()*2)/hard));if(Math.random()<.055)gain+=12+Math.round(Math.random()*30)}}
+    const desc=kind==='fumble'?'Fumble! Recovered by the defense.':kind==='int'?'Intercepted!':kind==='inc'?`${call.name}: incomplete.`:kind==='sack'?`Sacked for a loss of ${-gain}.`:`${call.name} for ${gain} yard${Math.abs(gain)===1?'':'s'}.`;
+    if(kind==='fumble'||kind==='int'){const on=100-clamp(G.ballOn+(kind==='int'?8+Math.random()*12:0),1,99);G.poss=D;G.ballOn=clamp(on,1,99);G.down=1;G.togo=Math.min(10,100-G.ballOn);G.ballX=MID;return post(pre,`${desc} ${ab(D)} ball.`,sec)}
+    if(kind==='inc'){G.down++;if(G.down>4){changePoss(100-G.ballOn);return post(pre,`${desc} Turnover on downs.`,sec)}return post(pre,desc,sec)}
+    const on=G.ballOn+gain;
+    if(on>=100){G.score[O]+=6;const xp=Math.random()<.94;if(xp)G.score[O]++;kickoffAfter(O);return post(pre,`${desc.replace(/\.$/,'')}. Touchdown, ${club(O).name}!${xp?'':' Extra point no good.'} ${scoreLine()}`,sec)}
+    if(on<=0){G.score[D]+=2;kickoffTo(D);G.ballX=MID;return post(pre,`${desc} Safety! ${scoreLine()}`,sec)}
+    G.ballOn=on;G.togo-=gain;let tail='';if(G.togo<=0){G.down=1;G.togo=Math.min(10,100-G.ballOn);tail=' First down.'}else{G.down++;if(G.down>4){changePoss(100-G.ballOn);tail=' Turnover on downs.'}}
+    return post(pre,desc+tail,sec)}
+  function quarterEnd(){G.clock=0;
+    if(G.q===1||G.q===3){G.q++;G.clock=G.qm*60;G.simLog.push(`End of the ${ORD[G.q-2]} quarter`);return'ok'}
+    if(G.q===2){G.q=3;G.clock=G.qm*60;kickoffTo(1-G.openPoss);G.ballX=MID;G.simLog.push(`Halftime: ${scoreLine()}`);return'ok'}
+    if(G.score[0]!==G.score[1]){G.over=true;endGame();return'over'}
+    if(mode()==='sim'){// college overtime, simulated: a possession each from the 25 until someone leads after a round
+      for(let round=0;round<12&&G.score[0]===G.score[1];round++)for(const t of[0,1]){const r=Math.random();G.score[t]+=r<.42?7:r<.72?3:0}
+      if(G.score[0]===G.score[1])G.score[Math.random()<.5?0:1]+=3;G.q=5;G.over=true;G.simLog.push('Decided in overtime');endGame();return'over'}
+    G.q=5;G.otDone=0;const t=Math.random()<.5?0:1;G.otCur=t;G.poss=t;G.ballOn=75;G.down=1;G.togo=10;G.ballX=MID;toast(`Overtime: ${ab(t)} ball at the 25`);return'ok'}
+  {const _sc=startCall;startCall=function(){if(!G.demo&&G.phase!=='final'&&!yours()){G.simLog=[];G.simPlays=0;let guard=0,res='ok';
+      while(!yours()&&guard++<450){res=snapSim();if(res==='over')return;if(G.phase==='final')return}
+      const n=G.simPlays,last=G.simLog[G.simLog.length-1]||'';if(n)toast(`Simulated ${n} play${n===1?'':'s'} · ${last} · Now: ${ab(G.poss)} ball, ${ddText()} at ${spotText()}`);if(n)callout(G.poss===0?'Your ball':'Your defense',`${ddText()} at ${spotText()}`,'#ffd23f')}
+    return _sc.apply(this,arguments)}}
+  // Simulate: skip the warmups and go straight to the final
+  {const _sw=startWarmup;startWarmup=function(){if(!G.demo&&mode()==='sim'){startCall();return}return _sw.apply(this,arguments)}}
+  {const _ng=newGame;newGame=function(demo){G.simRest=false;return _ng.apply(this,arguments)}}
+  // in a game you're playing: sim the rest
+  {const b=document.createElement('button');b.type='button';b.id='simrest';b.className=$('pause').className;b.textContent='Sim to end';b.hidden=true;$('pause').insertAdjacentElement('afterend',b);
+    b.onclick=()=>{if(G.demo||G.phase==='final')return;G.simRest=true;toast('Simulating the rest of the game…');if(G.phase==='call'||G.phase==='presnap')startCall()};
+    setInterval(()=>{b.hidden=G.demo||G.phase==='final'||$('pause').hidden},500)}
+  return{mode,yours}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'football',stateFr:true,even:true,otPts:3,strength:()=>.5,sim:(a,b)=>{const d=0;return[7*frPois(2.4+d*5)+3*frPois(1.2),7*frPois(2.4-d*5)+3*frPois(1.2)]}};
