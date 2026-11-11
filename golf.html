@@ -94,6 +94,10 @@ html.touch #mini{top:calc(104px + env(safe-area-inset-top,0px));bottom:auto;widt
 html.touch.playing .pbar{display:flex}
 .pbar button{min-height:34px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(20,28,40,.85);color:#fff;font:700 13px var(--body)}
 #confetti{position:absolute;inset:0;pointer-events:none;z-index:7}
+.cad{margin-top:6px;max-width:340px;padding:7px 10px;border-radius:9px;background:rgba(10,16,22,.72);border:1px solid rgba(255,255,255,.16);color:#fff;font:600 13px/1.35 var(--body)}.cad[hidden],.dragpad[hidden]{display:none}
+.dragpad{position:absolute;left:28%;right:28%;top:50%;bottom:8%;border:2px dashed rgba(255,255,255,.35);border-radius:18px;display:grid;place-items:end center;padding:10px;text-align:center;color:rgba(255,255,255,.85);font:700 13px/1.3 var(--body);text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none}
+.stg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}.stt{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;display:grid;gap:2px}.stt b{font:900 24px/1 var(--display);color:var(--led)}.stt small{color:var(--muted)}
+.chal{margin:8px 0 12px;padding:12px;border-radius:12px;background:rgba(255,194,61,.12);border:1px solid var(--led)}
 .shotbar{position:absolute;left:12px;bottom:118px;display:flex;flex-wrap:wrap;gap:4px;max-width:44%;pointer-events:auto}.shotbar button{min-height:28px;padding:0 9px;border-radius:7px;border:1px solid rgba(255,255,255,.28);background:rgba(10,16,22,.7);color:#fff;font:700 12px var(--body);cursor:pointer}.shotbar button[aria-pressed="true"]{background:var(--led);color:#1a1405;border-color:var(--led)}.shotbar button:disabled{opacity:.35;cursor:default}html.touch .shotbar{display:none}
 #stage:fullscreen{width:100vw;height:100vh;max-height:none;aspect-ratio:auto;border-radius:0;border:0}#stage:-webkit-full-screen{width:100vw;height:100vh;max-height:none;border-radius:0}
 #mini{pointer-events:auto;cursor:crosshair}#hLand{font-weight:800!important}html.touch #bFull{display:none}
@@ -119,7 +123,7 @@ html.touch.playing .pbar{display:flex}
   <h1>Pin High</h1>
   <div id="stage">
     <div class="hud">
-      <div class="tl"><div class="hole" id="hHole">Hole 1</div><div class="sm" id="hHoleSub"></div><div class="pl" id="hPlayer">Blake Yoakam</div><div class="sm" id="hScore"></div></div>
+      <div class="tl"><div class="hole" id="hHole">Hole 1</div><div class="sm" id="hHoleSub"></div><div class="pl" id="hPlayer">Blake Yoakam</div><div class="sm" id="hScore"></div><div class="cad" id="caddie" hidden></div></div><div class="dragpad" id="dragPad" hidden>Drag down to swing back, then push up to hit.<br>Push straight for a straight shot.</div>
       <div class="tr"><div class="wind"><i id="hWindA"></i><span id="hWind">0 MPH</span></div><div class="sm" id="hPin"></div><div class="sm" id="hLie"></div></div>
       <div class="note" id="hNote"></div><div class="sub" id="hSub"></div>
       <div class="shotbar" id="shotbar"></div><div class="clubbox" id="clubbox"><b id="hClub">Driver</b><span id="hCarry"></span><span id="hLand"></span><span id="hSpin"></span></div>
@@ -470,7 +474,7 @@ let cfg=Object.assign({course:'hills',holes:'18',diff:'am',names:['Blake Yoakam'
 let S=null;// the round
 const cur=()=>S&&S.players[S.turn];
 function newRound(mode,opts){opts=opts||{};if(mode==='career'){if(!CAR){CAR=newCareer();saveC()}const ev=EVENTS[CAR.ev];opts.course=ev.c;opts.range=ev.h}const range=opts.range||(mode==='daily'?[0,9]:cfg.holes==='f9'?[0,9]:cfg.holes==='b9'?[9,18]:[0,18]);
-  const names=(mode==='tour'||mode==='career'||mode==='daily'||mode==='ld'||mode==='ctp')?[cfg.names[0]||'Blake Yoakam']:cfg.names.slice(0,4);
+  const names=(mode==='tour'||mode==='career'||mode==='daily'||mode==='ld'||mode==='ctp'||mode==='match'||mode==='range'||mode==='pgreen')?[cfg.names[0]||'Blake Yoakam']:cfg.names.slice(0,4);
   S={mode,course:opts.course||cfg.course,diff:cfg.diff,h0:range[0],h1:range[1],hole:range[0],players:names.map((n,k)=>({name:n||('Golfer '+(k+1)),k,card:{},total:0,ball:null,strokes:0,holed:false,stats:{birdies:0,bog:0,fw:0,gir:0,holes:0}})),turn:0,phase:'intro',t:0,
     seed:opts.seed,field:null,ld:mode==='ld'?{left:6,best:0}:null,ctp:mode==='ctp'?{left:5,best:null}:null,coins:0,log:[]};
   if(mode==='tour')S.field=FIELD.map(f=>({name:f[0],sk:f[1],card:{},total:0}));
@@ -524,13 +528,13 @@ function shapeStep(){if(!S||S.phase!=='aim'||meter||club===PUTTER)return;let k=s
 function pinDist(b){return hyp(HOLE.pin.x-b.x,HOLE.pin.z-b.z)}
 function setupShot(){const p=cur(),b=p.ball;b.y=hAt(b.x,b.z);b.lie=b.lie||surfAt(b.x,b.z);const d=pinDist(b),onG=b.lie==='G'||(b.lie==='X'&&d<22);
   spin=0;viewTop=false;meter=null;shape=0;
-  if(onG)club=PUTTER;else{const lf=lieF(b.lie,0),pl=playsLike(b);club=b.lie==='T'&&(HOLE.par>3||S.mode==='ld')?0:12;for(let k=b.lie==='T'?0:1;k<13;k++){if(CLUBS[k][1]*lf*CM()<=pl+4){club=k;break}club=k}if(b.lie!=='T'&&club===0)club=1;if(b.lie==='B'&&d<70)club=11;if(S.mode==='ld')club=0}
+  if(onG)club=PUTTER;else{const lf=lieF(b.lie,0),pl=playsLike(b);club=b.lie==='T'&&(HOLE.par>3||S.mode==='ld')?0:12;for(let k=b.lie==='T'?0:1;k<13;k++){if(CLUBS[k][1]*lf*CM(k)<=pl+4){club=k;break}club=k}if(b.lie!=='T'&&club===0)club=1;if(b.lie==='B'&&d<70)club=11;if(S.mode==='ld')club=0}
   // aim: at the pin when it's reachable, otherwise down the middle
   const reach=club===PUTTER?1e9:CLUBS[club][1]*lieF(b.lie,club)*CM();let tx=HOLE.pin.x,tz=HOLE.pin.z;
   if(club!==PUTTER&&d>reach+12){const n=near(HOLE,b.x,b.z),q=ptAt(HOLE.CL,HOLE.acc,Math.min(HOLE.gEnd,n.s+reach));tx=q.x;tz=q.z}
   plantGrass(b.x,b.z);aim=Math.atan2(tx-b.x,tz-b.z);S.read=null;if(club===PUTTER&&HOLE.par!==0){S.read=readPutt(b);if(S.diff==='am')aim=S.read.aim}poseGolfer(b,aim,club,p);golfer.visible=true;hud();showOthers()}
 function lieF(lie,cl){const s=SURF[lie]||SURF.R;let pw=lie==='B'&&(cl===11||cl===12)?.82:(s.pw||1);if(pw<1)pw=1-(1-pw)*(1-.14*SK('rec'));return pw}
-const CM=()=>1+.025*SK('pow');
+const CM=k=>(1+.025*SK('pow'))*CBO(k==null?club:k);
 function playsLike(b){return pinDist(b)+(hAt(HOLE.pin.x,HOLE.pin.z)-b.y)*1}
 let lpKey='',lpVal=null;
 function aimTarget(){const p=cur(),b=p.ball;if(club!==PUTTER&&S&&S.phase==='aim'){const pw=meter&&meter.st>0?Math.min(1.1,Math.max(.05,meter.pw!=null?meter.pw:meter.m)):1,key=[aim.toFixed(4),club,shape,spin,pw.toFixed(2),b.x.toFixed(2),b.z.toFixed(2),b.lie,S.diff].join('|');if(key!==lpKey){lpKey=key;lpVal=predictLand(launchBall(pw,0),S.diff==='tour')}return{x:lpVal.x,z:lpVal.z}}
@@ -546,14 +550,14 @@ function meterTick(dt){if(!meter)return;const D=DIFF[S.diff];if(meter.st===1){me
   const u=golfer.userData,putt=club===PUTTER;if(meter)u.swing.rotation.z=(putt?-.55:-2.45)*(meter.st===1?meter.m:Math.max(0,meter.m)*(1));if(meter)u.hips.rotation.y=(putt?0:-.7)*clamp(meter.st===1?meter.m:meter.m,0,1)}
 let follow=0;
 function launchBall(pw,e){const p=cur(),b=p.ball,SH=SHAPES[shape],shid=SH[0];
-  const [n,carry,ang,sf]=CLUBS[club],lf=lieF(b.lie,club),v0=SH[2]*V0[club]*Math.pow(CM(),.77)*Math.sqrt(lf)*(pw<=1?Math.pow(pw,.62):1+(pw-1)*.45),bs=sf*(1-spin*.35*(1+.15*SK('spin')))*(b.lie==='R'?.7:b.lie==='B'?.8:1)*SH[4];
+  const [n,carry,ang,sf]=CLUBS[club],lf=lieF(b.lie,club),v0=SH[2]*V0[club]*Math.pow(CM(),.77)*Math.sqrt(lf)*(pw<=1?Math.pow(pw,.62):1+(pw-1)*.45),bs=sf*(1-spin*.35*(1+.15*SK('spin')))*(b.lie==='R'?.7:b.lie==='B'?.8:1)*SH[4]*CSPIN();
   const bend={draw:.45,fade:-.45,bigdraw:.85,bigfade:-.85}[shid]||0,la=(ang*SH[3]+(b.lie==='B'?4:0)-spin*1.2)*Math.PI/180,sp=bs*(bend>0?.9:bend<0?1.1:1);
   const mk=dir=>({x:b.x,y:b.y+.02,z:b.z,vx:Math.sin(dir)*Math.cos(la)*v0,vy:Math.sin(la)*v0,vz:Math.cos(dir)*Math.cos(la)*v0,roll:false,sp,side:e*4.5+bend,spinAdj:spin,shape:shid,carry:0,maxY:b.y,trees:0,lastDry:{x:b.x,z:b.z}});
   // a draw starts out to the right and curves back; a fade the other way. Start it off-line so it comes down where you aimed (the dashed line shows the bend)
   let off=0;if(bend){const L=predictLand({...mk(aim),side:bend},true),dz=L.z-b.z,dx=L.x-b.x;if(hyp(dx,dz)>5)off=Math.atan2(dx,dz)-aim}
   return mk(aim-off+e*.25)}
-function fire(pw,acc){const p=cur(),b=p.ball,D=DIFF[S.diff],putt=club===PUTTER,snap=D.snap+.006*SK('acc');let e;
-  if(putt&&acc==null){const PE={am:0,pro:.01,tour:.02}[S.diff]*(1-.15*SK('putt'));e=(Math.random()-.5)*2*PE}
+function fire(pw,acc){const p=cur(),b=p.ball,D=DIFF[S.diff],putt=club===PUTTER,snap=D.snap+.006*SK('acc')+CSNAP();let e;
+  if(putt&&acc==null){const PE={am:0,pro:.01,tour:.02}[S.diff]*(1-.15*SK('putt'))*CPUTT();e=(Math.random()-.5)*2*PE}
   else{e=-acc;if(Math.abs(e)<snap)e=0;else e=e-Math.sign(e)*snap;e*=1-.07*SK('acc');if(club>=9&&club<=12)e*=1-.1*SK('short');if(putt)e*=1-.1*SK('putt');if(pw>1)e*=1+(pw-1)*6}
   S.rec=[];S.recT=0;p.strokes++;p.prev={x:b.x,z:b.z,lie:b.lie};p.lastLie=b.lie;S.shotStart={x:b.x,z:b.z,y:b.y};S.shotClub=club;follow=.45;
   if(putt){const v0=Math.sqrt(2*SURF.G.mu*GRAV*puttScale(b)*pw)*(b.lie==='X'?1.12:1),dir=aim+e;
@@ -950,7 +954,132 @@ function annLie(p,tot,lie,why){const n=(p.name||'').split(' ').pop()||'Blake';
     else if(d===1)say(pick(['Bogey.','That is a bogey.']));else say(d===2?'Double bogey.':'Tough hole.')}
   else if(why==='rest'&&wasPutt){const ft=pinDist(p.ball)*3;if(ft<4&&S.shotStart&&hyp(S.shotStart.x-HOLE.pin.x,S.shotStart.z-HOLE.pin.z)*3>6){crowd('aww');say(pick(['Oh, so close!','Just misses!','Lipped out!']))}}
   else{const lie=p.ball.lie,txt=annLie(p,hyp(S.ball.x-S.shotStart.x,S.ball.z-S.shotStart.z),lie,why);if(why==='water'||why==='ob')crowd('aww');else if(lie==='G'&&pinDist(p.ball)*3<10)crowd('ooh');if(txt)say(txt)}}catch(e){}return r}}
-window.__golf={applyWx,WX,say,crowd,get rainOn(){return rain.m.visible},readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
+/* ---------- the pro shop: club upgrades bought with arcade coins ---------- */
+const CLUBUP=[['driver','Carbon driver','+2.5% driver distance per level'],['woods','Fairway woods','+2% wood distance per level'],['irons','Forged irons','+1.5% iron distance and a bigger sweet spot per level'],['wedges','Spin wedges','More backspin and a bigger sweet spot with wedges'],['putter','Milled putter','Steadier putts per level']],CUCOST=[80,180,320];
+let CU=Object.assign({driver:0,woods:0,irons:0,wedges:0,putter:0},store.get('golf-clubs',{}));
+const mine=()=>{const p=S&&S.players?cur():null;return !p||p.k===0};
+function cgrp(k){return k===0?'driver':k<=2?'woods':k<=8?'irons':k<=12?'wedges':'putter'}
+function CBO(k){if(!mine())return 1;const g=cgrp(k),l=CU[g]||0;return 1+l*(g==='driver'?.025:g==='woods'?.02:g==='irons'?.015:0)}
+function CSNAP(){if(!mine())return 0;const g=cgrp(club),l=CU[g]||0;return g==='irons'?l*.004:g==='wedges'?l*.003:0}
+function CSPIN(){if(!mine())return 1;return cgrp(club)==='wedges'?1+.1*(CU.wedges||0):1}
+function CPUTT(){if(!mine())return 1;return 1-.18*(CU.putter||0)}
+function coinsHave(){try{return(JSON.parse(localStorage.getItem('overtime-coins')||'null')||{c:0}).c||0}catch(e){return 0}}
+function spendCoins(n){try{const d=JSON.parse(localStorage.getItem('overtime-coins')||'null')||{c:0,own:{},earned:0};if((d.c||0)<n)return false;d.c-=n;localStorage.setItem('overtime-coins',JSON.stringify(d));return true}catch(e){return false}}
+function shop(msg){const c=coinsHave();showCard(`<h2>Pro shop</h2><p>Spend Overtime Arcade coins on better clubs for ${esc(cfg.names[0]||'Blake Yoakam')}. You have <b style="color:var(--led)">${c} coins</b>.</p>${msg?`<p style="color:var(--led)">${esc(msg)}</p>`:''}
+  <div class="skills">${CLUBUP.map(([k,n,d])=>{const l=CU[k]||0,cost=CUCOST[l];return`<div class="sk"><div><b>${n} · level ${l}</b><small>${d}</small></div><span class="pips">${[0,1,2].map(i=>`<i class="${i<l?'on':''}"></i>`).join('')}</span><button class="btn" type="button" data-buy="${k}"${l>=3||c<cost?' disabled':''}>${l>=3?'Maxed':`Buy · ${cost} coins`}</button></div>`}).join('')}</div>
+  <p><small>Win coins in every Overtime Arcade game. Golf pays for finished rounds, wins, birdies, eagles and aces.</small></p><div class="row"><button class="go" type="button" data-a="menu">Back</button></div>`)}
+
+/* ---------- stats ---------- */
+let ST=Object.assign({rounds:0,holes:0,drives:0,driveYds:0,longDrive:0,fwHit:0,fwOpp:0,gir:0,girOpp:0,putts:0,puttHoles:0,birdies:0,eagles:0,aces:0,matchW:0,matchL:0,matchH:0,best:[]},store.get('golf-stats',{}));
+const saveST=()=>store.set('golf-stats',ST),COUNTED=m=>['stroke','tour','career','daily','match'].includes(m);
+function statsScreen(){const pct=(a,b)=>b?Math.round(a/b*100)+'%':'—',tile=(v,l)=>`<div class="stt"><b>${v}</b><small>${l}</small></div>`;
+  showCard(`<h2>Stats</h2><p>${esc(cfg.names[0]||'Blake Yoakam')} · ${ST.rounds} round${ST.rounds===1?'':'s'} · ${ST.holes} holes</p><div class="stg">
+  ${tile(ST.drives?Math.round(ST.driveYds/ST.drives)+' yds':'—','Avg drive')}${tile(ST.longDrive?ST.longDrive+' yds':'—','Longest drive')}${tile(pct(ST.fwHit,ST.fwOpp),'Fairways hit')}${tile(pct(ST.gir,ST.girOpp),'Greens in regulation')}
+  ${tile(ST.puttHoles?(ST.putts/ST.puttHoles*18).toFixed(1):'—','Putts per 18')}${tile(ST.birdies,'Birdies')}${tile(ST.eagles,'Eagles')}${tile(ST.aces,'Holes in one')}${tile(`${ST.matchW}-${ST.matchL}-${ST.matchH}`,'Match play W-L-H')}</div>
+  <h3>Best rounds</h3>${ST.best.length?`<div class="lb">${ST.best.map((r,k)=>`<div><span>${k+1}</span><span>${esc(r.c)} <small>${r.h} holes · ${esc(r.dt)}</small></span><span>${r.d===0?'E':r.d>0?'+'+r.d:r.d}</span><span>${r.t}</span></div>`).join('')}</div>`:'<p>Finish a round to see it here.</p>'}
+  <div class="row"><button class="go" type="button" data-a="menu">Back</button></div>`)}
+
+/* ---------- match play against a rival ---------- */
+const RIVALS=[['Cole Hartigan','The Bomber','Long off the tee, shaky with the putter. Eats up par 5s.',.86,'bomb'],['Theo Brandt','The Grinder','Fairways and greens. Almost never makes a big number.',.8,'steady'],['Luca Ferreira','Putting Wizard','Short off the tee, but holes everything on the green.',.78,'putt'],
+  ['Wes Dalton','Streaky','Hot and cold. Look out once he gets rolling.',.74,'streak'],['Eli Navarro','The Rookie','A nice swing and nervous hands. Good first opponent.',.55,'rookie']];
+function rivalHole(par){const R=RIVALS[S.match.r],M=S.match;let sk=R[3]+(S.diff==='am'?-.08:S.diff==='tour'?.06:0),base=.15+(1-sk)*1.1,sd=.75;
+  if(R[4]==='bomb'){sd=.95;base+=par===5?-.45:par===3?.12:0}if(R[4]==='steady')sd=.45;if(R[4]==='putt'){base-=.12;sd=.65}if(R[4]==='streak'){base-=M.mom*.35;sd=.85}if(R[4]==='rookie')sd=.8;
+  const s=clamp(par+Math.round(base+gauss()*sd),par-2,par+3);if(R[4]==='streak')M.mom=clamp(M.mom*.5+(s<par?1:s>par?-1:0),-1.5,1.5);return s}
+function matchStatus(fin){const M=S.match,u=M.up,left=M.len-Object.keys(M.card).length,rn=RIVALS[M.r][0].split(' ')[0],me=(S.players[0].name||'You').split(' ')[0];
+  if(u===0)return left?'All square':'Match halved';const who=u>0?me:rn;if(fin||Math.abs(u)>left)return`${who} wins ${left?`${Math.abs(u)} & ${left}`:`${Math.abs(u)} UP`}`;return`${who} ${Math.abs(u)} UP${left?` with ${left} to play`:''}`}
+function matchPick(){showCard(`<h2>Match play</h2><p>Hole by hole against a rival. Win a hole with a lower score. The match ends when someone is up by more holes than are left.</p><div class="modes">${RIVALS.map((r,k)=>`<button class="mode" type="button" data-rival="${k}"><b>${r[0]} · ${r[1]}</b><small>${r[2]}</small></button>`).join('')}</div>
+  <p><small>${COURSES[cfg.course].name} · ${cfg.holes==='18'?'18 holes':cfg.holes==='f9'?'Front 9':'Back 9'} · ${DIFF[cfg.diff].n}. Change these on the menu.</small></p><div class="row"><button class="btn" type="button" data-a="menu">Back</button></div>`)}
+function matchEnd(){const M=S.match,u=M.up,R=RIVALS[M.r],me=S.players[0];S.phase='done';const st=matchStatus(true);let coins=0,xp=30;
+  if(u>0){coins=40;xp=150;ST.matchW++;setTimeout(()=>celebrate('Match won',`${me.name} beats ${R[0]} ${st.replace(/^.* wins /,'')}`),200);say(`${me.name} wins the match!`,true);crowd('roar',1)}else if(u<0){coins=5;ST.matchL++;say(`${R[0]} wins the match.`,true)}else{coins=15;xp=70;ST.matchH++;say('The match is halved.',true)}
+  saveST();addCoins(coins);addXP(xp,me);const hs=Object.keys(M.card).map(Number).sort((a,b)=>a-b);
+  showCard(`<h2>Match play</h2><p class="bigt">${esc(st)}</p><p>${esc(me.name)} vs ${esc(R[0])} (${esc(R[1])})</p><div class="scw"><table class="sc"><tr><th>Hole</th>${hs.map(k=>`<th>${k+1}</th>`).join('')}</tr><tr><th>Par</th>${hs.map(k=>`<td>${PARS[k%18]}</td>`).join('')}</tr>
+    <tr><td class="n">${esc(me.name)}</td>${hs.map(k=>`<td><span class="${M.res[k]>0?'b':''}">${me.card[k]}</span></td>`).join('')}</tr><tr><td class="n">${esc(R[0])}</td>${hs.map(k=>`<td><span class="${M.res[k]<0?'b':''}">${M.card[k]}</span></td>`).join('')}</tr></table></div>
+    <p>+${coins} coins</p><div class="row"><button class="go" type="button" data-a="again">Rematch</button><button class="btn" type="button" data-a="match">New rival</button><button class="btn" type="button" data-a="menu">Menu</button></div>`)}
+
+/* ---------- practice: the driving range and the putting green ---------- */
+const RANGE_T=[75,105,135,165,195,225];
+function rangeHole(i){const H=makeHole('hills',0,5150);H.par=0;H.W=[];H.B=[];H.fwW=58;H.hname='Driving range';H.name='Practice range';const t=RANGE_T[i%RANGE_T.length],q=ptAt(H.CL,H.acc,t);H.G=Object.assign({},H.G,{x:q.x,z:q.z,rot:q.a,sx:0,sz:0,tier:0,bowl:0,rx:9,rz:9});H.pin={x:q.x,z:q.z};H.gEnd=Math.max(H.gEnd,t+40);H.trees=H.trees.filter(tr=>Math.abs(near(H,tr.x,tr.z).d)>44);H.wind={s:Math.round(Math.random()*8),a:Math.random()*6.283};H.rangeT=t;return H}
+function pgHole(){const H=makeHole('lakes',15,6161);H.par=0;H.W=[];H.hname='Putting green';H.name='Practice green';H.wind={s:0,a:0};return H}
+function pgSpot(){const H=HOLE,G=H.G;for(let k=0;k<400;k++){const a=Math.random()*6.283,d=2+Math.random()*Math.min(11,Math.max(G.rx,G.rz)),x=H.pin.x+Math.sin(a)*d,z=H.pin.z+Math.cos(a)*d;if(surfAt(x,z)==='G'&&hyp(x-H.pin.x,z-H.pin.z)>=2)return{x,z}}return{x:H.pin.x+3,z:H.pin.z-3}}
+function practiceEnd(){const m=S.mode,P=S.prac;S.phase='done';let h='';
+  if(m==='range'){const pts=P.log.reduce((a,b)=>a+b.xp,0);addXP(pts);h=`<h2>Driving range</h2><p class="bigt">${P.log.filter(r=>r.d<10).length} of ${P.log.length} inside 10 yards</p><div class="lb">${P.log.map((r,k)=>`<div><span>${k+1}</span><span>${r.t} yd target</span><span>${r.d.toFixed(1)} yds</span><span>+${r.xp} XP</span></div>`).join('')}</div><p>+${pts} XP for ${esc(cfg.names[0]||'Blake Yoakam')}</p>`}
+  else{const made=P.log.filter(r=>r.made).length,pts=P.log.reduce((a,b)=>a+b.xp,0),best=store.get('golf-pg',0);if(made>best)store.set('golf-pg',made);addXP(pts);h=`<h2>Putting green</h2><p class="bigt">${made} of ${P.log.length} made</p><div class="lb">${P.log.map((r,k)=>`<div><span>${k+1}</span><span>${r.ft} ft putt</span><span>${r.made?'Made':r.left.toFixed(1)+' ft left'}</span><span>+${r.xp} XP</span></div>`).join('')}</div><p>Best: ${Math.max(made,best)} made · +${pts} XP</p>`}
+  showCard(h+`<div class="row"><button class="go" type="button" data-a="again">Go again</button><button class="btn" type="button" data-a="menu">Menu</button></div>`)}
+
+/* ---------- Daily 9 challenge links ---------- */
+let CH=null;try{const q=new URLSearchParams(location.search);if(q.get('d9')&&/^\d{4}-\d{2}-\d{2}$/.test(q.get('d9'))){const c=(q.get('c')||'').slice(0,9).split('').map(ch=>parseInt(ch,36)).filter(n=>n>0&&n<20);if(c.length)CH={date:q.get('d9'),card:c,name:(q.get('n')||'A friend').replace(/[<>]/g,'').slice(0,22)}}}catch(e){}
+let chGo=false;
+function chThru(upto){let s=0,p=0;for(let k=0;k<upto&&k<CH.card.length;k++){s+=CH.card[k];p+=PARS[k]}return s-p}
+const tp=d=>d===0?'E':d>0?'+'+d:String(d);
+
+/* ---------- the caddie ---------- */
+function caddieTalk(){const el=$('caddie');if(!el)return;if((cfg.caddie||'on')!=='on'||!S||S.phase!=='aim'||S.mode==='ld'){el.hidden=true;return}const p=cur(),b=p.ball,H=HOLE;let t='';
+  if(club===PUTTER){const ft=pinDist(b)*3,eff=puttEff(b)*3,dh=(hAt(H.pin.x,H.pin.z)-hAt(b.x,b.z))*36;t=`${Math.round(ft)} ft, ${Math.abs(dh)<1.5?'flat':dh>0?`uphill (${Math.round(dh)} in)`:`downhill (${Math.round(-dh)} in)`}${Math.abs(eff-ft)>2?`, plays like ${Math.round(eff)} ft`:''}${S.wx==='rain'?'. Wet green, it will be slow':''}.`;
+    if(S.read&&S.diff!=='tour'){const pa=Math.atan2(H.pin.x-b.x,H.pin.z-b.z);let da=S.read.aim-pa;da=Math.atan2(Math.sin(da),Math.cos(da));const inch=Math.abs(Math.tan(da)*pinDist(b)*36);t+=inch<2?' Straight in.':` Play it ${Math.round(inch)} in. ${da>0?'left':'right'} of the cup.`}}
+  else{const d=pinDist(b),pl=playsLike(b),w=H.wind,tail=w.s*Math.cos(w.a-aim),adj=Math.round(pl-tail*.8*Math.min(1.3,pl/150));const lf=lieF(b.lie,0);let best=null;for(let k=b.lie==='T'?0:1;k<13;k++){if(CLUBS[k][1]*lf*CM(k)<=adj+3){best=k;break}best=k}
+    const reach=CLUBS[b.lie==='T'?0:1][1]*lf*CM(b.lie==='T'?0:1);t=d>reach+15?`${Math.round(d)} to the pin, out of reach. Find the fairway.`:`${Math.round(d)} yds, plays ${adj}${Math.abs(tail)>4?(tail>0?' downwind':' into the wind'):''}. ${CLUBS[best][0]}${best!==club?' is the play':' is right'}.`;
+    const L=aimTarget(),hz=new Set();if(L){for(let r=0;r<=14;r+=7)for(let a=0;a<8;a++){const x=L.x+Math.sin(a*.785)*r,z=L.z+Math.cos(a*.785)*r,s=surfAt(x,z);if(s==='W')hz.add('water');else if(s==='B')hz.add('a bunker');else if(s==='O')hz.add('out of bounds')}}
+    if(hz.size)t+=` Careful: ${[...hz].join(' and ')} near where this lands.`;if(b.lie==='R'||b.lie==='D')t+=' From the rough it will come out short.';if(b.lie==='B')t+=' Out of the sand: take a little extra.'}
+  el.hidden=false;el.textContent='🧢 Caddie: '+t}
+
+/* ---------- drag to swing ---------- */
+let drag=null;
+function padHit(e){const r=stage.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;return x>.28&&x<.72&&y>.5&&y<.92}
+stage.addEventListener('pointerdown',e=>{if((cfg.swing||'meter')!=='drag'||!S||S.phase!=='aim'||meter||e.target.closest('button,.shotbar,#mini'))return;if(!padHit(e))return;e.stopPropagation();e.preventDefault();audio();
+  const r=stage.getBoundingClientRect();drag={id:e.pointerId,x0:e.clientX,y0:e.clientY,yMax:e.clientY,xb:e.clientX,ph:'back',H:r.height,W:r.width};meter={st:1,m:0,dir:1,pw:null,spd:0,drag:1};sfx.whoosh();try{stage.setPointerCapture(e.pointerId)}catch(_){}},true);
+stage.addEventListener('pointermove',e=>{if(!drag||e.pointerId!==drag.id||!meter)return;e.stopPropagation();const putt=club===PUTTER,dy=e.clientY-drag.y0;
+  if(drag.ph==='back'){const pw=clamp(dy/(drag.H*.3),0,putt?.995:1.09);meter.m=pw;if(e.clientY>drag.yMax){drag.yMax=e.clientY;drag.xb=e.clientX}if(e.clientY<drag.yMax-14&&pw>.04){drag.ph='fwd';drag.pw=clamp((drag.yMax-drag.y0)/(drag.H*.3),.02,putt?.995:1.09);meter.pw=drag.pw;meter.st=putt?1:2;meter.m=drag.pw}}
+  else if(e.clientY<=drag.y0){const acc=(e.clientX-drag.xb)/drag.W*.9,pw=drag.pw;drag=null;meter=null;if(club===PUTTER)fire(Math.min(1,pw),null);else fire(pw,acc)}},true);
+addEventListener('pointerup',e=>{if(drag&&e.pointerId===drag.id){drag=null;if(meter&&meter.drag){meter=null;note('','Drag down, then push up past where you started to swing',1.8)}}},true);
+function padShow(){const el=$('dragPad');if(el)el.hidden=!((cfg.swing||'meter')==='drag'&&S&&S.phase==='aim'&&!drag)}
+
+/* ---------- wiring ---------- */
+{const _sr=shotReport;shotReport=function(why){const p=cur();if(S&&(S.mode==='range'||S.mode==='pgreen')){const P=S.prac,B=S.ball;
+    if(S.mode==='range'){const d=why==='holed'?0:hyp(B.x-HOLE.pin.x,B.z-HOLE.pin.z),xp=d<3?15:d<6?10:d<10?6:d<20?2:0;P.log.push({t:HOLE.rangeT,d,xp});note(why==='holed'?'In the hole!':`${d.toFixed(1)} yards away`,xp?`+${xp} XP`:'Inside 20 yards earns XP',1.8);if(d<6)crowd('ooh')}
+    else{const made=why==='holed',left=made?0:pinDist(p.ball)*3,xp=made?Math.round(8+P.ft/4):left<3?3:0;P.log.push({ft:P.ft,made,left,xp});note(made?'Made it!':`${left.toFixed(1)} ft left`,xp?`+${xp} XP`:'',1.6);if(made)sfx.clap(10)}return}
+  const before={club:S&&S.shotClub,strokes:p&&p.strokes,start:S&&S.shotStart};const r=_sr.apply(this,arguments);
+  try{if(S&&COUNTED(S.mode)&&p&&p.k===0){if(before.club===PUTTER)p._putts=(p._putts||0)+1;
+    if(p.strokes>=1&&HOLE.par>3&&before.club!==PUTTER&&!p._teeDone){p._teeDone=1;ST.fwOpp++;if(why==='rest'){const tot=hyp(S.ball.x-before.start.x,S.ball.z-before.start.z);if(before.club===0){ST.drives++;ST.driveYds+=Math.round(tot);ST.longDrive=Math.max(ST.longDrive,Math.round(tot))}if(p.ball.lie==='F')ST.fwHit++}}saveST()}}catch(e){}return r}}
+{const _eh=endHole;endHole=function(){const p=S.players[0];if(S.mode==='match'){const M=S.match,i=S.hole,rs=rivalHole(HOLE.par);M.card[i]=rs;const mine=p.strokes,res=mine<rs?1:mine>rs?-1:0;M.res[i]=res;M.up+=res;const R=RIVALS[M.r],st=matchStatus(false);
+      setTimeout(()=>{note(res>0?'You win the hole':res<0?`${R[0].split(' ')[0]} wins the hole`:'Hole halved',`${R[0].split(' ')[0]} made ${rs} · ${st}`,2.6);say(`${res>0?'Hole won.':res<0?'Hole lost.':'Halved.'} ${st}.`,true)},300);
+      const left=M.len-Object.keys(M.card).length;if(Math.abs(M.up)>left)S.h1=S.hole+1}
+    if(COUNTED(S.mode)){const d=p.strokes-HOLE.par;ST.holes++;ST.girOpp++;if(p.gir)ST.gir++;ST.putts+=p._putts||0;ST.puttHoles++;if(p.strokes===1)ST.aces++;else if(d<=-2)ST.eagles++;else if(d===-1)ST.birdies++;saveST()}
+    for(const q of S.players){q._putts=0;q._teeDone=0}return _eh.apply(this,arguments)}}
+{const _er=endRound;endRound=function(){if(S.mode==='match')return matchEnd();if(S.mode==='range'||S.mode==='pgreen')return practiceEnd();const r=_er.apply(this,arguments);
+  try{const p=S.players[0],full=S.h1-S.h0,done=Object.keys(p.card).length===full;if(done&&COUNTED(S.mode)){ST.rounds++;ST.best.push({c:S.mode==='daily'?'Daily 9':COURSES[S.course].name,h:full,d:p.total-parThru(p),t:p.total,dt:today()});ST.best.sort((a,b)=>(a.d/a.h)-(b.d/b.h));ST.best=ST.best.slice(0,5);saveST()}
+    if(S.mode==='daily'&&done){const row=$('ovc').querySelector('.row:last-child'),hs=[];for(let k=0;k<9;k++)hs.push(p.card[k]);
+      if(S.ch){const me=p.total-parThru(p),fr=chThru(9),pa=document.createElement('p');pa.className='bigt';pa.textContent=me<fr?`You beat ${S.ch.name}! ${tp(me)} to ${tp(fr)}`:me>fr?`${S.ch.name} wins this one, ${tp(fr)} to ${tp(me)}`:`Tied with ${S.ch.name} at ${tp(me)}`;row.before(pa)}
+      const b=document.createElement('button');b.className='btn';b.type='button';b.textContent='Challenge a friend';b.onclick=async()=>{const url=`${location.origin}${location.pathname}?d9=${S.dailyDate||today()}&c=${hs.map(v=>Math.min(35,v).toString(36)).join('')}&n=${encodeURIComponent((p.name||'').slice(0,22))}`,txt=`I shot ${p.total} (${toPar(p)}) on the Pin High Daily 9. Can you beat me hole by hole?`;
+        try{if(navigator.share){await navigator.share({title:'Pin High Daily 9',text:txt,url});return}}catch(err){if(err&&err.name==='AbortError')return}try{await navigator.clipboard.writeText(txt+' '+url);b.textContent='Link copied!'}catch(err){b.textContent=url}};row.append(b)}}catch(e){}return r}}
+{const _af=afterShot;afterShot=function(){if(S&&(S.mode==='range'||S.mode==='pgreen')){const P=S.prac,p=S.players[0];if(P.log.length>=P.n)return endRound();
+    if(S.mode==='range'){P.i++;const H=rangeHole(P.i);buildHole(H);S.H=H;p.ball={x:0,z:0,y:hAt(0,0),lie:'T'};p.holed=false;p.strokes=0;S.phase='aim';setupShot();note(`${H.rangeT} yard target`,`Ball ${P.log.length+1} of ${P.n}`,1.6);return}
+    const s=pgSpot();p.ball={x:s.x,z:s.z,y:hAt(s.x,s.z),lie:'G'};p.holed=false;p.strokes=0;P.ft=Math.round(pinDist(p.ball)*3);S.phase='aim';setupShot();note(`${P.ft} footer`,`Putt ${P.log.length+1} of ${P.n}`,1.4);return}return _af.apply(this,arguments)}}
+{const _ch=cardHtml;cardHtml=function(mid){let h=_ch.apply(this,arguments);if(S&&S.mode==='match'&&S.match){const R=RIVALS[S.match.r],hs=Object.keys(S.match.card).map(Number).sort((a,b)=>a-b);h+=`<p class="bigt">${esc(matchStatus(false))}</p><p>${esc(R[0])}: ${hs.map(k=>`${k+1}: ${S.match.card[k]}`).join(' · ')}</p>`}return h}}
+{const _hf=holeFor;holeFor=function(){if(S.mode==='range')return rangeHole(S.prac?S.prac.i:0);if(S.mode==='pgreen')return pgHole();return _hf.apply(this,arguments)}}
+{const _sh=startHole;startHole=function(){if(S&&S.mode==='daily'&&chGo&&CH&&!S.ch){S.ch=CH;S.dailyDate=CH.date;chGo=false}if(S&&(S.mode==='range'||S.mode==='pgreen')&&!S.prac)S.prac={i:0,n:S.mode==='range'?6:8,log:[],ft:0};
+  if(S&&S.mode==='match'&&!S.match)S.match={r:clamp(cfg.rival|0,0,RIVALS.length-1),up:0,card:{},res:{},mom:0,len:S.h1-S.h0};const r=_sh.apply(this,arguments);
+  if(S.mode==='pgreen'){const p=S.players[0],s=pgSpot();p.ball={x:s.x,z:s.z,y:hAt(s.x,s.z),lie:'G'};S.prac.ft=Math.round(pinDist(p.ball)*3);const ph=S.phase;setupShot();S.phase=ph}
+  if(S.mode==='match'&&S.hole===S.h0){const R=RIVALS[S.match.r];setTimeout(()=>{if(S&&S.mode==='match')note(`vs ${R[0]}`,`${R[1]}: ${R[2]}`,3)},1200)}return r}}
+{const _ss=setupShot;setupShot=function(){const r=_ss.apply(this,arguments);try{caddieTalk()}catch(e){}return r}}
+{const _hu=hud;hud=function(){const r=_hu.apply(this,arguments);try{if(!S)return r;const sub=$('hHoleSub');
+  if(S.mode==='match'&&S.match)sub.textContent+=` · ${matchStatus(false)}`;
+  if(S.mode==='range'&&S.prac)sub.textContent=`Ball ${Math.min(S.prac.n,S.prac.log.length+1)} of ${S.prac.n} · target ${HOLE.rangeT} yds`;
+  if(S.mode==='pgreen'&&S.prac)sub.textContent=`Putt ${Math.min(S.prac.n,S.prac.log.length+1)} of ${S.prac.n} · made ${S.prac.log.filter(x=>x.made).length}`;
+  if(S.mode==='daily'&&S.ch){const i=S.hole;sub.textContent+=` · ${S.ch.name}: ${S.ch.card[i]!=null?S.ch.card[i]+' here':'—'}, ${tp(chThru(i))} thru ${i}`}
+  if(S.phase==='aim'&&!meter)caddieTalk();padShow()}catch(e){}return r}}
+{const _mt=meterTick;meterTick=function(dt){if(meter&&meter.drag){const u=golfer.userData,putt=club===PUTTER,m=clamp(meter.m,0,1.1);u.swing.rotation.z=(putt?-.55:-2.45)*m;u.hips.rotation.y=(putt?0:-.7)*clamp(m,0,1);return}return _mt.apply(this,arguments)}}
+{const _m=menu;menu=function(){drag=null;const r=_m.apply(this,arguments);try{const o=$('ovc');$('caddie').hidden=true;$('dragPad').hidden=true;
+  const lk=o.querySelector('.lockbtn');if(lk)lk.insertAdjacentHTML('beforeend',`<button class="btn" type="button" data-a="shop">🏌️ Pro shop · ${coinsHave()} coins</button><button class="btn" type="button" data-a="stats">📊 Stats</button>`);
+  const md=o.querySelector('.modes');if(md){md.querySelector('[data-m="stroke"]').insertAdjacentHTML('afterend',`<button class="mode" type="button" data-a="match"><b>Match play</b><small>Hole by hole against a rival with their own style.${ST.matchW+ST.matchL+ST.matchH?` Record: ${ST.matchW}-${ST.matchL}-${ST.matchH}`:''}</small></button>`);
+    md.insertAdjacentHTML('beforeend',`<button class="mode" type="button" data-m="range"><b>Driving range</b><small>Six balls at targets from 75 to 225 yards. Earn XP for Blake.</small></button><button class="mode" type="button" data-m="pgreen"><b>Putting green</b><small>Eight putts from all over the green. Best: ${store.get('golf-pg',0)} made.</small></button>`)}
+  if(CH){o.querySelector('h2').insertAdjacentHTML('afterend',`<div class="chal"><b>${esc(CH.name)} challenged you!</b> They shot ${tp(chThru(9))} on the Daily 9 from ${esc(CH.date)}. Play the same 9 holes and see who wins each hole.<div class="row"><button class="go" type="button" data-a="d9go">Accept the challenge</button></div></div>`)}
+  const gx=o.querySelector('[data-gfx]');if(gx){const row=document.createElement('div');row.className='row';row.innerHTML=`<span style="color:var(--muted);font-size:14px">Swing:</span>${[['meter','Tap meter'],['drag','Drag to swing']].map(([k,t])=>`<button class="chip" type="button" data-swing="${k}" aria-pressed="${(cfg.swing||'meter')===k}">${t}</button>`).join('')}<span style="color:var(--muted);font-size:14px;margin-left:10px">Caddie:</span>${[['on','On'],['off','Off']].map(([k,t])=>`<button class="chip" type="button" data-caddie="${k}" aria-pressed="${(cfg.caddie||'on')===k}">${t}</button>`).join('')}`;gx.closest('.row').before(row)}}catch(e){console.warn(e)}return r}}
+$('ovc').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a;
+  if(b.dataset.swing){cfg.swing=b.dataset.swing;saveCfg();menu();return}if(b.dataset.caddie){cfg.caddie=b.dataset.caddie;saveCfg();menu();return}
+  if(b.dataset.buy){const k=b.dataset.buy,l=CU[k]||0;if(l<3&&spendCoins(CUCOST[l])){CU[k]=l+1;store.set('golf-clubs',CU);sfx.clap(12);shop(`${CLUBUP.find(c=>c[0]===k)[1]} upgraded to level ${l+1}`)}return}
+  if(b.dataset.rival!=null){cfg.rival=+b.dataset.rival;saveCfg();camInit=false;newRound('match');return}
+  if(a==='shop')shop();else if(a==='stats')statsScreen();else if(a==='match')matchPick();else if(a==='d9go'){chGo=true;camInit=false;newRound('daily')}});
+window.__golf={endHoleT:()=>endHole(),get ST(){return ST},get CU(){return CU},set CU(v){CU=v},RIVALS,caddieTalk,rangeHole,applyWx,WX,say,crowd,get rainOn(){return rain.m.visible},readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 lin(scene);menu();requestAnimationFrame(frame);
 })();

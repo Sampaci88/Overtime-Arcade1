@@ -562,7 +562,7 @@ function dThink(d,dt){
   if(c&&c.side==='D'){convoy(d,dt);return}
   if(ball.state==='air'&&!ball.snap){
     if(d.job==='rush'&&dist(d,ball.to)>6){const q=R('QB');seek(d,q.x,q.y,dt,.6);return}
-    if(T-thrownT>lag*.6){seek(d,ball.to.x,ball.to.y,dt,1.08,.15);return}
+    {const db=(d.pos==='CB'||d.pos==='S'||d.pos==='LB')&&dist(d,ball.to)<14;if(T-thrownT>lag*(db?.2:.6)){seek(d,ball.to.x,ball.to.y,dt,db?1.2:1.08,.15);return}}
     jobMove(d,dt,lag);return;
   }
   if(c&&openField()){if(d.job==='rush'||T-readT>lag)pursue(d,c,dt);else jobMove(d,dt,lag);return}
@@ -584,12 +584,12 @@ function zoneMove(d,dt,lag){
   const recs=P.filter(p=>p.side==='O'&&p.job==='route');let tx=z.x,ty=z.y;
   if(z.deep){
     let best=null,by=-1e9;for(const r of recs)if(Math.abs(r.x-z.x)<z.r&&r.y>playLos+6&&r.y>by){by=r.y;best=r}
-    if(best){const h=histOf(best,lag);tx=lerp(z.x,h.x,.75);ty=Math.max(z.y,h.y+3.2)}
+    if(best){const h=histOf(best,lag*.8);tx=lerp(z.x,h.x+h.vx*.3,.85);ty=Math.max(z.y-2,h.y+h.vy*.3+2.2)}
   }else{
     let best=null,bd=1e9;for(const r of recs){const dd=hyp(r.x-z.x,r.y-z.y);if(dd<z.r&&dd<bd){bd=dd;best=r}}
     const q=R('QB');
-    if(best){const h=histOf(best,lag);let vx=q.x-h.x,vy=q.y-h.y;const l=hyp(vx,vy)||1;tx=h.x+vx/l*1.4;ty=h.y+vy/l*1.4;
-      const ox=tx-z.x,oy=ty-z.y,ol=hyp(ox,oy),lim=z.r*1.3;if(ol>lim){tx=z.x+ox/ol*lim;ty=z.y+oy/ol*lim}}
+    if(best){const h=histOf(best,lag*.8);let vx=q.x-h.x,vy=q.y-h.y;const l=hyp(vx,vy)||1;tx=h.x+h.vx*.35+vx/l*.7;ty=h.y+h.vy*.35+vy/l*.7;
+      const ox=tx-z.x,oy=ty-z.y,ol=hyp(ox,oy),lim=z.r*1.6;if(ol>lim){tx=z.x+ox/ol*lim;ty=z.y+oy/ol*lim}}
     else tx=z.x+(q.x-z.x)*.15;
   }
   seek(d,tx,ty,dt,1,.8);
@@ -597,8 +597,8 @@ function zoneMove(d,dt,lag){
 function manMove(d,dt,lag){
   const r=d.tgt;if(!r){decel(d,dt);return}
   if(T>.9&&r.job!=='route'&&!(G.oCall.type==='run')){d.job='rush';return} // green dog: his man stayed in to block
-  const h=histOf(r,lag),cush=(d.pos==='CB'||d.pos==='S')?.38:.2;
-  seek(d,h.x+h.vx*.45+(MID>h.x?.35:-.35),h.y+h.vy*.45+cush,dt,1.03,.35);
+  const h=histOf(r,lag*.8),cush=(d.pos==='CB'||d.pos==='S')?.3:.2;
+  seek(d,h.x+h.vx*.6+(MID>h.x?.35:-.35),h.y+h.vy*.6+cush,dt,1.07,.35);
 }
 
 /* ---------- ball carrier ---------- */
@@ -654,9 +654,9 @@ function arrive(){
   let df=null,dd=99;for(const p of P)if(p.side==='D'&&!p.blocked&&p.stun<=0){let d=hyp(p.x-to.x,p.y-to.y);if(p===ctrl&&isUserP(p))d-=.25;if(p.diveT>0)d-=.4;if(d<dd){dd=d;df=p}}
   const roll=Math.random(),you=isUserP(r);
   if(dr<=2.3){
-    if(dd<=1.5&&dd<dr+.8){const pc=clamp(.5+(dd-dr)*.32,.24,.86),pi=dd<.7?.13:.06;
+    if(dd<=2.6&&dd<dr+1.5){const pc=clamp(.6+(dd-dr)*.22,.22,.86),pi=dd<.8?.14:.05;
       if(roll<pc)catchBy(r);else if(roll<pc+pi)intercept(df);else if(dd<1&&!G.demo&&!G.tryMode&&Math.random()<.14){const on=Math.min(99,Math.max(G.ballOn+1,to.y-10));resolve('pen',{ballOn:on,down:1,togo:Math.min(10,100-on),head:'Flag: pass interference',text:`Pass interference on ${df.name} #${df.num}. Automatic first down at the spot of the foul.`})}else resolve('inc',{text:`Pass broken up by ${df.name} #${df.num}.`,head:'Broken up'})}
-    else{if(roll<.92-Math.max(0,dr-1.4)*.16)catchBy(r);else resolve('inc',{text:`Dropped by ${r.name} #${r.num}.`})}
+    else{if(roll<.9-Math.max(0,dr-1.4)*.16)catchBy(r);else resolve('inc',{text:`Dropped by ${r.name} #${r.num}.`})}
   }else if(dd<=1.2){if(roll<.4)intercept(df);else resolve('inc',{text:`Broken up by ${df.name} #${df.num}.`})}
   else resolve('inc',{text:`Incomplete, intended for ${it.name} #${it.num}.`});
 }
