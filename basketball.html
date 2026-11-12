@@ -482,9 +482,9 @@ function launchShot(p){
   let pr=shotChance(p,kind,d,three),gr=null;
   if(kind==='jumper'||kind==='ft'){gr=gradeOf(s);pr*=gr.mul;if(s.user||p.team===0&&!G.auto)G.grade={text:gr.g.toUpperCase(),col:gr.col,t:0,p}}
   if(kind!=='ft'){
-    const de=kind==='jumper'?(c.dd+Math.min(s.dd0,12))/2:c.dd,jmp=c.jump&&c.dd<3;
+    const de=(kind==='jumper'?(c.dd+Math.min(s.dd0,12))/2:c.dd)+(p.fadeT>0?1.6:p.sbT>0?1:0),jmp=c.jump&&c.dd<3;
     const cm=kind==='jumper'?(de<2.5?(jmp?.52:.62):de<4.5?(jmp?.72:.8):de<7?.92:1.04):(c.dd<3?(jmp?.58:.72):c.dd<5?.88:1);
-    pr*=cm;if(p.streak>=3)pr*=1.06;
+    pr*=cm*(p.fadeT>0?.93:p.sbT>0?.96:1);if(p.streak>=3)pr*=1.06;
   }
   if(!G.demo&&!G.auto&&t===1)pr*=diff().acc;
   pr=clamp(pr,.02,kind==='ft'?.97:.95);
@@ -590,7 +590,7 @@ function missed(p,si){
   if(si.three&&si.grade&&si.grade.g.startsWith('Very')&&Math.random()<.5)color('Way off on the release there. He rushed that one.',1500);
 }
 function scoreBasket(p,si){
-  const t=p.team,pts=si.pts;G.score[t]+=pts;p.pts+=pts;if(!G.demo)pst(p).pts+=pts;
+  const t=p.team,pts=(typeof HOOPX!=='undefined'&&HOOPX.street()&&si.pts>1)?si.pts-1:si.pts;G.score[t]+=pts;p.pts+=pts;if(!G.demo)pst(p).pts+=pts;
   if(p.ankleAt!=null&&GT-p.ankleAt<3&&si.kind!=='ft'){p.ankleAt=null;setTimeout(()=>{callout('Ankle breaker bucket!',`${p.name} drops him and scores`,'#ff9f1c');roar(1,4);say(pick([`He broke his ankles and finished it! ${p.name}!`,`${p.name} with the ankle breaker... and the bucket!`]),3)},300)}
   if(si.kind!=='ft')setTimeout(()=>CLUTCH.check(t),0);
   if(si.kind==='ft'){G.stats.ftm[t]++;say(pick(['Free throw is good.','Good.','Knocks it down.','Splits the net.']),0);ftNext(true);return}
@@ -1379,7 +1379,7 @@ function hud(){
 function renderInfo(){
   const m=cache.mode;let h;
   if(m==='warm'){$('info').innerHTML=`<h3>Pregame warmups</h3><p>You're out there for warmups. Use WASD to move and hold Space to shoot. Press Q to fire up the crowd. Press Enter, or tap the warmup banner, to start the game.</p>`;return}
-  const off=`<div class="keys"><span><kbd>WASD</kbd> move</span><span><kbd>Space</kbd> shoot: hold to rise, let go at the top of the meter (the green band). Near the rim it's a layup or dunk</span><span><kbd>1</kbd>–<kbd>5</kbd> pass to the number over a teammate (1 PG, 2 SG, 3 SF, 4 PF, 5 C): tap for a soft pass, hold for a bullet pass</span><span>Click a number or a teammate to pass</span><span><kbd>E</kbd> pass to the man you're moving toward (or the best open man)</span><span><kbd>Q</kbd> crossover</span><span><kbd>P</kbd> pause</span></div>`;
+  const off=`<div class="keys"><span><kbd>WASD</kbd> move</span><span><kbd>Space</kbd> shoot: hold to rise, let go at the top of the meter (the green band). Near the rim it's a layup or dunk</span><span><kbd>R</kbd> call a pick and roll</span><span><kbd>F</kbd> step-back (fadeaway close to the rim)</span><span><kbd>G</kbd> euro step on a drive</span><span><kbd>1</kbd>–<kbd>5</kbd> pass to the number over a teammate (1 PG, 2 SG, 3 SF, 4 PF, 5 C): tap for a soft pass, hold for a bullet pass</span><span>Click a number or a teammate to pass</span><span><kbd>E</kbd> pass to the man you're moving toward (or the best open man)</span><span><kbd>Q</kbd> crossover</span><span><kbd>P</kbd> pause</span></div>`;
   if(m==='demo')h=`<h3>Ready to play</h3><p>You against the CPU. Pick your club and opponent above, then press Play vs CPU.</p>`;
   else if(m==='tip')h=`<h3>Tip-off</h3><p>Press Space when the ball reaches the top of the toss. Too early is a violation.</p>`;
   else if(m==='ft')h=`<h3>Free throws</h3><p>Hold Space, then let go when the meter fills to the green band.</p>`;
@@ -2658,7 +2658,7 @@ const SHOP=(()=>{const ITEMS=[
 /* ---------- arcade modes: the same games with the rules turned up ---------- */
 const ARC=(()=>{const KEY='arcade-mode-'+CELESPORT,TO={hockey:3,lacrosse:5,soccer:3,basketball:21,football:21}[CELESPORT]||3,UNITS=CELESPORT==='basketball'||CELESPORT==='football'?'points':'goals';
   const MODES=[['normal','Normal','The regular game',null],['turbo','Turbo','Everyone is 30% faster',null],['first','First to '+TO,`No clock: first team to ${TO} ${UNITS} wins`,null],['slip','Slippery','Everybody slides like the floor is wet','mode-slip']];
-  if(CELESPORT==='basketball')MODES.push(['moon','Moon Ball','Low gravity: huge jumps and floaty shots','mode-moon']);
+  if(CELESPORT==='basketball')MODES.push(['moon','Moon Ball','Low gravity: huge jumps and floaty shots','mode-moon'],['street','3-on-3 Streetball','Outdoor court, three a side, 1s and 2s, first to 21',null]);
   let id='normal';try{id=localStorage.getItem(KEY)||'normal'}catch(e){}
   const unlocked=m=>!m[3]||shopOwns(m[3])||(m[0]==='slip'&&WEEK.ev.id==='slip');
   const on=()=>!G.demo&&!G.fr&&!G.tourn&&!G.skills&&!G.daily&&!G.career&&!G.chal&&id!=='normal';
@@ -2670,9 +2670,9 @@ const ARC=(()=>{const KEY='arcade-mode-'+CELESPORT,TO={hockey:3,lacrosse:5,socce
   if(CELESPORT==='basketball'){const _st=step;step=function(dt,rdt){GRAV=cur()==='moon'?13:32;return _st.apply(this,arguments)}}
   // first to N: the clock never runs out, and the game ends when somebody gets there
   let done=false;{const _ng=newGame;newGame=function(){done=false;const r=_ng.apply(this,arguments);if(!arguments[0]&&on())setTimeout(()=>{try{const m=MODES.find(x=>x[0]===id);toast(`Arcade mode: ${m[1]}. ${m[2]}`)}catch(e){}},1200);return r}}
-  {const _st=step;step=function(dt,rdt){const r=_st.apply(this,arguments);try{if(cur()==='first'&&G.score&&!done){if(G.clock<60)G.clock=60;
+  {const _st=step;step=function(dt,rdt){const r=_st.apply(this,arguments);try{if((cur()==='first'||cur()==='street')&&G.score&&!done){if(G.clock<60)G.clock=60;
     if(Math.max(...G.score)>=TO&&['live','fo','call','presnap','tip','ko','inbound','restart','dead'].includes(G.phase)){done=true;endGame()}}}catch(e){}return r}}
-  {const _d=draw;draw=function(){_d.apply(this,arguments);try{if(cur()==='first'&&!G.rp&&$('menu').hidden){const s=`FIRST TO ${TO}`;ctx.font='800 14px "Arial Narrow",system-ui,sans-serif';const w=ctx.measureText(s).width+16;ctx.fillStyle='#ffc23d';ctx.fillRect(cw-w-10,ch-34,w,22);ctx.fillStyle='#1a1405';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(s,cw-w-2,ch-22)}}catch(e){}}}
+  {const _d=draw;draw=function(){_d.apply(this,arguments);try{if((cur()==='first'||cur()==='street')&&!G.rp&&$('menu').hidden){const s=cur()==='street'?'STREETBALL · FIRST TO 21':`FIRST TO ${TO}`;ctx.font='800 14px "Arial Narrow",system-ui,sans-serif';const w=ctx.measureText(s).width+16;ctx.fillStyle='#ffc23d';ctx.fillRect(cw-w-10,ch-34,w,22);ctx.fillStyle='#1a1405';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(s,cw-w-2,ch-22)}}catch(e){}}}
   render();return{cur,render}})();
 /* ---------- halftime contests: one shot at a prize between halves ---------- */
 const HALF=(()=>{const T={hockey:['Chuck-a-puck','Land the puck on the center-ice target'],lacrosse:['Bucket shot','Bury it in the bucket from midfield'],basketball:['Half-court shot','Swish it from half court'],soccer:['Crossbar challenge','Ping the crossbar from the top of the box'],football:['50-yard field goal','Split the uprights from 50']}[CELESPORT]||['Halftime shot','Make it'];
@@ -2965,6 +2965,59 @@ const BIGWIN=(()=>{let LAST=null,raf=0;
     if(typeof say==='function')setTimeout(()=>{try{say(pick([`${col.name||'They'} are your ${title.replace(/^The /,'')}! Raise the banner, this one lives forever!`,`Hold that trophy up high! ${title}!`,`Look at that celebration! They'll be talking about this one for years.`]),3)}catch(e){}},4200)}
   {const _b=BIGCELE;BIGCELE=function(title,sub){const r=_b.apply(this,arguments);try{enhance(title,sub)}catch(e){}return r}}
   return{enhance,picture,get LAST(){return LAST}}})();
+/* ---------- pick and roll, shot creator moves, and 3-on-3 streetball ---------- */
+const HOOPX=(()=>{
+  // ---- 3-on-3 streetball is an arcade mode: outdoor court, three a side, 1s and 2s, first to 21
+  const street=()=>{try{return ARC.cur()==='street'}catch(e){return false}};
+  {const _bt=buildTeams;buildTeams=function(){_bt.apply(this,arguments);if(street()){P=P.filter(p=>p.role==='PG'||p.role==='SF'||p.role==='C');for(const p of P)p.man=find(1-p.team,p.role)}}}
+  {const _ar=drawArena;drawArena=function(){if(!street())return _ar.apply(this,arguments);
+    const g=ctx.createLinearGradient(0,0,0,ch);g.addColorStop(0,'#0b1430');g.addColorStop(.6,'#24345c');g.addColorStop(1,'#3a3f4a');ctx.fillStyle=g;ctx.fillRect(0,0,cw,ch);
+    for(let i=0;i<60;i++){ctx.fillStyle='rgba(255,255,255,.6)';ctx.fillRect((i*137)%cw,(i*61)%(ch*.3),1.5,1.5)}
+    poly([{x:-14,y:-6},{x:L+14,y:-6},{x:L+14,y:W+9},{x:-14,y:W+9}]);ctx.fillStyle='#2d3036';ctx.fill();
+    // chain-link fence along the far side
+    const a=proj(-10,-5.5,0),b=proj(L+10,-5.5,0),t=proj(-10,-5.5,12);ctx.strokeStyle='rgba(190,200,210,.28)';ctx.lineWidth=1;for(let x=a.x;x<b.x;x+=9){ctx.beginPath();ctx.moveTo(x,a.y);ctx.lineTo(x+12,t.y);ctx.stroke();ctx.beginPath();ctx.moveTo(x+12,a.y);ctx.lineTo(x,t.y);ctx.stroke()}
+    ctx.strokeStyle='rgba(190,200,210,.6)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(a.x,t.y);ctx.lineTo(b.x,t.y);ctx.stroke();
+    drawFloor()}}
+  {const _A=ARENA;ARENA=function(){const a=_A.apply(this,arguments);return street()?Object.assign({},a,{wood:['#55595f','#4b4f55','#3f4247']}):a}}
+  // ---- pick and roll
+  let pnr=null;
+  function startPnr(h){if(pnr||!h||G.phase!=='live'||backcourt(h)||h.shot)return false;const mates=P.filter(q=>q.team===h.team&&q!==h).sort((a,b)=>((b.role==='C'||b.role==='PF')-(a.role==='C'||a.role==='PF'))||dist(a,h)-dist(b,h));const s=mates[0];if(!s)return false;
+    const d=P.find(q=>q.team!==h.team&&q.man===h);if(!d)return false;pnr={h,s,d,sd:s.man,t:0,ph:'set',done:false,team:h.team,cpuSwitch:Math.random()<.45};floatText(s,'Screen','#4ea1ff');return true}
+  function endPnr(){if(!pnr)return;if(pnr.swapped){pnr.d.man=pnr.h;if(pnr.sd)pnr.sd.man=pnr.s}pnr=null}
+  {const _ob=offBallAI;offBallAI=function(p,dt){if(pnr&&p===pnr.s&&pnr.ph==='set'){const h=pnr.h,d=pnr.d,rim=atkRim(p.team),ux=rim.x-h.x,uy=rim.y-h.y,l=hyp(ux,uy)||1,side=((p.x-h.x)*-uy+(p.y-h.y)*ux)>0?1:-1;
+      const tx=d.x+(-uy/l)*side*1.6-ux/l*.4,ty=d.y+(ux/l)*side*1.6-uy/l*.4;if(dist(p,{x:tx,y:ty})>.9)seek(p,tx,ty,dt,1,1.5);else{p.vx*=.6;p.vy*=.6;pnr.planted=true}turnTo(p,Math.atan2(h.y-p.y,h.x-p.x),dt,8);return}
+    return _ob.apply(this,arguments)}}
+  function pnrTick(dt){if(!pnr)return;const{h,s,d}=pnr;pnr.t+=dt;
+    if(ball.owner!==h&&!(ball.state==='air'&&ball.kind==='pass'&&ball.lastTeam===pnr.team)||G.phase!=='live'){if(pnr.t>6||ball.owner&&ball.owner.team!==pnr.team||G.phase!=='live')endPnr();return}
+    if(pnr.ph==='set'&&pnr.planted&&!pnr.done&&dist(d,s)<2.1&&dist(h,s)<5.5){pnr.done=true;
+      const defIsUser=(d===ctrl||(typeof ctrl2!=='undefined'&&d===ctrl2));
+      if(!defIsUser&&pnr.cpuSwitch&&pnr.sd){pnr.d.man=s;pnr.sd.man=h;pnr.swapped=true;floatText(d,'Switch!','#ffd23f')}else{d.stun=Math.max(d.stun||0,defIsUser?.45:.6);floatText(d,'Screened!','#ff9f1c')}
+      pnr.ph='roll';s.cutT=1.7;s.cutCD=3}
+    if(pnr.ph==='set'&&pnr.t>2.6){pnr.ph='roll';s.cutT=1.5;s.cutCD=3}
+    if(pnr.ph==='roll'&&pnr.t>6)endPnr()}
+  {const _st=step;step=function(dt,rdt){const r=_st.apply(this,arguments);try{pnrTick(dt);
+      // the CPU runs pick and rolls too
+      const h=ball.owner;if(!pnr&&h&&G.phase==='live'&&!backcourt(h)&&!h.shot&&(G.demo||G.auto||!(h===ctrl||(typeof ctrl2!=='undefined'&&h===ctrl2)))&&h.holdT>.6&&Math.random()<dt*.14){if(startPnr(h))h.drive=0}
+      if(pnr&&pnr.done&&ball.owner===pnr.h&&pnr.h!==ctrl&&!pnr.cpuGo){pnr.cpuGo=true;pnr.h.drive=1.4}
+      for(const p of P){if(p.sbT>0)p.sbT-=dt;if(p.fadeT>0)p.fadeT-=dt;if(p.euroT>0)p.euroT-=dt}}catch(e){console.warn(e)}return r}}
+  // ---- shot creator moves (your ball handler)
+  function nearestDef(p){let o=null,bd=1e9;for(const q of P)if(q.team!==p.team){const d=dist(q,p);if(d<bd){bd=d;o=q}}return{o,d:bd}}
+  function stepBack(p){if(!p||ball.owner!==p||p.shot||p.sbCD>GT)return;const n=nearestDef(p),rim=atkRim(p.team),dR=rimDist(p);p.sbCD=GT+1.2;
+    if(dR<15&&n.d<4.5){p.fadeT=.9;startShot(p,true);floatText(p,'Fadeaway','#ff9f1c');return}
+    const ax=n.o?p.x-n.o.x:p.x-rim.x,ay=n.o?p.y-n.o.y:p.y-rim.y,l=hyp(ax,ay)||1;p.vx=ax/l*12;p.vy=ay/l*12;p.sbT=.8;floatText(p,'Step-back','#ff9f1c');sfx('squeak');
+    if(n.o&&n.d<4&&Math.random()<.22){n.o.stun=Math.max(n.o.stun||0,.6);floatText(n.o,'Stumbles','#ffd23f')}}
+  function euro(p){if(!p||ball.owner!==p||p.shot||p.euroCD>GT)return;const rim=atkRim(p.team),dR=rimDist(p);if(dR>22){floatText(p,'Get closer to the rim','#c9d1dd');return}p.euroCD=GT+1.4;
+    const ux=rim.x-p.x,uy=rim.y-p.y,l=hyp(ux,uy)||1,s=Math.random()<.5?1:-1;p.vx=ux/l*7+(-uy/l)*s*9;p.vy=uy/l*7+(ux/l)*s*9;p.euroT=.7;floatText(p,'Euro step','#ff9f1c');sfx('squeak');
+    const n=nearestDef(p);if(n.o&&n.d<5&&Math.random()<.55){n.o.stun=Math.max(n.o.stun||0,.5);floatText(n.o,'Fooled','#ffd23f')}}
+  addEventListener('keydown',e=>{if(G.demo||G.auto||G.paused||G.phase!=='live'||!ctrl||e.repeat)return;if(e.target&&e.target.closest&&e.target.closest('input,select,textarea'))return;
+    if(e.code==='KeyR'){if(ball.owner===ctrl){if(startPnr(ctrl)){say(pick(['Here comes the screen.','Pick and roll.']),1)}}e.preventDefault()}
+    else if(e.code==='KeyF'){stepBack(ctrl);e.preventDefault()}else if(e.code==='KeyG'){euro(ctrl);e.preventDefault()}});
+  // touch buttons
+  {const pb=document.querySelector('#pad .pbtns');if(pb){const mk=(id,t,fn)=>{const b=document.createElement('button');b.id=id;b.type='button';b.textContent=t;b.addEventListener('pointerdown',e=>{e.preventDefault();if(ctrl&&ball.owner===ctrl)fn(ctrl)});pb.prepend(b)};
+    mk('bEuro','Euro',euro);mk('bStep','Step',stepBack);mk('bPnr','Screen',p=>startPnr(p))}}
+  // ---- scoring rules and help text
+  {const _ii=isThree;}
+  return{street,startPnr,stepBack,euro,get pnr(){return pnr}}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'basketball',stateFr:true,even:true,otPts:2,strength:()=>.5,sim:(a,b)=>{const d=0,m=7*G.qlen,s=x=>Math.max(4,Math.round(m*(1+x*.5)+gauss()*m*.11));return[s(d),s(-d)]}};
