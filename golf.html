@@ -536,7 +536,7 @@ function setupShot(){const p=cur(),b=p.ball;b.y=hAt(b.x,b.z);b.lie=b.lie||surfAt
   // aim: at the pin when it's reachable, otherwise down the middle
   const reach=club===PUTTER?1e9:CLUBS[club][1]*lieF(b.lie,club)*CM();let tx=HOLE.pin.x,tz=HOLE.pin.z;
   if(club!==PUTTER&&d>reach+12){const n=near(HOLE,b.x,b.z),q=ptAt(HOLE.CL,HOLE.acc,Math.min(HOLE.gEnd,n.s+reach));tx=q.x;tz=q.z}
-  plantGrass(b.x,b.z);aim=Math.atan2(tx-b.x,tz-b.z);S.read=null;if(club===PUTTER&&HOLE.par!==0){S.read=readPutt(b);if(S.diff==='am')aim=S.read.aim}poseGolfer(b,aim,club,p);golfer.visible=true;hud();showOthers()}
+  plantGrass(b.x,b.z);aim=Math.atan2(tx-b.x,tz-b.z);S.read=null;if(club===PUTTER&&HOLE.par!==0){S.read=readPutt(b);if(S.diff==='am'){const pa=Math.atan2(HOLE.pin.x-b.x,HOLE.pin.z-b.z),brk=Math.atan2(Math.sin(S.read.aim-pa),Math.cos(S.read.aim-pa));aim=S.read.aim+brk*(Math.random()-.5)*.5*(1-.1*SK('putt'))+(Math.random()-.5)*.012}}poseGolfer(b,aim,club,p);golfer.visible=true;hud();showOthers()}
 function lieF(lie,cl){const s=SURF[lie]||SURF.R;let pw=lie==='B'&&(cl===11||cl===12)?.82:(s.pw||1);if(pw<1)pw=1-(1-pw)*(1-.14*SK('rec'));return pw}
 const CM=k=>(1+.025*SK('pow'))*CBO(k==null?club:k);
 function playsLike(b){return pinDist(b)+(hAt(HOLE.pin.x,HOLE.pin.z)-b.y)*1}
@@ -547,7 +547,7 @@ function showOthers(){let k=0;S.players.forEach((q,i)=>{if(i===S.turn||!q.ball||
 /* ---------- the swing ---------- */
 // meter value m: 0 at the white line, 1 = full power, up to 1.1 overswing
 function swingPress(){if(S&&S.phase==='replay'){endReplay();return}if(!S||S.phase==='intro'){if(S&&S.phase==='intro'){S.t=99}return}if(S.phase!=='aim')return;const D=DIFF[S.diff],putt=club===PUTTER;
-  if(!meter){meter={st:1,m:0,dir:1,pw:null,spd:1/(D.meter*(putt?1.35*(1+.07*SK('putt')):1))};sfx.whoosh();return}
+  if(!meter){meter={st:1,m:0,dir:1,pw:null,spd:1/(D.meter*(putt?1.2*(1+.07*SK('putt')):1))};sfx.whoosh();return}
   if(meter.st===1){meter.pw=clamp(meter.m,.02,1.1);if(putt){fire(Math.min(1,meter.pw),null);meter=null;return}meter.st=2;meter.dir=-1;return}
   if(meter.st===2){const acc=meter.m;fire(meter.pw,acc);meter=null}}
 function meterTick(dt){if(!meter)return;const D=DIFF[S.diff];if(meter.st===1){meter.m+=dt*meter.spd;if(club===PUTTER&&meter.m>=1){meter.m=1;fire(1,null);meter=null;return}if(meter.m>=1.1){meter.m=1.1;meter.pw=1.1;meter.st=2;meter.dir=-1}}else if(meter.st===2){meter.m-=dt*meter.spd*.85;if(meter.m<=-.16){fire(meter.pw,-.16);meter=null}}
@@ -561,7 +561,7 @@ function launchBall(pw,e){const p=cur(),b=p.ball,SH=SHAPES[shape],shid=SH[0];
   let off=0;if(bend){const L=predictLand({...mk(aim),side:bend},true),dz=L.z-b.z,dx=L.x-b.x;if(hyp(dx,dz)>5)off=Math.atan2(dx,dz)-aim}
   return mk(aim-off+e*.25)}
 function fire(pw,acc){const p=cur(),b=p.ball,D=DIFF[S.diff],putt=club===PUTTER,snap=D.snap+.006*SK('acc')+CSNAP();let e;
-  if(putt&&acc==null){const PE={am:0,pro:.01,tour:.02}[S.diff]*(1-.15*SK('putt'))*CPUTT();e=(Math.random()-.5)*2*PE}
+  if(putt&&acc==null){const PE={am:.012,pro:.02,tour:.03}[S.diff]*(1-.15*SK('putt'))*CPUTT();e=(Math.random()-.5)*2*PE}
   else{e=-acc;if(Math.abs(e)<snap)e=0;else e=e-Math.sign(e)*snap;e*=1-.07*SK('acc');if(club>=9&&club<=12)e*=1-.1*SK('short');if(putt)e*=1-.1*SK('putt');if(pw>1)e*=1+(pw-1)*6}
   S.rec=[];S.recT=0;p.strokes++;p.prev={x:b.x,z:b.z,lie:b.lie};p.lastLie=b.lie;S.shotStart={x:b.x,z:b.z,y:b.y};S.shotClub=club;follow=.45;
   if(putt){const v0=Math.sqrt(2*SURF.G.mu*GRAV*puttScale(b)*pw)*(b.lie==='X'?1.12:1),dir=aim+e;
@@ -573,7 +573,7 @@ function fire(pw,acc){const p=cur(),b=p.ball,D=DIFF[S.diff],putt=club===PUTTER,s
   S.phase='flight';S.flightT=0;S.landMark=null;S.tvCut=false;S.ball.pred=predictLand(S.ball);trailReset();sfx.hit(pw);if(b.lie==='B')sfx.sand();if(p.firstShot&&HOLE.par>3)S.drive={x:b.x,z:b.z};p.firstShot=false}
 // putting: how far it really plays once the slope is counted
 function simPutt(b,ang,pw){const v0=Math.sqrt(2*SURF.G.mu*GRAV*puttScale(b)*pw)*(b.lie==='X'?1.12:1),px=HOLE.pin.x,pz=HOLE.pin.z,dt=1/90;let x=b.x,z=b.z,vx=Math.sin(ang)*v0,vz=Math.cos(ang)*v0,best=1e9;
-  for(let i=0;i<1400;i++){const gr=grad(x,z),v=hyp(vx,vz);if(v<.04)break;const mu=ndG(HOLE.G,x,z)<1?SURF.G.mu:SURF.X.mu;vx+=(-5/7*GRAV*gr.x-mu*GRAV*vx/v)*dt;vz+=(-5/7*GRAV*gr.z-mu*GRAV*vz/v)*dt;x+=vx*dt;z+=vz*dt;const d=hyp(x-px,z-pz);if(d<best){best=d;if(d<.08&&hyp(vx,vz)<2.2)return{hole:true,d:0}}}return{hole:false,d:best}}
+  for(let i=0;i<1400;i++){const gr=grad(x,z),v=hyp(vx,vz);if(v<.04)break;const mu=ndG(HOLE.G,x,z)<1?SURF.G.mu:SURF.X.mu;vx+=(-5/7*GRAV*gr.x-mu*GRAV*vx/v)*dt;vz+=(-5/7*GRAV*gr.z-mu*GRAV*vz/v)*dt;x+=vx*dt;z+=vz*dt;const d=hyp(x-px,z-pz);if(d<best){best=d;if(d<.075&&hyp(vx,vz)<1.95)return{hole:true,d:0}}}return{hole:false,d:best}}
 // the read: which line drops it at the right pace
 function readPutt(b){const base=Math.atan2(HOLE.pin.x-b.x,HOLE.pin.z-b.z),pw=Math.min(1,(puttEff(b)+.35)/puttScale(b));let best=base,bd=1e9;
   const tryA=o=>{const r=simPutt(b,base+o,pw),s=r.hole?-1+Math.abs(o):r.d;if(s<bd){bd=s;best=base+o}};for(let o=-.3;o<=.3001;o+=.02)tryA(o);const c=best-base;for(let o=c-.02;o<=c+.02;o+=.002)tryA(o);return{aim:best,off:best-base,d:pinDist(b)}}
@@ -617,9 +617,9 @@ function stepBall(dt){const B=S.ball,H=HOLE;if(!B)return;
   B.x+=B.vx*dt;B.z+=B.vz*dt;B.y=hAt(B.x,B.z);
   // the cup
   const px=H.pin.x,pz=H.pin.z,dx=B.x-ox,dz=B.z-oz,L2=dx*dx+dz*dz,t=L2>0?clamp(((px-ox)*dx+(pz-oz)*dz)/L2,0,1):0,cd=hyp(ox+dx*t-px,oz+dz*t-pz),sp=hyp(B.vx,B.vz);
-  if(cd<.085){if(sp<2.2){B.x=px;B.z=pz;return endBall('holed')}else if(cd<.06&&sp<3.4&&!B.lipped){B.lipped=1;const a=(Math.random()<.5?-1:1)*(.5+Math.random()*.5),c=Math.cos(a),sn=Math.sin(a);const vx=B.vx*c-B.vz*sn,vz=B.vx*sn+B.vz*c;B.vx=vx*.6;B.vz=vz*.6;note('','Lipped out!',1.2)}}
+  if(cd<.078){if(sp<1.95){B.x=px;B.z=pz;return endBall('holed')}else if(cd<.06&&sp<3.4&&!B.lipped){B.lipped=1;const a=(Math.random()<.5?-1:1)*(.5+Math.random()*.5),c=Math.cos(a),sn=Math.sin(a);const vx=B.vx*c-B.vz*sn,vz=B.vx*sn+B.vz*c;B.vx=vx*.6;B.vz=vz*.6;note('','Lipped out!',1.2)}}
   if(hyp(B.vx,B.vz)<.035&&hyp(gr.x,gr.z)*5/7<P.mu*1.3){endBall('rest')}}
-function endBall(why){const B=S.ball,p=cur();if(why==='rest'&&S.mode!=='ld'&&S.mode!=='ctp'&&B&&surfAt(B.x,B.z)==='G'&&hyp(B.x-HOLE.pin.x,B.z-HOLE.pin.z)<({am:.55,pro:.4,tour:.3}[S.diff]||.4)){p.strokes++;why='holed';B.x=HOLE.pin.x;B.z=HOLE.pin.z;S.tapIn=true;setTimeout(()=>note('','Tap-in (counts a stroke)',1.6),2700)}S.phase='rest';S.t=0;S.why=why;S.result=null;if(S.rec&&S.rec.length>4){S.rec.push([B.x,B.y,B.z,S.recT+.05]);S.lastRec={rec:S.rec,why,club:S.shotClub,start:S.shotStart}}
+function endBall(why){const B=S.ball,p=cur();if(why==='rest'&&S.mode!=='ld'&&S.mode!=='ctp'&&B&&surfAt(B.x,B.z)==='G'&&hyp(B.x-HOLE.pin.x,B.z-HOLE.pin.z)<({am:.42,pro:.32,tour:.24}[S.diff]||.32)){p.strokes++;why='holed';B.x=HOLE.pin.x;B.z=HOLE.pin.z;S.tapIn=true;setTimeout(()=>note('','Tap-in (counts a stroke)',1.6),2700)}S.phase='rest';S.t=0;S.why=why;S.result=null;if(S.rec&&S.rec.length>4){S.rec.push([B.x,B.y,B.z,S.recT+.05]);S.lastRec={rec:S.rec,why,club:S.shotClub,start:S.shotStart}}
   if(why==='holed'){p.holed=true;p.ball={x:HOLE.pin.x,z:HOLE.pin.z,y:hAt(HOLE.pin.x,HOLE.pin.z),lie:'G'};sfx.cup();setTimeout(()=>sfx.clap(28),250)}
   else if(why==='water'){p.strokes++;sfx.splash();const d=B.lastDry||p.prev;let x=d.x,z=d.z;const dx=x-(S.shotStart.x),dz=z-(S.shotStart.z),l=hyp(dx,dz)||1;for(let k=0;k<30&&(surfAt(x,z)==='W'||surfAt(x,z)==='O');k++){x-=dx/l*1.5;z-=dz/l*1.5}p.ball={x,z,y:hAt(x,z),lie:surfAt(x,z)};note('In the water','Penalty stroke. Drop where it went in.',2.2)}
   else if(why==='ob'){p.strokes++;p.ball={x:p.prev.x,z:p.prev.z,y:hAt(p.prev.x,p.prev.z),lie:p.prev.lie};note('Out of bounds','Stroke and distance: play it again.',2.2)}
@@ -869,9 +869,9 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-(las
   renderer.render(scene,cam)}
 let ppKey='';function puttPreview(){const p=cur(),b=p.ball,pw=meter&&meter.st===1?clamp(meter.m,.02,1):clamp((puttEff(b)+.35)/puttScale(b),0,1),key=aim.toFixed(4)+'|'+pw.toFixed(3)+'|'+b.x+b.z;if(key===ppKey)return;ppKey=key;
   const v0=Math.sqrt(2*SURF.G.mu*GRAV*puttScale(b)*pw)*(b.lie==='X'?1.12:1),px=HOLE.pin.x,pz=HOLE.pin.z;let x=b.x,z=b.z,vx=Math.sin(aim)*v0,vz=Math.cos(aim)*v0,holed=false;const arr=puttLine.geometry.attributes.position.array;let n=0;
-  for(let i=0;i<1600&&n<299;i++){const dt=1/120,gr=grad(x,z),v=hyp(vx,vz);if(v<.035)break;const s=surfAt(x,z),mu=(SURF[s]||SURF.G).mu;vx+=(-5/7*GRAV*gr.x-mu*GRAV*vx/v)*dt;vz+=(-5/7*GRAV*gr.z-mu*GRAV*vz/v)*dt;x+=vx*dt;z+=vz*dt;if(hyp(x-px,z-pz)<.085&&hyp(vx,vz)<2.2){holed=true;x=px;z=pz}if(i%3===0||holed){arr[n*3]=x;arr[n*3+1]=hAt(x,z)+.04;arr[n*3+2]=z;n++}if(holed)break}
-  const show=S.diff==='am'?1:S.diff==='pro'?.5+.08*SK('putt'):SK('putt')>=3?.12*(SK('putt')-2):0;puttLine.geometry.setDrawRange(0,Math.round(n*Math.min(1,show)));puttLine.geometry.attributes.position.needsUpdate=true;puttLine.material.color.set(holed?0x3ddc84:0xffc23d).convertSRGBToLinear();
-  if(stopRing){stopRing.visible=S.diff==='am';stopRing.position.set(x,hAt(x,z)+.03,z);stopRing.material.color.set(holed?0x3ddc84:0xffc23d).convertSRGBToLinear()}}
+  for(let i=0;i<1600&&n<299;i++){const dt=1/120,gr=grad(x,z),v=hyp(vx,vz);if(v<.035)break;const s=surfAt(x,z),mu=(SURF[s]||SURF.G).mu;vx+=(-5/7*GRAV*gr.x-mu*GRAV*vx/v)*dt;vz+=(-5/7*GRAV*gr.z-mu*GRAV*vz/v)*dt;x+=vx*dt;z+=vz*dt;if(hyp(x-px,z-pz)<.078&&hyp(vx,vz)<1.95){holed=true;x=px;z=pz}if(i%3===0||holed){arr[n*3]=x;arr[n*3+1]=hAt(x,z)+.04;arr[n*3+2]=z;n++}if(holed)break}
+  const show=S.diff==='am'?.62+.06*SK('putt'):S.diff==='pro'?.32+.08*SK('putt'):SK('putt')>=3?.1*(SK('putt')-2):0;puttLine.geometry.setDrawRange(0,Math.round(n*Math.min(1,show)));puttLine.geometry.attributes.position.needsUpdate=true;puttLine.material.color.set(holed&&S.diff==='am'?0x3ddc84:0xffc23d).convertSRGBToLinear();
+  if(stopRing){stopRing.visible=S.diff==='am';stopRing.position.set(x,hAt(x,z)+.03,z);stopRing.material.color.set(holed&&S.diff==='am'?0x3ddc84:0xffc23d).convertSRGBToLinear()}}
 let CAMK=1;function resize(){const r=stage.getBoundingClientRect();renderer.setSize(Math.max(200,r.width),Math.max(150,r.height),false);cam.aspect=Math.max(.4,r.width/Math.max(1,r.height));cam.fov=cam.aspect<1?70:55;CAMK=cam.aspect<1?1.6:1;cam.updateProjectionMatrix()}
 addEventListener('resize',resize);resize();
 /* ---------- controllers ---------- */
