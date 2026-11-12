@@ -145,7 +145,7 @@ html.touch.playing .pbar{display:flex}
   <div class="info">
     <section><h2>How to play</h2><ul><li>Aim with <kbd>A</kbd> <kbd>D</kbd> (hold <kbd>Shift</kbd> for fine aim), or just click or tap where you want to hit it, on the course or on the map. <kbd>P</kbd> aims at the pin. Pick a club with <kbd>W</kbd> <kbd>S</kbd>.</li><li><b>Swing:</b> press <kbd>Space</kbd> to start, press again to set the power, then once more when the marker comes back to the white line. Early slices, late hooks.</li><li>Watch the wind, the lie and the slope of the green. The arrows on the green show which way it breaks.</li></ul></section>
     <section><h2>Shots</h2><ul><li><kbd>Q</kbd>/<kbd>E</kbd> backspin or topspin: backspin stops it on the green, topspin rolls it out.</li><li>Rough costs distance, sand costs more (a sand wedge helps). Water and out of bounds cost a stroke.</li><li><kbd>F</kbd> (or the shot buttons) to shape it: draw curves right to left, fade left to right, big draw and big fade bend it around doglegs, punch flies low under trees, flop goes high and soft (wedges only). The dashed line shows the curve.</li><li><kbd>V</kbd> overhead view, <kbd>R</kbd> replay your last shot, <kbd>Tab</kbd> scorecard.</li></ul></section>
-    <section><h2>Modes</h2><p>Stroke play for up to four golfers on one device, a tournament against a full field, a Daily 9 that's the same for everyone, a long drive contest and closest to the pin. Three courses, all original.</p></section>
+    <section><h2>Modes</h2><p>Stroke play for up to four golfers on one device, a tournament against a full field, a Daily 9 that's the same for everyone, a long drive contest and closest to the pin. Six courses, from friendly parkland to two championship monsters: Azalea Pines and Iron Valley.</p></section>
   </div>
 </div>
 <script src="lib/three.min.js"></script>
@@ -189,7 +189,7 @@ const DESIGNS={
     ['tree','Lone Saguaro'],['island','The Oasis'],['drivable','Quick Draw'],['lakeL','Mirage Lake'],['cape','Cliff Edge'],['straight','Sun Runway'],['twotier','High Shelf'],['cornerTrees','Cactus Corner'],['creek','Dry Creek']],
   links:[['cliffL','Cliff Walk'],['bunkers','Sea Pots'],['island','The Rock'],['horseshoe','Around the Bay'],['banana','Seawall Curve'],['cape','Over the Inlet'],['carry','Ocean Carry'],['doglegR','Gull Turn'],['double','Tidal Snake'],
     ['narrow','Dune Alley'],['peninsula','Lighthouse'],['drivable','Sea Breeze'],['zigzag','Zig Zag'],['split','High or Low'],['cornerTrees','Cypress Corner'],['twotier','The Shelf'],['doglegL','Harbor Wall'],['straight','Last Wave']]};
-function makeHole(cid,i,seedOverride){const C=COURSES[cid],r=rng((seedOverride!=null?seedOverride:C.seed*101)+i*7919),par=PARS[i%18],D=DESIGNS[cid][i%18],tp=D[0],desert=C.desert;
+function makeHole(cid,i,seedOverride){if(seedOverride==null&&COURSES[cid].holes)return specHole(cid,i);const C=COURSES[cid],r=rng((seedOverride!=null?seedOverride:C.seed*101)+i*7919),par=parFor(cid,i),D=DESIGNS[cid][i%18],tp=D[0],desert=C.desert;
   let L=par===3?140+Math.round(r()*65):par===4?345+Math.round(r()*95):490+Math.round(r()*70);
   if(tp==='drivable')L=285+Math.round(r()*30);else if(tp==='island')L=125+Math.round(r()*30);else if(tp==='carry')L=160+Math.round(r()*40);else if(tp==='double')L=530+Math.round(r()*40);else if(tp==='punchbowl')L=140+Math.round(r()*35);else if(tp==='twotier')L=165+Math.round(r()*35);else if(tp==='peninsula')L=145+Math.round(r()*30);else if(tp==='horseshoe')L=par===5?445+Math.round(r()*30):350+Math.round(r()*30);else if(tp==='banana')L=par===5?470+Math.round(r()*40):360+Math.round(r()*50);else if(tp==='zigzag')L=480+Math.round(r()*40);else if(tp==='cornerTrees')L=370+Math.round(r()*45);
   // the line of the hole: a cubic curve from the tee to the green
@@ -248,6 +248,97 @@ function makeHole(cid,i,seedOverride){const C=COURSES[cid],r=rng((seedOverride!=
   const dens=tp==='narrow'?1.9:tp==='island'||tp==='carry'||tp==='peninsula'?.6:1,nt=Math.round((L/3.2)*C.trees*dens),inner=tp==='narrow'?3:8;
   for(let k=0;k<nt*3&&trees.length<nt+8;k++){const along=r()*(gEnd+30)-10,q=at(Math.max(0,along)),sd=r()<.5?-1:1,off=fwW/2+inner+r()*44,x=q.x+q.nx*off*sd,z=q.z+q.nz*off*sd;
     if(hyp(x-G.x,z-G.z)<Math.max(G.rx,G.rz)+10||hyp(x,z)<14)continue;if(Wt.some(w=>ndE(w,x,z)<1.3)||B.some(b=>ndE(b,x,z)<1.4))continue;const h=desert?3+r()*3:C.scrub?2.5+r()*2.5:10+r()*8;trees.push({x,z,r:desert?.9:C.scrub?1.6+r():3+r()*1.6,h,k:r()})}
+  return H}
+/* ---------- championship courses: every hole drawn by hand, the way the big ones are ---------- */
+// feature codes (s = yards from the tee, a negative s counts back from the green; o = yards outside the fairway edge, + left, - right):
+//  b:[s,o,a,b] bunker beside the fairway   bc:[s,lat,a,b] bunker at an exact spot (lat + left)   gb:[deg,a,b,d] greenside bunker (0 behind, 180 front, 90 left, -90 right)
+//  w:[s,o,a,b] pond   wc:[s,lat,a,b] pond at an exact spot   gw:[deg,d,a,b] water by the green   cr:[s,half-width,depth] creek across the hole   d:[s0,s1,side] drainage ditch along one side
+//  pew:[s,o,n] a church-pew bunker (n strips of sand with grass ridges between)   t:[s,lat,r,h] a single big tree   tl:[s0,s1,o,side] a tight line of trees   az:[s0,s1,o,side] azaleas
+Object.assign(COURSES,{
+  pines:{name:'Azalea Pines',blurb:'Towering pines, azaleas and big hills. Wide fairways but lightning-fast, tilted greens, and a creek through the back nine. Par 72 and very tough.',seed:4401,hills:5.2,elev:12,trees:1.05,fwBunk:.5,wind:12,width:44,desert:false,
+    sky:0xd6ecf8,skyTop:0x3b8ddc,glow:0xfff2cf,fog:0xd2e6ef,cut:0x4c9a3e,pine:.8,far:0x5f8a72,water:0x2c6f8f,tree:[0x1f4d2a,0x245a30,0x2d6636],pals:[[0x1f4d2a,0x245a30,0x2d6636],[0x22522d,0x2b6234,0x356e3b]],trunk:0x5a3f2a,rough:[0x3f8a37,0x438f3b],fw:[0x58ae48,0x4fa340],
+    gmu:.78,gsl:1.35,gfirm:1.45,pe:1.3,rpw:.8,tough:.5,pars:[4,5,4,3,4,3,4,5,4,4,4,3,5,4,5,3,4,4],
+    holes:[
+      {n:'Sweetgum',p:4,L:405,cx:[0,-6,-14],E:5,g:{rx:11,rz:14,t:.55,sl:.012},pin:[.45,-.3],f:[['b',265,-2,4,9],['gb',150,3.5,2.5],['gb',-110,3,2.5]]},
+      {n:'Wisteria',p:5,L:530,dl:[1,250,30],E:-10,g:{rx:15,rz:12,sl:.014,sd:-.006},pin:[-.5,.35],f:[['b',255,-3,4,10],['gb',140,3.5,2.6],['gb',-140,3.5,2.6],['az',-60,-10,14,1]]},
+      {n:'Laurel',p:4,L:320,cx:[2,5,8],E:4,g:{rx:8.5,rz:19,t:.7,sl:.02},pin:[.55,0],f:[['bc',205,4,2.6,3],['bc',220,10,2.4,2.8],['bc',235,2,2.2,2.6],['bc',228,15,2.4,2.6],['gb',100,3.5,3]]},
+      {n:'Dogwood',p:3,L:215,E:-4,g:{rx:16,rz:10,sl:.016},pin:[.2,.5],f:[['gb',-150,4.5,3],['gb',110,3,2.4]]},
+      {n:'Hickory',p:4,L:450,dl:[1,230,25],E:8,g:{rx:12,rz:15,t:.6,sl:.018,sd:.006},pin:[.5,.3],f:[['b',230,1.5,2.4,3.2,1],['b',248,2,2.4,3.2,1],['gb',-160,3,2.2]]},
+      {n:'Redbud',p:3,L:165,E:-12,g:{rx:13,rz:13,t:-.6,sl:.014,sd:-.008},pin:[.5,-.45],f:[['gb',175,4,2.4],['az',-20,25,8,1],['az',-20,25,8,-1]]},
+      {n:'Pine Alley',p:4,L:400,fw:.7,E:6,td:1.5,ti:3,g:{rx:10,rz:14,sl:.015},pin:[-.3,-.2],f:[['tl',30,330,4,1],['tl',30,330,4,-1],['gb',180,3,2.4],['gb',140,3,2.2],['gb',-140,3,2.2],['gb',40,2.6,2],['gb',-40,2.6,2]]},
+      {n:'Long Climb',p:5,L:515,cx:[0,4,2],E:14,g:{rx:14,rz:13,sl:.016,sd:.01},pin:[.3,.4],f:[['b',255,-1,6,14]]},
+      {n:'Hilltop',p:4,L:410,dl:[1,240,22],E:4,g:{rx:12,rz:13,sl:.024},pin:[-.55,0],f:[['gb',120,3.5,2.6],['gb',70,3,2.4]]},
+      {n:'Cathedral',p:4,L:445,dl:[1,240,30],E:-16,g:{rx:13,rz:14,sl:.018,sd:.006},pin:[.4,.3],f:[['bc',-45,-8,6,7]]},
+      {n:'White Water',p:4,L:465,E:-7,cx:[0,-3,4],g:{rx:12,rz:14,sl:.014,sd:.012},pin:[.1,.45],f:[['gw',115,2.05,12,9],['gb',-30,3,2.4],['tl',40,360,9,-1]]},
+      {n:'Swirl',p:3,L:140,E:-2,wind:16,g:{rx:16,rz:6.5,rot:.35,sl:.006},pin:[.1,-.55],f:[['cr',-16,60,4.5],['gb',180,3.2,1.8,1.25],['gb',20,3.5,2,1.3],['gb',-30,3,2,1.3],['az',-14,14,6,1],['az',-14,14,6,-1]]},
+      {n:'Azalea Bend',p:5,L:490,dl:[1,235,45],E:-3,g:{rx:15,rz:11,sl:.012,sd:-.01},pin:[-.2,.4],f:[['w',150,6,6,60],['cr',-17,45,4],['gb',20,3.5,2.2],['gb',-20,3.5,2.2],['gb',0,3.5,2.2,1.35],['az',120,240,12,1]]},
+      {n:'Rolling',p:4,L:405,cx:[6,14,18],E:2,g:{rx:13,rz:15,t:.65,sl:.012,sd:.016},pin:[.5,-.4],f:[]},
+      {n:'Last Chance',p:5,L:500,cx:[0,-4,-6],E:-5,g:{rx:14,rz:12,sl:.018},pin:[-.45,.2],f:[['gw',180,1.85,18,9],['gw',25,2.1,10,9],['gb',-100,3,2.4]]},
+      {n:'Pond Shot',p:3,L:160,E:-3,g:{rx:15,rz:11,sl:.006,sd:-.022},pin:[-.2,-.5],f:[['wc',95,30,14,60],['gb',-80,3.5,2.2],['gb',-130,3,2]]},
+      {n:'Old Oak',p:4,L:405,E:4,g:{rx:12,rz:14,sl:.016,sd:-.006},pin:[.3,.2],f:[['t',190,9,6.5,21],['gb',150,3.5,2.5]]},
+      {n:'The Chute Home',p:4,L:420,dl:[-1,255,22],fw:.78,E:10,ti:3,td:1.3,g:{rx:12,rz:15,t:.6,sl:.016},pin:[.5,-.3],f:[['tl',20,200,5,1],['tl',20,200,5,-1],['b',268,1.5,3.5,6],['b',290,1.5,3.5,6],['gb',150,3.5,2.4],['gb',-90,3,2.2]]}]},
+  valley:{name:'Iron Valley',blurb:'Open, windswept and brutal: church-pew bunkers, drainage ditches, deep rough and the fastest greens you will ever see, most of them running away from you. Par 70.',seed:6602,hills:3.6,elev:8,trees:.22,fwBunk:.9,wind:15,width:32,desert:false,
+    sky:0xdfe7ee,skyTop:0x5b86b8,glow:0xfff3dc,fog:0xdce3e8,cut:0x4e8f3c,pine:.25,far:0x6f8478,water:0x3a6f78,tree:[0x3d6b38,0x4a7a40],pals:[[0x3d6b38,0x4a7a40],[0x456f3a,0x557d44]],trunk:0x5c4a36,rough:[0x3a7631,0x3e7c34],fw:[0x5aa648,0x52a042],
+    gmu:.7,gsl:1.25,gfirm:1.5,pe:1.45,rpw:.66,rmu:1.4,tough:.7,pars:[4,4,4,5,4,3,4,3,4,4,4,5,3,4,4,3,4,4],
+    holes:[
+      {n:'The Plunge',p:4,L:435,E:-8,g:{rx:12,rz:15,sl:-.016},pin:[.35,.2],f:[['d',110,320,-1],['b',245,2,3,10],['gb',100,3.5,2.4],['gb',-100,3.5,2.4]]},
+      {n:'Short Crest',p:4,L:325,cx:[0,-4,-6],E:3,g:{rx:11,rz:13,sl:.02},pin:[.4,.3],f:[['bc',205,-3,2.4,2.6],['bc',222,5,2.4,2.6],['bc',240,-1,2.2,2.4],['gb',160,3,2.4],['gb',-160,3,2.4],['gb',90,3,2.2]]},
+      {n:'The Pews',p:4,L:395,E:2,g:{rx:12,rz:14,sl:-.012,sd:.006},pin:[-.3,-.3],f:[['pew',190,1.5,8],['b',245,-2,3,9],['gb',120,3.2,2.4],['gb',-60,3,2.2]]},
+      {n:'Pew\'s Twin',p:5,L:545,cx:[0,6,12],E:-3,g:{rx:14,rz:14,sl:.012,sd:-.01},pin:[.45,-.35],f:[['pew',215,-1.5,8],['b',300,1.5,3,10],['b',420,-1.5,3,9],['gb',160,3.5,2.5],['gb',-150,3.2,2.4]]},
+      {n:'Ditchside',p:4,L:350,E:1,g:{rx:10,rz:12,sl:.014,sd:.008},pin:[.3,.4],f:[['d',40,-15,1],['b',220,-2,3,8],['b',240,-2.5,3,8],['gb',-120,3,2.4]]},
+      {n:'Short Iron',p:3,L:175,E:-3,g:{rx:12,rz:12,sl:.012,sd:.016},pin:[-.3,.45],f:[['gb',110,3.5,2.6],['gb',150,3.2,2.4],['gb',-110,3.2,2.4]]},
+      {n:'Long Seven',p:4,L:435,cx:[0,4,10],E:2,g:{rx:12,rz:14,sl:-.01},pin:[.4,-.2],f:[['b',245,2,3,10],['b',270,-2,3,10],['gb',170,3.5,2.2,1.2],['gb',-150,3,2.2]]},
+      {n:'The Sahara',p:3,L:235,E:-2,g:{rx:10,rz:18,sl:.008,sd:-.012},pin:[.4,-.3],f:[['b',-70,1,13,52],['gb',-120,3,2.2]]},
+      {n:'Uphill Nine',p:4,L:430,dl:[-1,250,16],E:7,g:{rx:14,rz:16,t:.5,sl:.014},pin:[.5,.3],f:[['d',60,230,1],['b',255,1.5,3,9],['gb',-130,3.5,2.4],['gb',150,3,2.4]]},
+      {n:'Away Ten',p:4,L:420,cx:[0,-5,-8],E:-6,g:{rx:11,rz:15,sl:-.018},pin:[.3,.2],f:[['b',240,2,3,10],['b',230,-1.5,2.6,7],['gb',100,3.5,2.6],['gb',-150,3,2.2]]},
+      {n:'Ditch Crossing',p:4,L:345,E:4,g:{rx:11,rz:12,sl:.018,sd:.006},pin:[-.3,-.35],f:[['cr',-95,30,2.5],['b',215,-1.5,3,8],['gb',150,3,2.4],['gb',-110,3,2.2]]},
+      {n:'Long Haul',p:5,L:600,cx:[0,10,6],E:-4,g:{rx:13,rz:15,sl:-.012,sd:.01},pin:[.4,.35],f:[['pew',285,1.5,6],['d',150,420,-1],['b',470,-1.5,3,9],['gb',160,3.5,2.4],['gb',-150,3.5,2.4]]},
+      {n:'Thirteen',p:3,L:165,E:1,g:{rx:12,rz:12,sl:.02},pin:[-.4,.2],f:[['gb',170,3.2,2.2,1.2],['gb',90,3,2.2],['gb',-90,3,2.2],['gb',10,2.8,2]]},
+      {n:'Fourteen',p:4,L:330,cx:[0,4,6],E:2,g:{rx:9,rz:12,sl:.016,sd:-.008},pin:[.35,-.3],f:[['bc',215,8,2.6,3],['bc',232,12,2.6,3],['bc',249,9,2.6,3],['gb',120,3,2.2],['gb',-120,3,2.2]]},
+      {n:'Long Fifteen',p:4,L:450,cx:[0,6,4],E:1,g:{rx:13,rz:17,t:.6,sl:.012},pin:[.55,-.25],f:[['pew',230,1.5,6],['d',120,330,-1],['gb',-100,3.5,2.6],['gb',140,3,2.2]]},
+      {n:'Long Sixteen',p:3,L:210,E:-2,g:{rx:13,rz:13,sl:.008,sd:.018},pin:[.3,-.45],f:[['gb',-110,4,2.8],['gb',160,3,2.2]]},
+      {n:'Temptation',p:4,L:290,cx:[0,-4,-8],E:6,g:{rx:8,rz:13,sl:.014},pin:[.4,0],f:[['bc',215,4,2.4,3],['bc',228,-2,2.4,3],['bc',240,6,2.2,2.6],['gb',180,2.8,2,1.25],['gb',140,2.8,2],['gb',-140,2.8,2],['gb',90,2.8,2],['gb',-60,2.6,2]]},
+      {n:'Last Climb',p:4,L:440,cx:[0,-3,-5],E:5,g:{rx:12,rz:15,sl:-.012,sd:.008},pin:[.35,.3],f:[['pew',250,-1.5,4],['b',275,1.5,3,9],['gb',140,3.5,2.4],['gb',-140,3.5,2.4],['gb',0,3,2.2,1.3]]}]}});
+DESIGNS.pines=COURSES.pines.holes.map(h=>[h.dl?(h.dl[0]>0?'doglegL':'doglegR'):h.p===3?'carry':'straight',h.n]);
+DESIGNS.valley=COURSES.valley.holes.map(h=>[h.p===3?'twotier':h.p===5?'double':'bunkers',h.n]);
+const parFor=(cid,i)=>{const C=COURSES[cid];return C&&C.pars?C.pars[i%18]:PARS[i%18]};
+function specHole(cid,i){const C=COURSES[cid],SP=C.holes[i%18],r=rng(C.seed*101+i*7919),par=SP.p;
+  // the line of the hole, stretched so it measures what the card says
+  const line=k=>{let P1={x:0,z:SP.L*.33},P2={x:0,z:SP.L*.66},P3={x:0,z:SP.L};
+    if(SP.dl){const[side,zc0,thd]=SP.dl,th=thd*Math.PI/180,zc=Math.min(zc0,SP.L*.7),l2=SP.L-zc;P1={x:0,z:zc*.96};P2={x:0,z:zc*1.02};P3={x:side*l2*Math.sin(th)*1.15,z:zc+l2*Math.cos(th)}}
+    else if(SP.cx){P1.x=SP.cx[0];P2.x=SP.cx[1];P3.x=SP.cx[2]}
+    for(const P of[P1,P2,P3]){P.x*=k;P.z*=k}const CL=[];for(let j=0;j<=64;j++){const t=j/64,u=1-t,a=3*u*u*t,b=3*u*t*t,c=t*t*t;CL.push({x:a*P1.x+b*P2.x+c*P3.x,z:a*P1.z+b*P2.z+c*P3.z})}return{CL,P3}};
+  let{CL,P3}=line(1);{let l=0;for(let j=1;j<CL.length;j++)l+=hyp(CL[j].x-CL[j-1].x,CL[j].z-CL[j-1].z);({CL,P3}=line(SP.L/l))}
+  {const a=CL[63],b=CL[64],dx=b.x-a.x,dz=b.z-a.z,l=hyp(dx,dz);for(let k=1;k<=6;k++)CL.push({x:b.x+dx/l*k*8,z:b.z+dz/l*k*8})}
+  const acc=[0];for(let k=1;k<CL.length;k++)acc.push(acc[k-1]+hyp(CL[k].x-CL[k-1].x,CL[k].z-CL[k-1].z));
+  const gEnd=acc[64],ang=Math.atan2(CL[64].x-CL[62].x,CL[64].z-CL[62].z),dir={x:Math.sin(ang),z:Math.cos(ang)},left={x:Math.cos(ang),z:-Math.sin(ang)};
+  // the green: size, tiers and how it tilts (sl + means the back is higher, sd + means the left is higher)
+  const g=SP.g,sl=(g.sl||0)*(C.gsl||1),sd=(g.sd||0)*(C.gsl||1),G={x:P3.x,z:P3.z,rx:g.rx,rz:g.rz,rot:ang+(g.rot||0),sx:sl*dir.x+sd*left.x,sz:sl*dir.z+sd*left.z,tier:g.t||0,bowl:!!g.bowl};
+  const pn=SP.pin||[(r()-.5)*.8,(r()-.5)*.8],pin={x:G.x+dir.x*pn[0]*G.rz*.85+left.x*pn[1]*G.rx*.85,z:G.z+dir.z*pn[0]*G.rz*.85+left.z*pn[1]*G.rx*.85};
+  const B=[],Wt=[],trees=[],fwW=C.width*(SP.fw||1)*(.96+r()*.08),at=s=>ptAt(CL,acc,clamp(s<0?gEnd+s:s,0,gEnd)),lat=(q,o)=>o>0?fwW/2+o:o<0?-(fwW/2-o):0;
+  const aroundG=(deg,d)=>{const t=deg*Math.PI/180,c=Math.cos(t),s=Math.sin(t);return{x:G.x+dir.x*c*G.rz*d+left.x*s*G.rx*d,z:G.z+dir.z*c*G.rz*d+left.z*s*G.rx*d,rot:ang+t}};
+  for(const F of SP.f){const k=F[0];
+    if(k==='b'){const q=at(F[1]),o=lat(q,F[2]);B.push({x:q.x+q.nx*o,z:q.z+q.nz*o,a:F[3],b:F[4],rot:q.a,pot:F[5]?1:0})}
+    else if(k==='bc'){const q=at(F[1]);B.push({x:q.x+q.nx*F[2],z:q.z+q.nz*F[2],a:F[3],b:F[4],rot:q.a+(r()-.5)*.6,pot:1})}
+    else if(k==='gb'){const p=aroundG(F[1],Math.max(F[4]||0,1+(F[3]+1.2)/Math.min(G.rx,G.rz)));B.push({x:p.x,z:p.z,a:F[2],b:F[3],rot:p.rot,pot:F[1]===180||F[1]===0?1:0})}
+    else if(k==='w'){const n=Math.max(1,Math.ceil(F[4]/22)),bb=F[4]/n;for(let j=0;j<n;j++){const q=at(F[1]+bb*(2*j+1)),o=lat(q,F[2]>0?F[2]+F[3]:F[2]-F[3]);Wt.push({x:q.x+q.nx*o,z:q.z+q.nz*o,a:F[3],b:bb*1.25,rot:q.a})}}
+    else if(k==='wc'){const n=Math.max(1,Math.ceil(F[4]/22)),bb=F[4]/n;for(let j=0;j<n;j++){const q=at(F[1]-F[4]+bb*(2*j+1));Wt.push({x:q.x+q.nx*F[2],z:q.z+q.nz*F[2],a:F[3],b:bb*1.25,rot:q.a})}}
+    else if(k==='gw'){const p=aroundG(F[1],F[2]);Wt.push({x:p.x,z:p.z,a:F[3],b:F[4],rot:ang})}
+    else if(k==='cr'){const q=at(F[1]);Wt.push({x:q.x,z:q.z,a:F[2],b:F[3],rot:q.a})}
+    else if(k==='d'){const s0=F[1],s1=F[2]<0?gEnd+F[2]:F[2];for(let s=s0;s<s1;s+=14){const q=at(s+7),o=F[3]*(fwW/2+8);Wt.push({x:q.x+q.nx*o,z:q.z+q.nz*o,a:1.6,b:8,rot:q.a})}}
+    else if(k==='pew'){for(let n=0;n<F[3];n++){const q=at(F[1]+n*9),o=F[2]>0?fwW/2+F[2]+8:-(fwW/2-F[2]+8);B.push({x:q.x+q.nx*o,z:q.z+q.nz*o,a:8,b:3.4,rot:q.a})}}
+    else if(k==='t'){const q=at(F[1]);trees.push({x:q.x+q.nx*F[2],z:q.z+q.nz*F[2],r:F[3],h:F[4],k:.99,big:1})}
+    else if(k==='tl'){for(let s=F[1];s<F[2];s+=7){const q=at(s),o=F[4]*(fwW/2+F[3]+r()*3);trees.push({x:q.x+q.nx*o,z:q.z+q.nz*o,r:3+r()*1.2,h:15+r()*6,k:r()*C.pine})}}
+    else if(k==='az'){const s0=F[1]<0?gEnd+F[1]:F[1],s1=F[2]<0?gEnd+F[2]:F[2],AZ=[0xe0408a,0xf06aa8,0xf3e9f0,0xc93a7a,0xe85d9c];for(let s=s0;s<s1;s+=4.5+r()*2){const q=at(s),o=F[4]*(fwW/2+F[3]+r()*7);trees.push({x:q.x+q.nx*o,z:q.z+q.nz*o,r:1.1+r()*.5,h:2.3+r()*.6,k:.995,c:AZ[Math.floor(r()*AZ.length)]})}}}
+  const E=SP.E||0,H={cid,i,par,L:SP.L,CL,acc,gEnd,G,pin,B,W:Wt,trees,tp:'spec',hname:SP.n,fwW,fwStart:par===3?Math.max(20,SP.L-40):SP.fs||70+r()*30,fwPh:r()*6,
+    hp:[r()*6,r()*6,r()*6,r()*6,r()*6],E,pal:Math.floor(r()*((C.pals||[0]).length)),wind:{s:SP.wind?Math.round(SP.wind*(.6+r()*.5)):Math.round(r()*C.wind),a:r()*6.283},C,name:''};
+  H.tee={x:0,z:0};H.birch=false;
+  // trees line the rough, but never in the fairway, the hazards, the green or the tee shot
+  const nt=Math.round((SP.L/3.2)*C.trees*(SP.td||1)),inner=SP.ti||8;
+  const t0=trees.length;for(let k=0;k<nt*3&&trees.length-t0<nt;k++){const along=r()*(gEnd+30)-10,q=at(Math.max(0,along)),sd2=r()<.5?-1:1,off=fwW/2+inner+r()*44,x=q.x+q.nx*off*sd2,z=q.z+q.nz*off*sd2;
+    if(hyp(x-G.x,z-G.z)<Math.max(G.rx,G.rz)+10||hyp(x,z)<14)continue;if(Wt.some(w=>ndE(w,x,z)<1.3)||B.some(b=>ndE(b,x,z)<1.4))continue;trees.push({x,z,r:3+r()*1.6,h:C.pine>.5?14+r()*9:10+r()*8,k:r()})}
+  // nothing planted in the fairway, the water or the sand
+  H.trees=trees.filter(t=>t.big||!(Wt.some(w=>ndE(w,t.x,t.z)<1.15)||B.some(b=>ndE(b,t.x,t.z)<1.2)||hyp(t.x-G.x,t.z-G.z)<Math.max(G.rx,G.rz)+4||Math.abs(near(H,t.x,t.z).d)<fwW/2+1.5||hyp(t.x,t.z)<10));
   return H}
 function ptAt(CL,acc,s){let k=1;while(k<CL.length-1&&acc[k]<s)k++;const a=CL[k-1],b=CL[k],f=clamp((s-acc[k-1])/Math.max(1e-6,acc[k]-acc[k-1]),0,1),dx=b.x-a.x,dz=b.z-a.z,l=hyp(dx,dz)||1;return{x:lerp(a.x,b.x,f),z:lerp(a.z,b.z,f),nx:dz/l,nz:-dx/l,a:Math.atan2(dx,dz)}}
 function ndE(e,x,z){const c=Math.cos(e.rot),s=Math.sin(e.rot),dx=x-e.x,dz=z-e.z,u=dx*s+dz*c,v=dx*c-dz*s;return Math.sqrt((v/e.a)**2+(u/e.b)**2)}
@@ -428,7 +519,7 @@ function buildHole(H){prepHole(H);scene.remove(world);world.traverse(o=>{if(o.ge
       for(const s of[-1,1]){const ah=t.h*(.25+tr()*.2),ay=y+t.h*(.35+tr()*.2);put(elb,t.x+s*.5,ay,t.z,1,1,1,gc);put(arm,t.x+s*.62,ay+ah/2,t.z,1,ah,1,gc)}});
     const nr=Math.round(H.L/9),rock=mk(new T3.DodecahedronGeometry(1,0),new T3.MeshLambertMaterial({flatShading:true}),nr);for(let k=0;k<nr;k++){const along=tr()*H.gEnd,qq=ptAt(H.CL,H.acc,along),side=tr()<.5?-1:1,off=H.fwW/2+12+tr()*45,x=qq.x+qq.nx*off*side,z=qq.z+qq.nz*off*side,s=.5+tr()*1.8;put(rock,x,hAt(x,z)+s*.3,z,s*1.3,s,s,new T3.Color(0x9b6a46).offsetHSL(0,0,(tr()-.5)*.15).getHex(),tr()*6)}}
   else if(n){const trunk=mk(new T3.CylinderGeometry(.16,.28,1,8),new T3.MeshLambertMaterial({color:H.birch?0xe8e4da:C.trunk}),n),cone=mk(new T3.ConeGeometry(1,1,10),new T3.MeshLambertMaterial(),n*3),blob=mk(new T3.IcosahedronGeometry(1,1),new T3.MeshLambertMaterial({flatShading:true}),n*3);
-    H.trees.forEach(t=>{const y=hAt(t.x,t.z);t.y=y;const pine=t.k<C.pine,base=new T3.Color(PAL[Math.floor(tr()*PAL.length)]).offsetHSL((tr()-.5)*.03,0,(tr()-.5)*.08);
+    H.trees.forEach(t=>{const y=hAt(t.x,t.z);t.y=y;const pine=t.k<C.pine,base=new T3.Color(t.c!=null?(tr(),t.c):PAL[Math.floor(tr()*PAL.length)]).offsetHSL((tr()-.5)*.03,0,(tr()-.5)*.08);
       put(trunk,t.x,y+t.h*(pine?.2:.24),t.z,1,t.h*(pine?.4:.48),1,null);
       if(pine){[[.3,1,.42],[.5,.78,.36],[.68,.55,.32]].forEach(([fy,fr,fh])=>put(cone,t.x,y+t.h*(fy+fh/2),t.z,t.r*fr,t.h*fh,t.r*fr,base.getHex(),tr()*6))}
       else{put(blob,t.x,y+t.h*.62,t.z,t.r*1.05,t.r*.92,t.r*1.05,base.getHex(),tr()*6);put(blob,t.x+t.r*.45,y+t.h*.5,t.z+t.r*.2,t.r*.72,t.r*.64,t.r*.72,base.clone().offsetHSL(0,0,.04).getHex(),tr()*6);put(blob,t.x-t.r*.38,y+t.h*.78,t.z-t.r*.22,t.r*.6,t.r*.55,t.r*.6,base.clone().offsetHSL(0,0,.07).getHex(),tr()*6)}})}
@@ -513,6 +604,7 @@ function newRound(mode,opts){opts=opts||{};if(mode==='career'){if(!CAR){CAR=newC
   const names=(mode==='tour'||mode==='career'||mode==='daily'||mode==='ld'||mode==='ctp'||mode==='match'||mode==='range'||mode==='pgreen')?[cfg.names[0]||'Blake Yoakam']:cfg.names.slice(0,4);
   S={mode,course:opts.course||cfg.course,diff:cfg.diff,h0:range[0],h1:range[1],hole:range[0],players:names.map((n,k)=>({name:n||('Golfer '+(k+1)),k,card:{},total:0,ball:null,strokes:0,holed:false,stats:{birdies:0,bog:0,fw:0,gir:0,holes:0}})),turn:0,phase:'intro',t:0,
     seed:opts.seed,field:null,ld:mode==='ld'?{left:6,best:0}:null,ctp:mode==='ctp'?{left:5,best:null}:null,coins:0,log:[]};
+  {const CC=COURSES[S.course];if(CC&&CC.pars&&!['daily','ld','ctp','range','pgreen','par3','custom','career'].includes(mode))S.pars=CC.pars.slice()}
   if(mode==='tour')S.field=FIELD.map(f=>({name:f[0],sk:f[1],card:{},total:0}));
   if(mode==='career'){S.field=CAR.cpu.map(c=>({name:c.name,sk:cpuSk(c),card:{},total:0}));const ev=EVENTS[CAR.ev];S.evName=ev.n+(ev.major?' (major)':'')}
   startHole()}
@@ -593,7 +685,7 @@ function launchBall(pw,e){const p=cur(),b=p.ball,SH=SHAPES[shape],shid=SH[0];
   let off=0;if(bend){const L=predictLand({...mk(aim),side:bend},true),dz=L.z-b.z,dx=L.x-b.x;if(hyp(dx,dz)>5)off=Math.atan2(dx,dz)-aim}
   return mk(aim-off+e*.25)}
 function fire(pw,acc){const p=cur(),b=p.ball,D=DIFF[S.diff],putt=club===PUTTER,snap=D.snap+.006*SK('acc')+CSNAP();let e;
-  if(putt&&acc==null){const PE={am:.026,pro:.028,tour:.036}[S.diff]*(1-.15*SK('putt'))*CPUTT();e=(Math.random()-.5)*2*PE}
+  if(putt&&acc==null){const PE={am:.026,pro:.028,tour:.036}[S.diff]*(1-.15*SK('putt'))*CPUTT()*(HOLE.C.pe||1);e=(Math.random()-.5)*2*PE}
   else{e=-acc;if(Math.abs(e)<snap)e=0;else e=e-Math.sign(e)*snap;e*=1-.07*SK('acc');if(club>=9&&club<=12)e*=1-.1*SK('short');if(putt)e*=1-.1*SK('putt');if(pw>1)e*=1+(pw-1)*6}
   S.rec=[];S.recT=0;p.strokes++;p.prev={x:b.x,z:b.z,lie:b.lie};p.lastLie=b.lie;S.shotStart={x:b.x,z:b.z,y:b.y};S.shotClub=club;swTop=Math.min(-.15,swK);follow=putt?.75:.7;
   if(putt){const v0=Math.sqrt(2*SURF.G.mu*GRAV*puttScale(b)*pw)*(b.lie==='X'?1.12:1),dir=aim+e;
@@ -653,7 +745,7 @@ function stepBall(dt){const B=S.ball,H=HOLE;if(!B)return;
   if(hyp(B.vx,B.vz)<.035&&hyp(gr.x,gr.z)*5/7<P.mu*1.3){endBall('rest')}}
 function endBall(why){const B=S.ball,p=cur();if(why==='rest'&&S.mode!=='ld'&&S.mode!=='ctp'&&B&&surfAt(B.x,B.z)==='G'&&hyp(B.x-HOLE.pin.x,B.z-HOLE.pin.z)<({am:.3,pro:.26,tour:.2}[S.diff]||.26)){p.strokes++;why='holed';B.x=HOLE.pin.x;B.z=HOLE.pin.z;S.tapIn=true;setTimeout(()=>note('','Tap-in (counts a stroke)',1.6),2700)}S.phase='rest';S.t=0;S.why=why;S.result=null;if(S.rec&&S.rec.length>4){S.rec.push([B.x,B.y,B.z,S.recT+.05]);S.lastRec={rec:S.rec,why,club:S.shotClub,start:S.shotStart}}
   if(why==='holed'){p.holed=true;p.ball={x:HOLE.pin.x,z:HOLE.pin.z,y:hAt(HOLE.pin.x,HOLE.pin.z),lie:'G'};sfx.cup();setTimeout(()=>sfx.clap(28),250)}
-  else if(why==='water'){p.strokes++;sfx.splash();const d=B.lastDry||p.prev;let x=d.x,z=d.z;const dx=x-(S.shotStart.x),dz=z-(S.shotStart.z),l=hyp(dx,dz)||1;for(let k=0;k<30&&(surfAt(x,z)==='W'||surfAt(x,z)==='O');k++){x-=dx/l*1.5;z-=dz/l*1.5}p.ball={x,z,y:hAt(x,z),lie:surfAt(x,z)};note('In the water','Penalty stroke. Drop where it went in.',2.2)}
+  else if(why==='water'){p.strokes++;sfx.splash();const d=B.lastDry||p.prev;let x=d.x,z=d.z;const dx=x-(S.shotStart.x),dz=z-(S.shotStart.z),l=hyp(dx,dz)||1;for(let k=0;k<30&&(surfAt(x,z)==='W'||surfAt(x,z)==='O'||HOLE.W.some(w=>!w.ocean&&ndE(w,x,z)<1.3));k++){x-=dx/l*1.5;z-=dz/l*1.5}p.ball={x,z,y:hAt(x,z),lie:surfAt(x,z)};note('In the water','Penalty stroke. Drop where it went in.',2.2)}
   else if(why==='ob'){p.strokes++;p.ball={x:p.prev.x,z:p.prev.z,y:hAt(p.prev.x,p.prev.z),lie:p.prev.lie};note('Out of bounds','Stroke and distance: play it again.',2.2)}
   else{p.ball={x:B.x,z:B.z,y:hAt(B.x,B.z),lie:surfAt(B.x,B.z)}}
   shotReport(why)}
@@ -690,7 +782,7 @@ function afterShot(){const H=HOLE;
   else{let far=-1,bi=0;S.players.forEach((p,k)=>{if(p.holed)return;const d=pinDist(p.ball);if(d>far){far=d;bi=k}});S.turn=bi}
   S.phase='aim';setupShot();if(S.players.length>1)note('',`${cur().name} is up`,1.2)}
 function endHole(){const i=S.hole;for(const p of S.players){p.card[i]=p.strokes;p.total=Object.values(p.card).reduce((a,b)=>a+b,0);p.stats.holes++;if(p.strokes>HOLE.par)p.stats.bog++}
-  if(S.field)for(const f of S.field){const d=Math.round(.15+(1-f.sk)*1.1+gauss()*.7);f.card[i]=clamp(HOLE.par+d,HOLE.par-2,HOLE.par+3);f.total=Object.values(f.card).reduce((a,b)=>a+b,0)}
+  if(S.field)for(const f of S.field){const d=Math.round(.15+(1-f.sk)*1.1+gauss()*.7+(HOLE.C.tough||0));f.card[i]=clamp(HOLE.par+d,HOLE.par-2,HOLE.par+3);f.total=Object.values(f.card).reduce((a,b)=>a+b,0)}
   S.phase='card';setTimeout(()=>{if(S.hole+1>=S.h1)endRound();else showCard(cardHtml(true)+`<div class="row"><button class="go" type="button" data-a="next">Next hole</button><button class="btn" type="button" data-a="quit">Quit round</button></div>`)},1600)}
 function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(6.283*v)}
 const parThru=(p)=>{let s=0;for(const k in p.card)s+=parOf(k);return s};
@@ -817,7 +909,7 @@ function showCard(h,cls){document.querySelector('.hud').style.visibility=S&&S.ph
 function hideCard(){$('ov').hidden=true;document.querySelector('.hud').style.visibility='';if(TOUCH&&S&&S.phase!=='done')root.classList.add('playing');setTimeout(resize,30)}
 function bestTxt(cid){const b=store.get('golf-best',{});const v=b[cid+'-18'];return v!=null?`Best 18: ${v} (${v-72>0?'+':''}${v-72===0?'E':v-72})`:'No rounds yet'}
 function menu(){S=null;golfer.visible=false;lockerView=false;const n=cfg.names;
-  showCard(`<h2>Pin High</h2><p>Real golf on four original courses. Read the wind, pick a club, nail the swing.</p>
+  showCard(`<h2>Pin High</h2><p>Real golf on six courses, including two brutal championship tests. Read the wind, pick a club, nail the swing.</p>
   <div class="row lockbtn"><button class="btn" type="button" data-a="locker">🔒 ${esc(n[0]||'Blake Yoakam')}’s locker · Level ${lvlOf(PRO.xp).L}${ptsLeft()>0?` · <b style="color:var(--led)">${ptsLeft()} point${ptsLeft()>1?'s':''} to spend</b>`:''}</button></div>
   <h3>Golfers</h3><div class="names">${n.map((v,k)=>`<div><i style="background:${PCSS[k]}"></i><input data-n="${k}" maxlength="22" value="${esc(v)}" aria-label="Golfer ${k+1} name">${k?`<button class="btn" type="button" data-rm="${k}" aria-label="Remove golfer ${k+1}">✕</button>`:''}</div>`).join('')}${n.length<4?'<button class="btn" type="button" data-a="addp">+ Add a golfer</button>':''}</div>
   <h3>Course</h3><div class="row">${Object.entries(COURSES).map(([k,c])=>`<button class="chip" type="button" data-course="${k}" aria-pressed="${cfg.course===k}">${c.name}<small>${bestTxt(k)}</small></button>`).join('')}</div>
@@ -943,7 +1035,7 @@ function lightTowers(H){const C=K3=>new T3.Color(K3),pole=new T3.CylinderGeometr
     const p=new T3.Mesh(pole,pm);p.position.set(x,y+12,z);const h=new T3.Mesh(head,hm);h.position.set(x,y+24.5,z);h.rotation.y=q.a;const sp=new T3.Sprite(glow);sp.scale.set(26,26,1);sp.position.set(x,y+24.5,z);world.add(p,h,sp)}}
 function applyWx(H){const w=(S&&S.wx)||'clear',C=H.C;
   SUND.copy(WXD.sund);hemi.intensity=WXD.hemi;hemi.color.copy(WXD.hc);hemi.groundColor.copy(WXD.hg);sun.intensity=WXD.sun;sun.color.copy(WXD.sc);renderer.toneMappingExposure=WXD.exp;
-  for(const k in WXD.surf)Object.assign(SURF[k],WXD.surf[k]);stars.visible=false;rain.m.visible=false;sunSprite.visible=true;sunSprite.scale.set(1100,1100,1);sunSprite.material.color.set(0xffffff);
+  for(const k in WXD.surf)Object.assign(SURF[k],WXD.surf[k]);if(C.gmu)SURF.G.mu*=C.gmu;if(C.gfirm){SURF.G.rest*=C.gfirm;SURF.G.slide=Math.min(.55,SURF.G.slide*C.gfirm);SURF.X.rest*=C.gfirm}if(C.rpw)SURF.R.pw=C.rpw;if(C.rmu)SURF.R.mu*=C.rmu;stars.visible=false;rain.m.visible=false;sunSprite.visible=true;sunSprite.scale.set(1100,1100,1);sunSprite.material.color.set(0xffffff);
   for(const m of clouds){m.visible=true;m.material.color.set(0xffffff)}rainSound(false);
   const fogC=(c,n,f)=>{scene.fog=new T3.Fog(c,n,f);scene.fog.color.convertSRGBToLinear()},lc=(o,c)=>{o.set(c);o.convertSRGBToLinear()};
   if(w==='clear')return;
@@ -1030,7 +1122,7 @@ function matchPick(){showCard(`<h2>Match play</h2><p>Hole by hole against a riva
 function matchEnd(){const M=S.match,u=M.up,R=RIVALS[M.r],me=S.players[0];S.phase='done';const st=matchStatus(true);let coins=0,xp=30;
   if(u>0){coins=40;xp=150;ST.matchW++;setTimeout(()=>celebrate('Match won',`${me.name} beats ${R[0]} ${st.replace(/^.* wins /,'')}`),200);say(`${me.name} wins the match!`,true);crowd('roar',1)}else if(u<0){coins=5;ST.matchL++;say(`${R[0]} wins the match.`,true)}else{coins=15;xp=70;ST.matchH++;say('The match is halved.',true)}
   saveST();addCoins(coins);addXP(xp,me);const hs=Object.keys(M.card).map(Number).sort((a,b)=>a-b);
-  showCard(`<h2>Match play</h2><p class="bigt">${esc(st)}</p><p>${esc(me.name)} vs ${esc(R[0])} (${esc(R[1])})</p><div class="scw"><table class="sc"><tr><th>Hole</th>${hs.map(k=>`<th>${k+1}</th>`).join('')}</tr><tr><th>Par</th>${hs.map(k=>`<td>${PARS[k%18]}</td>`).join('')}</tr>
+  showCard(`<h2>Match play</h2><p class="bigt">${esc(st)}</p><p>${esc(me.name)} vs ${esc(R[0])} (${esc(R[1])})</p><div class="scw"><table class="sc"><tr><th>Hole</th>${hs.map(k=>`<th>${k+1}</th>`).join('')}</tr><tr><th>Par</th>${hs.map(k=>`<td>${parOf(k)}</td>`).join('')}</tr>
     <tr><td class="n">${esc(me.name)}</td>${hs.map(k=>`<td><span class="${M.res[k]>0?'b':''}">${me.card[k]}</span></td>`).join('')}</tr><tr><td class="n">${esc(R[0])}</td>${hs.map(k=>`<td><span class="${M.res[k]<0?'b':''}">${M.card[k]}</span></td>`).join('')}</tr></table></div>
     <p>+${coins} coins</p><div class="row"><button class="go" type="button" data-a="again">Rematch</button><button class="btn" type="button" data-a="match">New rival</button><button class="btn" type="button" data-a="menu">Menu</button></div>`)}
 
