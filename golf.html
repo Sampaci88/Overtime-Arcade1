@@ -94,6 +94,7 @@ html.touch #mini{top:calc(104px + env(safe-area-inset-top,0px));bottom:auto;widt
 html.touch.playing .pbar{display:flex}
 .pbar button{min-height:34px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(20,28,40,.85);color:#fff;font:700 13px var(--body)}
 #confetti{position:absolute;inset:0;pointer-events:none;z-index:7}
+.readout{position:absolute;right:12px;top:96px;z-index:4;min-width:180px;padding:9px 12px;border-radius:10px;background:rgba(10,16,22,.78);border:1px solid rgba(255,255,255,.16);color:#fff;font:600 13px/1.5 var(--body);display:grid;grid-template-columns:auto auto;gap:0 14px}.readout b{font:800 12px var(--body);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;grid-column:1/-1;margin-bottom:2px}.readout span:nth-child(odd){color:var(--muted)}.readout span:nth-child(even){text-align:right;font-weight:800}.readout[hidden]{display:none}
 .cad{margin-top:6px;max-width:340px;padding:7px 10px;border-radius:9px;background:rgba(10,16,22,.72);border:1px solid rgba(255,255,255,.16);color:#fff;font:600 13px/1.35 var(--body)}.cad[hidden],.dragpad[hidden]{display:none}
 .dragpad{position:absolute;left:28%;right:28%;top:50%;bottom:8%;border:2px dashed rgba(255,255,255,.35);border-radius:18px;display:grid;place-items:end center;padding:10px;text-align:center;color:rgba(255,255,255,.85);font:700 13px/1.3 var(--body);text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none}
 .stg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}.stt{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;display:grid;gap:2px}.stt b{font:900 24px/1 var(--display);color:var(--led)}.stt small{color:var(--muted)}
@@ -124,7 +125,7 @@ html.touch.playing .pbar{display:flex}
   <div id="stage">
     <div class="hud">
       <div class="tl"><div class="hole" id="hHole">Hole 1</div><div class="sm" id="hHoleSub"></div><div class="pl" id="hPlayer">Blake Yoakam</div><div class="sm" id="hScore"></div><div class="cad" id="caddie" hidden></div></div><div class="dragpad" id="dragPad" hidden>Drag down to swing back, then push up to hit.<br>Push straight for a straight shot.</div>
-      <div class="tr"><div class="wind"><i id="hWindA"></i><span id="hWind">0 MPH</span></div><div class="sm" id="hPin"></div><div class="sm" id="hLie"></div></div>
+      <div class="readout" id="readout" hidden></div><div class="tr"><div class="wind"><i id="hWindA"></i><span id="hWind">0 MPH</span></div><div class="sm" id="hPin"></div><div class="sm" id="hLie"></div></div>
       <div class="note" id="hNote"></div><div class="sub" id="hSub"></div>
       <div class="shotbar" id="shotbar"></div><div class="clubbox" id="clubbox"><b id="hClub">Driver</b><span id="hCarry"></span><span id="hLand"></span><span id="hSpin"></span></div>
       <div class="meter" id="meter"><div class="snap" id="mSnap"></div><div class="fill" id="mFill"></div><div class="zero"></div><div class="full"></div><div class="pw" id="mPw"></div><div class="tgt" id="mTgt"></div><div class="mk" id="mMk"></div><div class="lab" id="mLab">SPACE TO SWING</div></div>
@@ -162,7 +163,7 @@ const GRAV=10.72,KD=.0042,KL=.0042,KS=.15,BALLR=.1;
 const CLUBS=[['Driver',250,11,.55],['3 Wood',228,13,.65],['5 Wood',212,15,.72],['4 Iron',196,17,.8],['5 Iron',184,19,.85],['6 Iron',172,21,.9],['7 Iron',160,24,.95],['8 Iron',148,27,1],['9 Iron',136,30,1.05],['Pitching Wedge',122,34,1.12],['Gap Wedge',106,38,1.18],['Sand Wedge',90,42,1.25],['Lob Wedge',72,47,1.3],['Putter',0,0,0]];
 const PUTTER=13;
 // shot shapes: id, name, launch speed, launch angle and spin multipliers
-const SHAPES=[['normal','Normal',1,1,1],['draw','Draw',1,1,1],['fade','Fade',1,1,1],['bigdraw','Big draw',1,1,1],['bigfade','Big fade',1,1,1],['punch','Punch',.97,.5,.55],['flop','Flop',.95,1.5,1.4]];
+const SHAPES=[['normal','Normal',1,1,1],['draw','Draw',1,1,1],['fade','Fade',1,1,1],['bigdraw','Big draw',1,1,1],['bigfade','Big fade',1,1,1],['punch','Punch',.97,.5,.55],['flop','Flop',.95,1.5,1.4],['bump','Bump & run',.9,.42,.3]];
 function flySim(v0,ang,sp){let y=0,z=0,a=ang*Math.PI/180,vy=v0*Math.sin(a),vz=v0*Math.cos(a),t=0,s=sp;const dt=1/240;
   while(t<15){const v=hyp(vy,vz),lx=0,ly=vz/v,lz=-vy/v;vy+=(-GRAV-KD*v*vy+KL*s*v*v*ly)*dt;vz+=(-KD*v*vz+KL*s*v*v*lz)*dt;y+=vy*dt;z+=vz*dt;t+=dt;s*=Math.exp(-dt/7);if(y<0&&vy<0)break}return z}
 const V0=CLUBS.map(([n,c,a,s])=>{if(!c)return 0;let lo=10,hi=150;for(let i=0;i<34;i++){const m=(lo+hi)/2;if(flySim(m,a,s)<c)lo=m;else hi=m}return lo});
@@ -484,7 +485,7 @@ function newRound(mode,opts){opts=opts||{};if(mode==='career'){if(!CAR){CAR=newC
   startHole()}
 /* ---------- Pro Tour career: six events a season (two majors), points, and three tours to climb ---------- */
 const TIERS=['Amateur Circuit','Challenger Tour','Pro Tour'],TIERSK=[[.25,.62],[.42,.8],[.58,.95]];
-const EVENTS=[{n:'Cardinal Open',c:'hills',h:[0,9]},{n:'Lakeside Classic',c:'lakes',h:[0,9]},{n:'Canyon Ridge Invitational',c:'canyon',h:[9,18]},{n:'The Cardinal Championship',c:'hills',h:[0,18],major:1},{n:'Shoreline Shootout',c:'lakes',h:[9,18]},{n:'The Canyon Championship',c:'canyon',h:[0,18],major:1}];
+const EVENTS=[{n:'Cardinal Open',c:'hills',h:[0,9]},{n:'Lakeside Classic',c:'lakes',h:[0,9]},{n:'Canyon Ridge Invitational',c:'canyon',h:[9,18]},{n:'The Cardinal Championship',c:'hills',h:[0,18],major:1},{n:'Shoreline Shootout',c:'lakes',h:[9,18]},{n:'The Canyon Championship',c:'canyon',h:[0,18],major:1},{n:'The Seaside Open',c:'links',h:[0,18],major:1}];
 const EVPTS=[500,300,190,135,110,100,90,85,80,75];
 const CFN=['Cole','Mason','Theo','Luca','Owen','Rory','Jonah','Wes','Caleb','Grant','Eli','Nico','Brooks','Dante','Hayes','Jasper','Kai','Levi','Miles','Quinn','Reid','Silas','Tate'],CLN=['Hartigan','Whitfield','Brandt','Ferreira','Kessler','Callahan','Pierce','Dalton','Moreau','Ashford','Navarro','Lindqvist','Okafor','Vance','Delgado','Brennan','Sato','Whitaker','Castillo','Mercer','Halvorsen','Pryor','Abbott'];
 function newCareer(){const r=rng((Date.now()&0xffffff)+7);return{season:1,tier:0,ev:0,you:0,pts:CFN.map(()=>0),cpu:CFN.map((f,i)=>({name:f+' '+CLN[(i*7+3)%CLN.length],base:r()})),res:[],wins:0,majors:0,titles:0,last:null}}
@@ -497,7 +498,7 @@ function careerScreen(msg){if(!CAR){CAR=newCareer();saveC()}S=null;golfer.visibl
   let h=`<h2>Pro Tour career</h2><p>Season ${CAR.season} · <b style="color:var(--led)">${TIERS[CAR.tier]}</b> · ${nm} is ${ordinal(rank)} with ${CAR.you} points</p>${msg?`<p class="bigt" style="color:var(--led);font-size:20px">${msg}</p>`:''}`;
   h+=`<h3>Schedule</h3><div class="lb sched">${EVENTS.map((e,i)=>{const r=CAR.res.find(x=>x.ev===i&&x.season===CAR.season);return`<div class="${i===CAR.ev?'me':''}"><span>${i+1}</span><span>${esc(e.n)}${e.major?' ★':''}<small> · ${COURSES[e.c].name} · ${e.h[1]-e.h[0]} holes</small></span><span>${r?ordinal(r.place):i===CAR.ev?'next':''}</span><span>${r?'+'+r.pts:''}</span></div>`}).join('')}</div>`;
   h+=`<h3>Season standings</h3><div class="lb">${st.slice(0,8).concat(rank>8?[st[rank-1]]:[]).map(x=>`<div class="${x.me?'me':''}"><span>${st.indexOf(x)+1}</span><span>${esc(x.name)}</span><span></span><span>${x.pts}</span></div>`).join('')}</div>`;
-  h+=`<p>Career: ${CAR.wins} win${CAR.wins===1?'':'s'} · ${CAR.majors} major${CAR.majors===1?'':'s'} · ${CAR.titles} season title${CAR.titles===1?'':'s'}. Finish top 3 in the standings to move up a tour. Majors (★) are 18 holes and worth double points.</p>`;
+  h+=`<p>Career: ${CAR.wins} win${CAR.wins===1?'':'s'} · ${CAR.majors} major${CAR.majors===1?'':'s'} · ${CAR.titles} season title${CAR.titles===1?'':'s'} · ${CAR.poy||0} Player of the Year award${(CAR.poy||0)===1?'':'s'}. Finish top 3 in the standings to move up a tour. Majors (★) are 18 holes and worth double points.</p>`;
   h+=`<div class="row">${done?'<button class="go" type="button" data-a="season">Start the next season</button>':`<button class="go" type="button" data-a="event">Play: ${esc(ev.n)}</button>`}<button class="btn" type="button" data-a="menu">Menu</button><button class="btn" type="button" data-a="carreset">${carArm>Date.now()?'Tap again to start over':'Start a new career'}</button></div>`;
   showCard(h)}
 function careerFinish(me){const ev=EVENTS[CAR.ev],d=me.total-parThru(me),all=[{me:1,d,r:Math.random()}].concat(S.field.map((f,i)=>({i,d:f.total-parThru(f),r:Math.random()}))).sort((a,b)=>a.d-b.d||a.r-b.r);
@@ -506,7 +507,7 @@ function careerFinish(me){const ev=EVENTS[CAR.ev],d=me.total-parThru(me),all=[{m
   let coins=place===1?(ev.major?200:100):place<=3?40:place<=10?15:5;addCoins(coins);addXP(place===1?(ev.major?500:300):place<=10?120:50,me);
   if(place===1){CAR.wins++;ach('tourwin');if(ev.major){CAR.majors++;ach('major')}setTimeout(()=>celebrate(ev.major?'Major champion!':'Tournament winner!',`${me.name} wins the ${ev.n}`),200)}
   let txt=place===1?`${tieTop?'Won it in a playoff! ':''}You win the ${ev.n}!`:`You finished ${ordinal(place)} at the ${ev.n}`;
-  CAR.ev++;let season='';if(CAR.ev>=EVENTS.length){const st=standings(),rank=st.findIndex(x=>x.me)+1;season=`Season over: ${ordinal(rank)} on the ${TIERS[CAR.tier]}.`;if(rank===1){CAR.titles++;ach('season');season+=' Season champion!'}
+  CAR.ev++;let season='';if(CAR.ev>=EVENTS.length){const st=standings(),rank=st.findIndex(x=>x.me)+1;season=`Season over: ${ordinal(rank)} on the ${TIERS[CAR.tier]}.`;if(rank===1){CAR.titles++;CAR.poy=(CAR.poy||0)+1;ach('season');season+=` Season champion and Player of the Year!`;setTimeout(()=>celebrate('Player of the Year',`${me.name} wins the ${TIERS[CAR.tier]} points race`),3200)}
     if(rank<=3&&CAR.tier<2){CAR.tier++;season+=` You're moving up to the ${TIERS[CAR.tier]}!`;if(CAR.tier===2)ach('protour')}else if(rank<=3)season+=' Another great season on the Pro Tour.';CAR.last=season}
   saveC();return{txt:`${txt} · +${mine.pts} points · +${coins} coins`,season,place}}
 const FIELD=[['Cole Hartigan',.9],['Mason Whitfield',.85],['Theo Brandt',.8],['Luca Ferreira',.78],['Owen Kessler',.72],['Rory Callahan',.7],['Jonah Pierce',.65],['Wes Dalton',.6],['Caleb Moreau',.55],['Grant Ashford',.5],['Eli Navarro',.45]];
@@ -523,7 +524,7 @@ function startHole(){const H=holeFor();H.gallery=S.mode==='tour'||S.mode==='care
   note(S.mode==='ld'?'Long drive':S.mode==='ctp'?'Closest to the pin':`Hole ${S.hole+1}`,S.mode==='ld'?'Six balls. Longest one in the fairway wins.':S.mode==='ctp'?'Five balls. Get it close.':`“${H.hname}” · Par ${H.par} · ${Math.round(H.gEnd)} yards`,3.2)}
 /* ---------- per-shot setup ---------- */
 let aim=0,club=0,spin=0,meter=null,viewTop=false,shape=0;
-function shapeOK(k){const id=SHAPES[k][0];if(club===PUTTER)return k===0;if(id==='flop')return club>=9&&club<=12;return true}
+function shapeOK(k){const id=SHAPES[k][0];if(club===PUTTER)return k===0;if(id==='bump'){const b=S&&cur()&&cur().ball;return club>=5&&club<=12&&!!b&&b.lie!=='T'&&pinDist(b)<75}if(id==='flop')return club>=9&&club<=12;return true}
 function shotBar(){const el=$('shotbar');if(!el)return;const show=S&&S.phase==='aim'&&club!==PUTTER;el.style.display=show?'':'none';if(!show)return;const key=club+'|'+shape;if(el.dataset.k===key)return;el.dataset.k=key;el.innerHTML=SHAPES.map((s,k)=>`<button type="button" data-shape="${k}" aria-pressed="${k===shape}"${shapeOK(k)?'':' disabled'}>${s[1]}</button>`).join('')}
 $('shotbar').addEventListener('click',e=>{const b=e.target.closest('[data-shape]');if(!b||!S||S.phase!=='aim'||meter)return;const k=+b.dataset.shape;if(shapeOK(k)){shape=k;hud()}});
 function shapeStep(){if(!S||S.phase!=='aim'||meter||club===PUTTER)return;let k=shape;for(let i=0;i<5;i++){k=(k+1)%SHAPES.length;if(shapeOK(k))break}shape=k;hud()}
@@ -552,9 +553,9 @@ function meterTick(dt){if(!meter)return;const D=DIFF[S.diff];if(meter.st===1){me
   const u=golfer.userData,putt=club===PUTTER;if(meter)u.swing.rotation.z=(putt?-.55:-2.45)*(meter.st===1?meter.m:Math.max(0,meter.m)*(1));if(meter)u.hips.rotation.y=(putt?0:-.7)*clamp(meter.st===1?meter.m:meter.m,0,1)}
 let follow=0;
 function launchBall(pw,e){const p=cur(),b=p.ball,SH=SHAPES[shape],shid=SH[0];
-  const [n,carry,ang,sf]=CLUBS[club],lf=lieF(b.lie,club),v0=SH[2]*V0[club]*Math.pow(CM(),.77)*Math.sqrt(lf)*(pw<=1?Math.pow(pw,.62):1+(pw-1)*.45),bs=sf*(1-spin*.35*(1+.15*SK('spin')))*(b.lie==='R'?.7:b.lie==='B'?.8:1)*SH[4]*CSPIN();
-  const bend={draw:.45,fade:-.45,bigdraw:.85,bigfade:-.85}[shid]||0,la=(ang*SH[3]+(b.lie==='B'?4:0)-spin*1.2)*Math.PI/180,sp=bs*(bend>0?.9:bend<0?1.1:1);
-  const mk=dir=>({x:b.x,y:b.y+.02,z:b.z,vx:Math.sin(dir)*Math.cos(la)*v0,vy:Math.sin(la)*v0,vz:Math.cos(dir)*Math.cos(la)*v0,roll:false,sp,side:e*4.5+bend,spinAdj:spin,shape:shid,aimDir:aim,carry:0,maxY:b.y,trees:0,lastDry:{x:b.x,z:b.z}});
+  const LC=lieCond(b,aim),[n,carry,ang,sf]=CLUBS[club],lf=lieF(b.lie,club),v0=SH[2]*V0[club]*Math.pow(CM(),.77)*Math.sqrt(lf)*(pw<=1?Math.pow(pw,.62):1+(pw-1)*.45)*LC.v*BALLV(),bs=sf*(1-spin*.35*(1+.15*SK('spin')))*(b.lie==='R'?.7:b.lie==='B'?.8:1)*SH[4]*CSPIN()*LC.s*BALLS();
+  const bend={draw:.45,fade:-.45,bigdraw:.85,bigfade:-.85}[shid]||0,la=(ang*SH[3]+(b.lie==='B'?4:0)-spin*1.2+LC.la)*Math.PI/180,sp=bs*(bend>0?.9:bend<0?1.1:1);
+  const mk=dir=>({x:b.x,y:b.y+.02,z:b.z,vx:Math.sin(dir)*Math.cos(la)*v0,vy:Math.sin(la)*v0,vz:Math.cos(dir)*Math.cos(la)*v0,v0,la,roll:false,sp,side:e*4.5+bend+LC.side,spinAdj:spin,shape:shid,aimDir:aim,carry:0,maxY:b.y,trees:0,lastDry:{x:b.x,z:b.z}});
   // a draw starts out to the right and curves back; a fade the other way. Start it off-line so it comes down where you aimed (the dashed line shows the bend)
   let off=0;if(bend){const L=predictLand({...mk(aim),side:bend},true),dz=L.z-b.z,dx=L.x-b.x;if(hyp(dx,dz)>5)off=Math.atan2(dx,dz)-aim}
   return mk(aim-off+e*.25)}
@@ -595,7 +596,7 @@ function stepBall(dt){const B=S.ball,H=HOLE;if(!B)return;
       else if(rel<=base&&d<.45&&B.trees<4){B.vx*=-.35;B.vz*=-.35;B.trees++;sfx.tree()}}
     if(B.treeCD>0)B.treeCD-=dt;
     const g=hAt(B.x,B.z);
-    if(B.y<=g){B.y=g;const s=surfAt(B.x,B.z);if(!B.carry){B.carry=hyp(B.x-S.shotStart.x,B.z-S.shotStart.z);B.land={x:B.x,z:B.z};if(B.aimDir!=null&&B.trees===0){const ux=Math.sin(B.aimDir),uz=Math.cos(B.aimDir),along=B.vx*ux+B.vz*uz,lat=B.vx*uz-B.vz*ux,k=.35;B.vx=ux*along+uz*lat*k;B.vz=uz*along-ux*lat*k}const vh=hyp(B.vx,B.vz)||1;if(s==='B')burst(B.x,g,B.z,'sand',16,B.vx/vh,B.vz/vh,.7);else if(s==='W')burst(B.x,g,B.z,'water',36,0,0,1);else if(s!=='G')burst(B.x,g,B.z,'dust',5,B.vx/vh,B.vz/vh,.4)}
+    if(B.y<=g){B.y=g;const s=surfAt(B.x,B.z);if(!B.carry){B.carry=hyp(B.x-S.shotStart.x,B.z-S.shotStart.z);B.land={x:B.x,z:B.z,vy:B.vy};if(B.aimDir!=null&&B.trees===0){const ux=Math.sin(B.aimDir),uz=Math.cos(B.aimDir),along=B.vx*ux+B.vz*uz,lat=B.vx*uz-B.vz*ux,k=.35;B.vx=ux*along+uz*lat*k;B.vz=uz*along-ux*lat*k}const vh=hyp(B.vx,B.vz)||1;if(s==='B')burst(B.x,g,B.z,'sand',16,B.vx/vh,B.vz/vh,.7);else if(s==='W')burst(B.x,g,B.z,'water',36,0,0,1);else if(s!=='G')burst(B.x,g,B.z,'dust',5,B.vx/vh,B.vz/vh,.4)}
       if(s==='W'){return endBall('water')}if(s==='O'){return endBall('ob')}
       const P=SURF[s],gr=fairGrad(B.x,B.z,s),nl=hyp(gr.x,1,gr.z),nx=-gr.x/nl,ny=1/nl,nz=-gr.z/nl,vn=B.vx*nx+B.vy*ny+B.vz*nz;
       let tx=B.vx-vn*nx,ty=B.vy-vn*ny,tz=B.vz-vn*nz;let slide=P.slide;if(s==='G'||s==='X')slide*=clamp(1-1.1*(B.sp-.5),.1,1.2);if(B.spinAdj>0)slide=Math.min(1,slide+.12);
@@ -788,7 +789,7 @@ function menu(){S=null;golfer.visible=false;lockerView=false;const n=cfg.names;
   <p>${esc(COURSES[cfg.course].blurb)}</p>
   <div class="row">${[['18','18 holes'],['f9','Front 9'],['b9','Back 9']].map(([k,t])=>`<button class="chip" type="button" data-holes="${k}" aria-pressed="${cfg.holes===k}">${t}</button>`).join('')}<span style="width:12px"></span>${Object.entries(DIFF).map(([k,d])=>`<button class="chip" type="button" data-diff="${k}" aria-pressed="${cfg.diff===k}">${d.n}</button>`).join('')}</div>
   <div class="modes">
-    <button class="mode" type="button" data-a="career"><b>Pro Tour career</b><small>${CAR?`Season ${CAR.season} · ${TIERS[CAR.tier]} · ${CAR.ev<EVENTS.length?'next: '+esc(EVENTS[CAR.ev].n):'season over'}`:'Start on the Amateur Circuit and climb to the Pro Tour. Six events a season, two majors.'}</small></button>
+    <button class="mode" type="button" data-a="career"><b>Pro Tour career</b><small>${CAR?`Season ${CAR.season} · ${TIERS[CAR.tier]} · ${CAR.ev<EVENTS.length?'next: '+esc(EVENTS[CAR.ev].n):'season over'}`:'Start on the Amateur Circuit and climb to the Pro Tour. Seven events a season, three majors.'}</small></button>
     <button class="mode" type="button" data-m="stroke"><b>Stroke play</b><small>${n.length>1?`${n.length} golfers take turns. Farthest from the hole plays first.`:'Play the course. Lowest score wins.'}</small></button>
     <button class="mode" type="button" data-m="tour"><b>Tournament</b><small>The St. Charles Invitational: you against a field of 11 with a live leaderboard.</small></button>
     <button class="mode" type="button" data-m="daily"><b>Daily 9</b><small>A new 9 holes every day, the same for everyone.${store.get('golf-daily',{})[today()]!=null?` Today: ${store.get('golf-daily',{})[today()]}`:''}</small></button>
@@ -1081,7 +1082,39 @@ $('ovc').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
   if(b.dataset.buy){const k=b.dataset.buy,l=CU[k]||0;if(l<3&&spendCoins(CUCOST[l])){CU[k]=l+1;store.set('golf-clubs',CU);sfx.clap(12);shop(`${CLUBUP.find(c=>c[0]===k)[1]} upgraded to level ${l+1}`)}return}
   if(b.dataset.rival!=null){cfg.rival=+b.dataset.rival;saveCfg();camInit=false;newRound('match');return}
   if(a==='shop')shop();else if(a==='stats')statsScreen();else if(a==='match')matchPick();else if(a==='d9go'){chGo=true;camInit=false;newRound('daily')}});
-window.__golf={endHoleT:()=>endHole(),get ST(){return ST},get CU(){return CU},set CU(v){CU=v},RIVALS,caddieTalk,rangeHole,applyWx,WX,say,crowd,get rainOn(){return rain.m.visible},readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
+/* ---------- tricky lies: slopes, plugged balls in the sand, thick rough ---------- */
+function lieCond(b,dir){const o={v:1,s:1,la:0,side:0,tags:[]};if(!b||b.lie==='T'||b.lie==='G'||b.lie==='X'||(S&&(S.mode==='ld'||S.mode==='pgreen')))return o;
+  const g=grad(b.x,b.z),along=g.x*Math.sin(dir)+g.z*Math.cos(dir),lat=g.x*Math.cos(dir)-g.z*Math.sin(dir);
+  const dz=(v,d)=>Math.sign(v)*Math.max(0,Math.abs(v)-d),A=dz(along,.04),Lt=dz(lat,.05);
+  if(A){o.la=clamp(A*32,-5,6);o.v=A>0?1-Math.min(A,.2)*.4:1+Math.min(-A,.2)*.12;if(Math.abs(A)>.04)o.tags.push(A>0?'Uphill lie':'Downhill lie')}
+  if(Lt){o.side=clamp(Lt*2.2,-.35,.35);if(Math.abs(Lt)>.04)o.tags.push(`Sidehill: it will curve ${o.side>0?'left':'right'}`)}
+  if(b.plug){o.v*=.62;o.s*=.3;o.la+=5;o.tags.push('Plugged in the sand')}
+  if(b.thick){o.v*=.85;o.s*=.5;o.tags.push('Thick rough')}return o}
+function lieAdvice(b){const o=lieCond(b,aim),t=[];for(const g of o.tags){if(g==='Uphill lie')t.push('Uphill lie: it flies higher and shorter, take more club.');else if(g==='Downhill lie')t.push('Downhill lie: it comes out low and runs.');else if(g.startsWith('Sidehill'))t.push(`Sidehill lie: the ball will curve ${o.side>0?'left':'right'}, aim the other way.`);else if(g==='Plugged in the sand')t.push('Plugged! It will come out short with no spin.');else if(g==='Thick rough')t.push('Thick rough: less distance and no spin.')}return t}
+{const _eb=endBall;endBall=function(why){const p=cur(),B=S&&S.ball;const r=_eb.apply(this,arguments);try{if(why==='rest'&&p&&p.ball&&B&&S&&!['ld','ctp','range','pgreen'].includes(S.mode)&&S.shotClub!==PUTTER){
+    if(p.ball.lie==='B'&&B.land&&B.land.vy<-14&&surfAt(B.land.x,B.land.z)==='B'&&Math.random()<.35){p.ball.plug=1;setTimeout(()=>note('Plugged lie','A fried egg in the bunker',1.8),1700)}
+    else if(p.ball.lie==='R'&&Math.random()<.35){p.ball.thick=1;setTimeout(()=>note('Thick rough','It will come out slow',1.6),1700)}}}catch(e){}return r}}
+{const _ct=caddieTalk;caddieTalk=function(){_ct.apply(this,arguments);try{const el=$('caddie');if(el&&!el.hidden&&S&&club!==PUTTER){const t=lieAdvice(cur().ball);if(t.length)el.textContent+=' '+t.join(' ')}}catch(e){}}}
+
+/* ---------- golf balls ---------- */
+const BALLS_=[['tour','Tour ball','Balanced distance and spin',0],['distance','Distance ball','About 3% longer off every club, less spin on wedges',150],['spin','Spin ball','Stops fast on the green, slightly shorter',150]];
+function BALLV(){if(!mine())return 1;return CU.ball==='distance'?1.025:CU.ball==='spin'?.992:1}
+function BALLS(){if(!mine())return 1;return CU.ball==='distance'?(club>=7?.9:1):CU.ball==='spin'?(club>=7?1.3:1):1}
+{const _sp=shop;shop=function(msg){_sp.apply(this,arguments);try{const own=CU.balls||['tour'],c=coinsHave(),row=$('ovc').querySelector('.row:last-of-type');const d=document.createElement('div');
+  d.innerHTML=`<h3>Golf balls</h3><div class="skills">${BALLS_.map(([k,n,ds,cost])=>{const has=own.includes(k),on=(CU.ball||'tour')===k;return`<div class="sk"><div><b>${n}${on?' · in the bag':''}</b><small>${ds}</small></div><span></span><button class="btn" type="button" data-ball="${k}"${on||(!has&&c<cost)?' disabled':''}>${on?'Using':has?'Use':`Buy · ${cost} coins`}</button></div>`}).join('')}</div>`;row.before(d)}catch(e){}}}
+$('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-ball]');if(!b)return;const k=b.dataset.ball,it=BALLS_.find(x=>x[0]===k);if(!it)return;CU.balls=CU.balls||['tour'];
+  if(!CU.balls.includes(k)){if(!spendCoins(it[3]))return;CU.balls.push(k)}CU.ball=k;store.set('golf-clubs',CU);sfx.clap(8);shop(`${it[1]} is in the bag`)});
+
+/* ---------- shot readout: like a launch monitor ---------- */
+let roT=null;
+{const _sr=shotReport;shotReport=function(why){const B=S&&S.ball,st=S&&S.shotStart,cl=S&&S.shotClub;const r=_sr.apply(this,arguments);try{if(B&&st&&cl!==PUTTER&&B.v0&&S.mode!=='pgreen'){
+    const ux=Math.sin(B.aimDir||0),uz=Math.cos(B.aimDir||0),pts=(S.lastRec&&S.lastRec.rec)||[];let lat=0;for(const q of pts){const l=(q[0]-st.x)*uz-(q[2]-st.z)*ux;if(Math.abs(l)>Math.abs(lat))lat=l}
+    const tot=hyp(B.x-st.x,B.z-st.z),carry=B.carry||tot,apex=Math.max(0,(B.maxY-st.y)*3),el=$('readout');
+    el.innerHTML=`<b>${esc(CLUBS[cl][0])}${B.shape&&B.shape!=='normal'?' · '+esc(SHAPES.find(s=>s[0]===B.shape)[1]):''}</b><span>Ball speed</span><span>${Math.round(B.v0*2.045)} mph</span><span>Launch</span><span>${(B.la*180/Math.PI).toFixed(1)}°</span><span>Carry</span><span>${Math.round(carry)} yds</span><span>Total</span><span>${Math.round(tot)} yds</span><span>Height</span><span>${Math.round(apex)} ft</span><span>Curve</span><span>${Math.abs(lat)<1?'straight':`${Math.round(Math.abs(lat))} yds ${lat>0?'left':'right'}`}</span>`;
+    el.hidden=false;clearTimeout(roT);roT=setTimeout(()=>{el.hidden=true},6000)}}catch(e){}return r}}
+{const _m=menu;menu=function(){try{$('readout').hidden=true}catch(e){}return _m.apply(this,arguments)}}
+{const _hu=hud;hud=function(){const r=_hu.apply(this,arguments);try{if(S&&S.phase==='aim'&&club!==PUTTER){const t=lieCond(cur().ball,aim).tags;if(t.length)$('hLie').textContent+=' · '+t.join(' · ')}}catch(e){}return r}}
+window.__golf={lieCond,EVENTS,endHoleT:()=>endHole(),get ST(){return ST},get CU(){return CU},set CU(v){CU=v},RIVALS,caddieTalk,rangeHole,applyWx,WX,say,crowd,get rainOn(){return rain.m.visible},readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 lin(scene);menu();requestAnimationFrame(frame);
 })();
