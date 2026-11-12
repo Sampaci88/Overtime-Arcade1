@@ -572,7 +572,7 @@ function aiDefense(){
     if(d<o.reach+1.4&&o.pokeCD<=0){
       o.pokeCD=.9+Math.random()*.6;
       let prot=1;if(c===ctrl){prot=.55;const sv=hyp(c.vx,c.vy),dd=dist(o,c)||1;if(sv>6&&((c.x-o.x)*c.vx+(c.y-o.y)*c.vy)/(sv*dd)>.3)prot*=.6}
-      if(c.dekeT<=0&&Math.random()<(o.ak==='D'?.07:.055)*prot*(!G.demo&&o.team===1?diff().poke:1)){knockLoose(c,o,'poke');return}
+      if(c.dekeT<=0&&Math.random()<(o.ak==='D'?.07:.055)*prot*(!G.demo&&o.team===1?diff().poke:1)*(window.__hkx?window.__hkx.mul(o.team):1)){knockLoose(c,o,'poke');return}
       if(Math.random()<.018){callPenalty(o,pick(['hooking','tripping','slashing','holding']));return}
     }
     const nearBoards=!inRink(c.x,c.y,9);
@@ -2864,6 +2864,68 @@ const GKM=(()=>{const HK=CELESPORT==='hockey',R=HK?7:2.8,on=()=>G.xmode==='goali
   // a save you make yourself counts toward a goalie achievement-style toast
   AFTER.push(()=>{if(G.xmode!=='goalie')return;try{const sv=G.stats&&(HK?G.stats.sog[1]-G.score[1]:G.stats.saves[0]);if(sv>0)setTimeout(()=>toast(`You made ${sv} save${sv===1?'':'s'} in net`),1400)}catch(e){}});
   return{on}})();
+/* ---------- strategy, a shootout ladder, and the outdoor game (hockey and lacrosse) ---------- */
+const HKX=(()=>{const HK=CELESPORT==='hockey',STCI=CLUBS.findIndex(c=>c.abbr==='STC'),others=CCL.map((c,i)=>i).filter(i=>i!==STCI);
+  // ---- strategy
+  const SKEY='strat-'+CELESPORT,NAMES=HK?{aggressive:'Aggressive forecheck',balanced:'Balanced',trap:'Neutral-zone trap'}:{aggressive:'Pressure and ride',balanced:'Balanced',trap:'Sag and help'};
+  const ORDER=['aggressive','balanced','trap'];let mine='balanced';try{mine=localStorage.getItem(SKEY)||'balanced'}catch(e){}if(!NAMES[mine])mine='balanced';
+  function strat(t){if(G.demo)return'balanced';if(t===0)return mine;const late=HK?G.per>=3:G.q>=4,diffSc=G.score[1]-G.score[0];if(late&&diffSc<0)return'aggressive';if(late&&diffSc>0)return'trap';return'balanced'}
+  window.__hkx={mul:t=>{const s=strat(t);return s==='aggressive'?1.3:s==='trap'?.8:1}};
+  if(HK){const _dt=defTarget;defTarget=function(p){const r=_dt.apply(this,arguments),s=strat(p.team);if(s==='balanced'||!r)return r;const t=p.team,dir=dirOf(t),c=puck.owner,z=zoneOf(t,puck.x);
+      if(s==='aggressive'){if(c&&c.team!==t&&z==='off'&&(p.ak==='C'||p.ak==='W')&&!r.press){const fw=P.filter(q=>q.active&&q.team===t&&(q.ak==='C'||q.ak==='W')&&q!==f1[t]&&q!==ctrl).sort((a,b)=>dist(a,c)-dist(b,c))[0];if(fw===p)return{x:c.x-dir*5,y:c.y+(c.y<MY?6:-6),press:true}}
+        const m=markOf(p);if(m&&!r.press)return{x:r.x+(m.x-r.x)*.3,y:r.y+(m.y-r.y)*.3};return r}
+      if(c&&c.team!==t&&z==='off'&&p.ak!=='D'){if(r.press)return{x:c.x-dir*10,y:c.y};return{x:RED-dir*10,y:MY+(p.ak==='C'?0:sideOf(p)*14)}}
+      const og=ownGX(t);return{x:r.x+(og-r.x)*.12,y:r.y+(MY-r.y)*.15}}}
+  else{const _dt=defTarget;defTarget=function(p){const r=_dt.apply(this,arguments),s=strat(p.team);if(s==='balanced'||!r)return r;const t=p.team,og=goalPt(ownGoal(t)),c=ball.owner;
+      if(s==='aggressive'){if(c&&c.team!==t&&c.role!=='G'||c&&c.team!==t&&c.role==='G'){const cg=goalPt(ownGoal(c.team)),clearing=Math.abs(c.x-cg.x)<FL/2;
+          if(clearing){const riders=P.filter(q=>q.team===t&&q.role!=='G'&&q!==ctrl).sort((a,b)=>dist(a,c)-dist(b,c)).slice(0,2);if(riders.includes(p))return{x:c.x,y:c.y}}}
+        const m=markOf(p);if(m)return{x:r.x+(m.x-r.x)*.3,y:r.y+(m.y-r.y)*.3};return r}
+      return{x:r.x+(og.x-r.x)*.25,y:r.y+(og.y-r.y)*.25}}}
+  {const b=document.createElement('button');b.type='button';b.id='stratb';const pz=$('pause');if(pz){b.className=pz.className;pz.insertAdjacentElement('afterend',b)}
+    const lab=()=>{b.textContent='Strategy: '+NAMES[mine]};lab();b.onclick=()=>{mine=ORDER[(ORDER.indexOf(mine)+1)%3];try{localStorage.setItem(SKEY,mine)}catch(e){}lab();toast(`Strategy: ${NAMES[mine]}`)};
+    setInterval(()=>{b.hidden=!!(G.demo||G.phase==='final'||(pz&&pz.hidden))},500)}
+  addEventListener('keydown',e=>{if(e.code==='KeyY'&&!e.repeat&&!G.demo&&!(e.target&&e.target.closest&&e.target.closest('input,select,textarea'))){const b=$('stratb');if(b)b.click()}});
+  // ---- the shootout ladder
+  const LKEY='soladder-'+CELESPORT;let rung=0;try{rung=+(localStorage.getItem(LKEY)||0)}catch(e){}const RUNGS=8;let LAD=null,saveDiff=null;
+  const oppOf=r=>others[r%others.length];
+  function ladderStart(){if(rung>=RUNGS)rung=0;G.fr=false;G.tourn=null;G.tvenue=null;G.daily=null;G.skills='contest';saveDiff=G.diff;G.diff=Math.min(DIFFS.length-1,Math.floor(rung/2));G.clubs=[STCI,oppOf(rung)];LAD={rung};pendOut=false;
+    startGame();setTimeout(()=>{try{endWarmup()}catch(e){}setTimeout(()=>{if(HK){startShootout();G.so.ladder=true}else laxSO()},150)},150)}
+  function ladderEnd(won){if(!LAD)return;const r=LAD.rung;LAD=null;if(saveDiff!=null){G.diff=saveDiff;saveDiff=null}G.phase='final';
+    let msg,coins;if(won){rung=r+1;coins=15+r*10;msg=rung>=RUNGS?`You beat all ${RUNGS} goalies! Ladder champion.`:`Rung ${r+1} cleared. Next: ${club(1).name==null?'':''}${CLUBS[oppOf(rung)].name}.`}else{coins=3;msg=`Stopped on rung ${r+1}. Try again.`}
+    try{localStorage.setItem(LKEY,String(Math.min(rung,RUNGS)))}catch(e){}try{coinsAdd(coins,'Shootout ladder')}catch(e){}if(won)try{roar(.8,3)}catch(e){}
+    card('Shootout ladder',`${msg} +${coins} coins.`,[{label:won&&rung<RUNGS?'Next rung':'Try again',fn:()=>{hideCard();ladderStart()}},{label:'Menu',fn:()=>{toDemo()}}]);render()}
+  if(HK){const _eg=endGame;endGame=function(){if(LAD&&G.so&&G.so.ladder){const w=G.score[0]>G.score[1];G.so.done=true;for(const p of P)p.active=true;return ladderEnd(w)}return _eg.apply(this,arguments)}}
+  // lacrosse shootout: one shooter, one goalie, best of three then sudden death
+  let LS=null;
+  function laxSO(){LS={round:1,turn:0,res:[[],[]],all:P.slice()};lsoAttempt()}
+  function lsoAttempt(){const t=LS.turn;P.length=0;for(const p of LS.all)P.push(p);const s=P.find(q=>q.team===t&&q.role==='A')||P.find(q=>q.team===t&&q.role!=='G'),g=goalieOf(1-t);P.length=0;P.push(s,g);
+    const gp=goalPt(ownGoal(1-t)),dx=Math.sign(gp.x-MX)||1;s.x=gp.x-dx*24;s.y=MY;s.vx=s.vy=0;s.stun=0;g.x=gp.x-dx*1.5;g.y=MY;g.vx=g.vy=0;g.stun=0;
+    giveBall(s,'fo');ctrl=t===0?s:null;G.phase='live';G.shot=SHOTCLK;LS.t0=GT;LS.rec=false;
+    callout(`Shootout · round ${LS.round}`,`${club(t).abbr} shooter ${s.name} #${s.num}${t===0?'. Run in and shoot':''}`,'#ffc23d')}
+  function lsoRecord(scored){if(!LS||LS.rec)return;LS.rec=true;LS.res[LS.turn].push(scored?1:0);const a=LS.res[0],b=LS.res[1],sa=a.reduce((x,y)=>x+y,0),sb=b.reduce((x,y)=>x+y,0);
+    callout(scored?'Scores!':'Stopped!',`${club(0).abbr} ${sa} · ${club(1).abbr} ${sb}`,scored?'#ffc23d':'#9fe0ff');if(scored)try{roar(.4,2)}catch(e){}
+    G.phase='lso';setTimeout(()=>{if(!LS)return;let done=false;if(a.length<=3&&b.length<=3){const ra=3-a.length,rb=3-b.length;if(sa>sb+rb||sb>sa+ra)done=true;else if(a.length===3&&b.length===3&&sa!==sb)done=true}else if(a.length===b.length&&sa!==sb)done=true;
+      if(done){P.length=0;for(const p of LS.all)P.push(p);G.score=[sa,sb];LS=null;ladderEnd(sa>sb);return}if(LS.turn===0)LS.turn=1;else{LS.turn=0;LS.round++}lsoAttempt()},1900)}
+  if(!HK){const _g=goal;goal=function(t,sh){if(LS){lsoRecord(t===LS.turn);ball.state='dead';ball.vx=ball.vy=0;return}return _g.apply(this,arguments)};
+    const _rs=resolveShot;resolveShot=function(){const r=_rs.apply(this,arguments);if(LS&&!LS.rec)lsoRecord(false);return r};
+    const _st=step;step=function(){const r=_st.apply(this,arguments);if(LS&&!LS.rec&&G.phase==='live'&&(GT-LS.t0>9||(ball.owner&&ball.owner.role==='G')))lsoRecord(false);return r};
+    const _td=toDemo;toDemo=function(){if(LS){P.length=0;for(const p of LS.all)P.push(p);LS=null}LAD=null;return _td.apply(this,arguments)}}
+  // ---- outdoor game
+  let pendOut=false;
+  {const _ng=newGame;newGame=function(demo){if(demo)G.outdoor=false;else{G.outdoor=pendOut;pendOut=false}const r=_ng.apply(this,arguments);if(G.outdoor)setTimeout(()=>{try{callout(HK?'Outdoor Classic':'Under the Lights',HK?'Snow is falling on the outdoor rink':'A night game in the stadium','#9fd3ff');say(HK?'Welcome to the Outdoor Classic! It is cold, the snow is coming down, and this place is packed.':'Welcome to a Friday night under the lights!',3)}catch(e){}},1600);return r}}
+  function outdoor(){G.fr=false;G.tourn=null;G.tvenue=null;G.daily=null;G.skills=false;G.clubs=[STCI,others[Math.floor(Math.random()*others.length)]];pendOut=true;startGame()}
+  const flakes=Array.from({length:140},()=>({x:Math.random(),y:Math.random(),s:.6+Math.random()*1.8,v:.04+Math.random()*.08,w:Math.random()*6.28}));
+  {const _d=draw;draw=function(){_d.apply(this,arguments);if(!G.outdoor||G.demo)return;try{ctx.save();ctx.setTransform(1,0,0,1,0,0);const W=ctx.canvas.width,H=ctx.canvas.height;
+    ctx.fillStyle=HK?'rgba(8,18,52,.24)':'rgba(6,14,44,.4)';ctx.fillRect(0,0,W,H);for(const x of[.12,.38,.62,.88]){const g=ctx.createRadialGradient(W*x,-H*.05,4,W*x,-H*.05,H*.55);g.addColorStop(0,'rgba(255,248,225,.32)');g.addColorStop(1,'rgba(255,248,225,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
+    if(HK){ctx.fillStyle='rgba(255,255,255,.85)';const t=performance.now()/1000;for(const f of flakes){f.y+=f.v/60;if(f.y>1.05){f.y=-.05;f.x=Math.random()}const x=(f.x+Math.sin(t+f.w)*.01)*W,y=f.y*H;ctx.beginPath();ctx.arc(x,y,f.s*(W/900),0,6.283);ctx.fill()}}
+    ctx.restore()}catch(e){}}}
+  // ---- menu box
+  const box=menuBox('hkxbox','',e=>{const b=e.target.closest('[data-hx]');if(!b)return;audio();if(b.dataset.hx==='ladder')ladderStart();else if(b.dataset.hx==='outdoor')outdoor();else if(b.dataset.hx==='reset'){rung=0;try{localStorage.setItem(LKEY,'0')}catch(_){}render()}});
+  function render(){box.innerHTML=`<h2>Special events <span>${HK?'hockey':'lacrosse'}</span></h2>
+    <div class="frnext"><span><b>Shootout ladder</b> · Beat ${RUNGS} goalies in shootouts, each one tougher than the last. ${rung>=RUNGS?'<b>Ladder champion!</b>':`Next: rung ${rung+1} vs ${esc(CLUBS[oppOf(rung)].name)}`}</span><div class="frbtns"><button class="go" type="button" data-hx="ladder">Play</button>${rung?'<button class="btn" type="button" data-hx="reset">Start over</button>':''}</div></div>
+    <div class="frnext"><span><b>${HK?'Outdoor Classic':'Under the Lights'}</b> · ${HK?'A full game on an outdoor rink at night, with snow falling':'A full night game in the stadium under the lights'}.</span><div class="frbtns"><button class="go" type="button" data-hx="outdoor">Play</button></div></div>
+    <p class="frnote">In any game, the <b>Strategy</b> button (or Y) switches between ${Object.values(NAMES).join(', ')}.</p>`}
+  render();return{strat,get LS(){return LS},get rung(){return rung},ladderStart,outdoor}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'hockey',stateFr:true,even:true,otPts:1,strength:()=>.5,sim:(a,b)=>{const d=0;return[frPois(2.9+d*4),frPois(2.9-d*4)]}};
