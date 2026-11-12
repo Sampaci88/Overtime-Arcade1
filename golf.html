@@ -481,6 +481,26 @@ function audio(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioCont
 function noise(dur,f,q,vol,type){if(!AC||!soundOn)return;const n=AC.createBufferSource(),b=AC.createBuffer(1,Math.ceil(AC.sampleRate*dur),AC.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;n.buffer=b;
   const fl=AC.createBiquadFilter();fl.type=type||'bandpass';fl.frequency.value=f;fl.Q.value=q;const g=AC.createGain(),t=AC.currentTime;g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);n.connect(fl);fl.connect(g);g.connect(AC.destination);n.start()}
 function tone(f,dur,vol,type){if(!AC||!soundOn)return;const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;o.type=type||'sine';o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(AC.destination);o.start();o.stop(t+dur)}
+/* the strike: a crisp click, a solid body, the club's own ring, and the ball zipping away. Pure contact sounds pure; mishits sound dull */
+function strike(pw,q,cl,lie){if(!AC||!soundOn)return;const t0=AC.currentTime,out=AC.createGain(),pure=q==='Pure!'||q==='Perfect',bad=!pure&&q!=='Slight pull'&&q!=='Slight push',wood=cl<=2,wedge=cl>=9,v=Math.min(1.1,.55+.5*pw)*(bad?.8:1);
+  out.gain.value=3.4;const comp=AC.createDynamicsCompressor();comp.threshold.value=-9;comp.ratio.value=5;comp.attack.value=.001;comp.release.value=.12;out.connect(comp);comp.connect(AC.destination);
+  const nbuf=d=>{const b=AC.createBuffer(1,Math.ceil(AC.sampleRate*d),AC.sampleRate),x=b.getChannelData(0);for(let i=0;i<x.length;i++)x[i]=Math.random()*2-1;return b};
+  const env=(node,peak,att,dec,at)=>{const g=AC.createGain();g.gain.setValueAtTime(.0001,t0+(at||0));g.gain.exponentialRampToValueAtTime(peak,t0+(at||0)+att);g.gain.exponentialRampToValueAtTime(.0001,t0+(at||0)+att+dec);node.connect(g);g.connect(out);return g};
+  // 1. the click: the face meeting the ball
+  {const n=AC.createBufferSource();n.buffer=nbuf(.03);const f=AC.createBiquadFilter();f.type='highpass';f.frequency.value=bad?1800:wood?3200:4200;n.connect(f);env(f,(bad?.25:.55)*v,.001,bad?.03:.018);n.start(t0)}
+  // 2. the body: a quick pitch drop that gives it weight
+  {const o=AC.createOscillator();o.type='triangle';const f0=wood?240:wedge?520:400;o.frequency.setValueAtTime(f0*(bad?.85:1),t0);o.frequency.exponentialRampToValueAtTime(f0*.45,t0+.07);env(o,(bad?.5:.42)*v,.002,bad?.14:.09);o.start(t0);o.stop(t0+.25)}
+  // 3. the club's character: a hollow ping for the woods, a bright ring for the irons
+  if(!bad){if(wood){const n=AC.createBufferSource();n.buffer=nbuf(.2);const f=AC.createBiquadFilter();f.type='bandpass';f.frequency.value=1650+pw*250;f.Q.value=9;n.connect(f);env(f,.5*v,.002,.13);n.start(t0);
+      const o=AC.createOscillator();o.type='sine';o.frequency.value=1180;env(o,.08*v,.002,.12);o.start(t0);o.stop(t0+.2)}
+    else for(const[fr,a,d]of[[2350,.07,.16],[3480,.045,.12],[5200,.025,.08]]){const o=AC.createOscillator();o.type='sine';o.frequency.value=fr*(wedge?1.12:1);env(o,a*v*(pure?1.25:1),.001,d*(pure?1.3:1));o.start(t0);o.stop(t0+.3)}}
+  else{const n=AC.createBufferSource();n.buffer=nbuf(.15);const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=700;n.connect(f);env(f,.35*v,.003,.12);n.start(t0)}
+  // 4. the ball zipping away (a pure strike sings)
+  {const n=AC.createBufferSource();n.buffer=nbuf(.8);const f=AC.createBiquadFilter();f.type='bandpass';f.Q.value=pure?6:2.5;f.frequency.setValueAtTime(pure?3600:2400,t0+.03);f.frequency.exponentialRampToValueAtTime(pure?900:700,t0+.6);n.connect(f);env(f,(pure?.16:.07)*v,.04,.55,.02);n.start(t0+.02)}
+  if(lie==='B'||lie==='R'){const n=AC.createBufferSource();n.buffer=nbuf(.35);const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=lie==='B'?1400:900;n.connect(f);env(f,.22*v,.005,.28);n.start(t0)}}
+function puttTock(pw){if(!AC||!soundOn)return;const t0=AC.currentTime,o=AC.createOscillator(),g=AC.createGain(),n=AC.createBufferSource(),b=AC.createBuffer(1,Math.ceil(AC.sampleRate*.02),AC.sampleRate),x=b.getChannelData(0),f=AC.createBiquadFilter(),g2=AC.createGain(),v=.35+.4*Math.min(1,pw);
+  for(let i=0;i<x.length;i++)x[i]=Math.random()*2-1;o.type='sine';o.frequency.setValueAtTime(980,t0);o.frequency.exponentialRampToValueAtTime(720,t0+.05);g.gain.setValueAtTime(.0001,t0);g.gain.exponentialRampToValueAtTime(.55*v,t0+.002);g.gain.exponentialRampToValueAtTime(.0001,t0+.09);o.connect(g);g.connect(AC.destination);o.start(t0);o.stop(t0+.12);
+  n.buffer=b;f.type='highpass';f.frequency.value=3500;g2.gain.setValueAtTime(.2*v,t0);g2.gain.exponentialRampToValueAtTime(.0001,t0+.02);n.connect(f);f.connect(g2);g2.connect(AC.destination);n.start(t0)}
 const sfx={hit(p){noise(.09,2600,1.2,.5*p+.2);tone(180,.08,.25,'triangle')},putt(){tone(520,.06,.25,'triangle');noise(.04,3000,2,.15)},whoosh(){noise(.25,900,.7,.2,'lowpass')},
   cup(){[0,90,170].forEach((d,k)=>setTimeout(()=>{tone(900-k*120,.06,.3,'square');noise(.05,4000,3,.15)},d))},splash(){noise(.7,600,.6,.45,'lowpass')},tree(){noise(.25,1800,.5,.3);tone(140,.1,.2,'triangle')},
   clap(n){if(!AC||!soundOn)return;for(let i=0;i<(n||20);i++)setTimeout(()=>noise(.05,1400+Math.random()*1200,1.5,.08+Math.random()*.06),Math.random()*1600)},sand(){noise(.3,900,.8,.35)}};
@@ -548,7 +568,7 @@ function setupShot(){const p=cur(),b=p.ball;b.y=hAt(b.x,b.z);b.lie=b.lie||surfAt
   // aim: at the pin when it's reachable, otherwise down the middle
   const reach=club===PUTTER?1e9:CLUBS[club][1]*lieF(b.lie,club)*CM();let tx=HOLE.pin.x,tz=HOLE.pin.z;
   if(club!==PUTTER&&d>reach+12){const n=near(HOLE,b.x,b.z),q=ptAt(HOLE.CL,HOLE.acc,Math.min(HOLE.gEnd,n.s+reach));tx=q.x;tz=q.z}
-  plantGrass(b.x,b.z);aim=Math.atan2(tx-b.x,tz-b.z);S.read=null;if(club===PUTTER&&HOLE.par!==0){S.read=readPutt(b);if(S.diff==='am'){const pa=Math.atan2(HOLE.pin.x-b.x,HOLE.pin.z-b.z),brk=Math.atan2(Math.sin(S.read.aim-pa),Math.cos(S.read.aim-pa));aim=S.read.aim+brk*(Math.random()-.5)*.5*(1-.1*SK('putt'))+(Math.random()-.5)*.012}}poseGolfer(b,aim,club,p);golfer.visible=true;hud();showOthers()}
+  plantGrass(b.x,b.z);aim=Math.atan2(tx-b.x,tz-b.z);S.read=null;if(club===PUTTER&&HOLE.par!==0){S.read=readPutt(b);if(S.diff==='am'){const pa=Math.atan2(HOLE.pin.x-b.x,HOLE.pin.z-b.z),brk=Math.atan2(Math.sin(S.read.aim-pa),Math.cos(S.read.aim-pa));aim=S.read.aim+brk*(Math.random()-.5)*.8*(1-.1*SK('putt'))+(Math.random()-.5)*.02}}poseGolfer(b,aim,club,p);golfer.visible=true;hud();showOthers()}
 function lieF(lie,cl){const s=SURF[lie]||SURF.R;let pw=lie==='B'&&(cl===11||cl===12)?.82:(s.pw||1);if(pw<1)pw=1-(1-pw)*(1-.14*SK('rec'));return pw}
 const CM=k=>(1+.025*SK('pow'))*CBO(k==null?club:k);
 function playsLike(b){return pinDist(b)+(hAt(HOLE.pin.x,HOLE.pin.z)-b.y)*1}
@@ -573,19 +593,19 @@ function launchBall(pw,e){const p=cur(),b=p.ball,SH=SHAPES[shape],shid=SH[0];
   let off=0;if(bend){const L=predictLand({...mk(aim),side:bend},true),dz=L.z-b.z,dx=L.x-b.x;if(hyp(dx,dz)>5)off=Math.atan2(dx,dz)-aim}
   return mk(aim-off+e*.25)}
 function fire(pw,acc){const p=cur(),b=p.ball,D=DIFF[S.diff],putt=club===PUTTER,snap=D.snap+.006*SK('acc')+CSNAP();let e;
-  if(putt&&acc==null){const PE={am:.012,pro:.02,tour:.03}[S.diff]*(1-.15*SK('putt'))*CPUTT();e=(Math.random()-.5)*2*PE}
+  if(putt&&acc==null){const PE={am:.026,pro:.028,tour:.036}[S.diff]*(1-.15*SK('putt'))*CPUTT();e=(Math.random()-.5)*2*PE}
   else{e=-acc;if(Math.abs(e)<snap)e=0;else e=e-Math.sign(e)*snap;e*=1-.07*SK('acc');if(club>=9&&club<=12)e*=1-.1*SK('short');if(putt)e*=1-.1*SK('putt');if(pw>1)e*=1+(pw-1)*6}
   S.rec=[];S.recT=0;p.strokes++;p.prev={x:b.x,z:b.z,lie:b.lie};p.lastLie=b.lie;S.shotStart={x:b.x,z:b.z,y:b.y};S.shotClub=club;swTop=Math.min(-.15,swK);follow=putt?.75:.7;
   if(putt){const v0=Math.sqrt(2*SURF.G.mu*GRAV*puttScale(b)*pw)*(b.lie==='X'?1.12:1),dir=aim+e;
-    S.ball={x:b.x,y:b.y,z:b.z,vx:Math.sin(dir)*v0,vy:0,vz:Math.cos(dir)*v0,roll:true,sp:0,side:0,carry:0,maxY:b.y,trees:0};S.phase='roll';sfx.putt();return}
+    S.ball={x:b.x,y:b.y,z:b.z,vx:Math.sin(dir)*v0,vy:0,vz:Math.cos(dir)*v0,roll:true,sp:0,side:0,carry:0,maxY:b.y,trees:0};S.phase='roll';puttTock(pw);return}
   if(SHAPES[shape][0]==='flop')e*=1.3;
-  {const a=Math.abs(acc),lab=pw>1.03?['Overswing!','#ff8a7a']:a<snap*.4?['Pure!','#3ddc84']:a<snap?['Perfect','#3ddc84']:e>.025?['Hooked it','#ff8a7a']:e>0?['Slight pull','#ffd27a']:e<-.025?['Sliced it','#ff8a7a']:['Slight push','#ffd27a'];note(lab[0],'',1.2,lab[1])}
+  {const a=Math.abs(acc),lab=pw>1.03?['Overswing!','#ff8a7a']:a<snap*.4?['Pure!','#3ddc84']:a<snap?['Perfect','#3ddc84']:e>.025?['Hooked it','#ff8a7a']:e>0?['Slight pull','#ffd27a']:e<-.025?['Sliced it','#ff8a7a']:['Slight push','#ffd27a'];note(lab[0],'',1.2,lab[1]);S.hitQ=lab[0]}
   {const dx=Math.sin(aim),dz=Math.cos(aim);if(b.lie==='B')burst(b.x,b.y,b.z,'sand',34,dx,dz,1.2);else if(b.lie==='T')burst(b.x,b.y,b.z,'tee',8,dx,dz,.6);else if(club>=3)burst(b.x,b.y,b.z,'divot',14,dx,dz,.9);else burst(b.x,b.y,b.z,'dust',6,dx,dz,.5)}
   S.ball=launchBall(pw,e);
-  S.phase='flight';S.flightT=0;S.landMark=null;S.tvCut=false;S.ball.pred=predictLand(S.ball);trailReset();sfx.hit(pw);if(b.lie==='B')sfx.sand();if(p.firstShot&&HOLE.par>3)S.drive={x:b.x,z:b.z};p.firstShot=false}
+  S.phase='flight';S.flightT=0;S.landMark=null;S.tvCut=false;S.ball.pred=predictLand(S.ball);trailReset();strike(pw,S.hitQ,club,b.lie);if(p.firstShot&&HOLE.par>3)S.drive={x:b.x,z:b.z};p.firstShot=false}
 // putting: how far it really plays once the slope is counted
 function simPutt(b,ang,pw){const v0=Math.sqrt(2*SURF.G.mu*GRAV*puttScale(b)*pw)*(b.lie==='X'?1.12:1),px=HOLE.pin.x,pz=HOLE.pin.z,dt=1/90;let x=b.x,z=b.z,vx=Math.sin(ang)*v0,vz=Math.cos(ang)*v0,best=1e9;
-  for(let i=0;i<1400;i++){const gr=grad(x,z),v=hyp(vx,vz);if(v<.04)break;const mu=ndG(HOLE.G,x,z)<1?SURF.G.mu:SURF.X.mu;vx+=(-5/7*GRAV*gr.x-mu*GRAV*vx/v)*dt;vz+=(-5/7*GRAV*gr.z-mu*GRAV*vz/v)*dt;x+=vx*dt;z+=vz*dt;const d=hyp(x-px,z-pz);if(d<best){best=d;if(d<.075&&hyp(vx,vz)<1.95)return{hole:true,d:0}}}return{hole:false,d:best}}
+  for(let i=0;i<1400;i++){const gr=grad(x,z),v=hyp(vx,vz);if(v<.04)break;const mu=ndG(HOLE.G,x,z)<1?SURF.G.mu:SURF.X.mu;vx+=(-5/7*GRAV*gr.x-mu*GRAV*vx/v)*dt;vz+=(-5/7*GRAV*gr.z-mu*GRAV*vz/v)*dt;x+=vx*dt;z+=vz*dt;const d=hyp(x-px,z-pz);if(d<best){best=d;if(hyp(vx,vz)<1.6&&d<.062*(1-.55*Math.min(1,hyp(vx,vz)/1.6)**2))return{hole:true,d:0}}}return{hole:false,d:best}}
 // the read: which line drops it at the right pace
 function readPutt(b){const base=Math.atan2(HOLE.pin.x-b.x,HOLE.pin.z-b.z),pw=Math.min(1,(puttEff(b)+.35)/puttScale(b));let best=base,bd=1e9;
   const tryA=o=>{const r=simPutt(b,base+o,pw),s=r.hole?-1+Math.abs(o):r.d;if(s<bd){bd=s;best=base+o}};for(let o=-.3;o<=.3001;o+=.02)tryA(o);const c=best-base;for(let o=c-.02;o<=c+.02;o+=.002)tryA(o);return{aim:best,off:best-base,d:pinDist(b)}}
@@ -629,9 +649,9 @@ function stepBall(dt){const B=S.ball,H=HOLE;if(!B)return;
   B.x+=B.vx*dt;B.z+=B.vz*dt;B.y=hAt(B.x,B.z);
   // the cup
   const px=H.pin.x,pz=H.pin.z,dx=B.x-ox,dz=B.z-oz,L2=dx*dx+dz*dz,t=L2>0?clamp(((px-ox)*dx+(pz-oz)*dz)/L2,0,1):0,cd=hyp(ox+dx*t-px,oz+dz*t-pz),sp=hyp(B.vx,B.vz);
-  if(cd<.078){if(sp<1.95){B.x=px;B.z=pz;return endBall('holed')}else if(cd<.06&&sp<3.4&&!B.lipped){B.lipped=1;const a=(Math.random()<.5?-1:1)*(.5+Math.random()*.5),c=Math.cos(a),sn=Math.sin(a);const vx=B.vx*c-B.vz*sn,vz=B.vx*sn+B.vz*c;B.vx=vx*.6;B.vz=vz*.6;note('','Lipped out!',1.2)}}
+  if(cd<.064*(1-.55*Math.min(1,sp/1.6)**2)){if(sp<1.6){B.x=px;B.z=pz;return endBall('holed')}else if(cd<.06&&sp<3.4&&!B.lipped){B.lipped=1;const a=(Math.random()<.5?-1:1)*(.5+Math.random()*.5),c=Math.cos(a),sn=Math.sin(a);const vx=B.vx*c-B.vz*sn,vz=B.vx*sn+B.vz*c;B.vx=vx*.6;B.vz=vz*.6;note('','Lipped out!',1.2)}}
   if(hyp(B.vx,B.vz)<.035&&hyp(gr.x,gr.z)*5/7<P.mu*1.3){endBall('rest')}}
-function endBall(why){const B=S.ball,p=cur();if(why==='rest'&&S.mode!=='ld'&&S.mode!=='ctp'&&B&&surfAt(B.x,B.z)==='G'&&hyp(B.x-HOLE.pin.x,B.z-HOLE.pin.z)<({am:.42,pro:.32,tour:.24}[S.diff]||.32)){p.strokes++;why='holed';B.x=HOLE.pin.x;B.z=HOLE.pin.z;S.tapIn=true;setTimeout(()=>note('','Tap-in (counts a stroke)',1.6),2700)}S.phase='rest';S.t=0;S.why=why;S.result=null;if(S.rec&&S.rec.length>4){S.rec.push([B.x,B.y,B.z,S.recT+.05]);S.lastRec={rec:S.rec,why,club:S.shotClub,start:S.shotStart}}
+function endBall(why){const B=S.ball,p=cur();if(why==='rest'&&S.mode!=='ld'&&S.mode!=='ctp'&&B&&surfAt(B.x,B.z)==='G'&&hyp(B.x-HOLE.pin.x,B.z-HOLE.pin.z)<({am:.3,pro:.26,tour:.2}[S.diff]||.26)){p.strokes++;why='holed';B.x=HOLE.pin.x;B.z=HOLE.pin.z;S.tapIn=true;setTimeout(()=>note('','Tap-in (counts a stroke)',1.6),2700)}S.phase='rest';S.t=0;S.why=why;S.result=null;if(S.rec&&S.rec.length>4){S.rec.push([B.x,B.y,B.z,S.recT+.05]);S.lastRec={rec:S.rec,why,club:S.shotClub,start:S.shotStart}}
   if(why==='holed'){p.holed=true;p.ball={x:HOLE.pin.x,z:HOLE.pin.z,y:hAt(HOLE.pin.x,HOLE.pin.z),lie:'G'};sfx.cup();setTimeout(()=>sfx.clap(28),250)}
   else if(why==='water'){p.strokes++;sfx.splash();const d=B.lastDry||p.prev;let x=d.x,z=d.z;const dx=x-(S.shotStart.x),dz=z-(S.shotStart.z),l=hyp(dx,dz)||1;for(let k=0;k<30&&(surfAt(x,z)==='W'||surfAt(x,z)==='O');k++){x-=dx/l*1.5;z-=dz/l*1.5}p.ball={x,z,y:hAt(x,z),lie:surfAt(x,z)};note('In the water','Penalty stroke. Drop where it went in.',2.2)}
   else if(why==='ob'){p.strokes++;p.ball={x:p.prev.x,z:p.prev.z,y:hAt(p.prev.x,p.prev.z),lie:p.prev.lie};note('Out of bounds','Stroke and distance: play it again.',2.2)}
@@ -866,7 +886,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-(las
     else $('hLand').textContent='';
     readMesh&&(readMesh.visible=false);
     const putting=club===PUTTER&&(aiming||S.phase==='roll'||S.phase==='rest')&&p&&p.ball&&pinDist(p.ball)<45;
-    if(puttLine){if(aiming&&club===PUTTER&&(!meter||meter.st===1))puttPreview();else{puttLine.geometry.setDrawRange(0,0);ppKey='';if(stopRing)stopRing.visible=false}}
+    if(puttLine){if(aiming&&club===PUTTER&&!meter)puttPreview();else{puttLine.geometry.setDrawRange(0,0);ppKey='';if(stopRing)stopRing.visible=false}}
     if(pinGroup){pinGroup.children[0].visible=pinGroup.children[1].visible=!putting}if(cupGlow){cupGlow.visible=putting;const s=1+.18*Math.sin(now/260);cupGlow.scale.set(s,s,s)}
     if(flowPts){flowPts.visible=aiming&&club===PUTTER;if(flowPts.visible){const G=HOLE.G,R=Math.max(G.rx,G.rz),a=flowPts.geometry.attributes.position.array,D=flowPts.userData.d;for(let k=0;k<D.length;k++){const o=D[k];o.l-=dt;if(o.l<=0||ndG(G,o.x,o.z)>1){for(let tr=0;tr<8;tr++){o.x=G.x+(Math.random()*2-1)*R;o.z=G.z+(Math.random()*2-1)*R;if(ndG(G,o.x,o.z)<.97)break}o.l=1+Math.random()*2.2}const gr=grad(o.x,o.z);o.x-=gr.x*55*dt;o.z-=gr.z*55*dt;a[k*3]=o.x;a[k*3+1]=hAt(o.x,o.z)+.03;a[k*3+2]=o.z}flowPts.geometry.attributes.position.needsUpdate=true}}
     
@@ -883,7 +903,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-(las
   renderer.render(scene,cam)}
 let ppKey='';function puttPreview(){const p=cur(),b=p.ball,pw=meter&&meter.st===1?clamp(meter.m,.02,1):clamp((puttEff(b)+.35)/puttScale(b),0,1),key=aim.toFixed(4)+'|'+pw.toFixed(3)+'|'+b.x+b.z;if(key===ppKey)return;ppKey=key;
   const v0=Math.sqrt(2*SURF.G.mu*GRAV*puttScale(b)*pw)*(b.lie==='X'?1.12:1),px=HOLE.pin.x,pz=HOLE.pin.z;let x=b.x,z=b.z,vx=Math.sin(aim)*v0,vz=Math.cos(aim)*v0,holed=false;const arr=puttLine.geometry.attributes.position.array;let n=0;
-  for(let i=0;i<1600&&n<299;i++){const dt=1/120,gr=grad(x,z),v=hyp(vx,vz);if(v<.035)break;const s=surfAt(x,z),mu=(SURF[s]||SURF.G).mu;vx+=(-5/7*GRAV*gr.x-mu*GRAV*vx/v)*dt;vz+=(-5/7*GRAV*gr.z-mu*GRAV*vz/v)*dt;x+=vx*dt;z+=vz*dt;if(hyp(x-px,z-pz)<.078&&hyp(vx,vz)<1.95){holed=true;x=px;z=pz}if(i%3===0||holed){arr[n*3]=x;arr[n*3+1]=hAt(x,z)+.04;arr[n*3+2]=z;n++}if(holed)break}
+  for(let i=0;i<1600&&n<299;i++){const dt=1/120,gr=grad(x,z),v=hyp(vx,vz);if(v<.035)break;const s=surfAt(x,z),mu=(SURF[s]||SURF.G).mu;vx+=(-5/7*GRAV*gr.x-mu*GRAV*vx/v)*dt;vz+=(-5/7*GRAV*gr.z-mu*GRAV*vz/v)*dt;x+=vx*dt;z+=vz*dt;if(hyp(vx,vz)<1.6&&hyp(x-px,z-pz)<.064*(1-.55*Math.min(1,hyp(vx,vz)/1.6)**2)){holed=true;x=px;z=pz}if(i%3===0||holed){arr[n*3]=x;arr[n*3+1]=hAt(x,z)+.04;arr[n*3+2]=z;n++}if(holed)break}
   const show=S.diff==='am'?.62+.06*SK('putt'):S.diff==='pro'?.32+.08*SK('putt'):SK('putt')>=3?.1*(SK('putt')-2):0;puttLine.geometry.setDrawRange(0,Math.round(n*Math.min(1,show)));puttLine.geometry.attributes.position.needsUpdate=true;puttLine.material.color.set(holed&&S.diff==='am'?0x3ddc84:0xffc23d).convertSRGBToLinear();
   if(stopRing){stopRing.visible=S.diff==='am';stopRing.position.set(x,hAt(x,z)+.03,z);stopRing.material.color.set(holed&&S.diff==='am'?0x3ddc84:0xffc23d).convertSRGBToLinear()}}
 let CAMK=1;function resize(){const r=stage.getBoundingClientRect();renderer.setSize(Math.max(200,r.width),Math.max(150,r.height),false);cam.aspect=Math.max(.4,r.width/Math.max(1,r.height));cam.fov=cam.aspect<1?70:55;CAMK=cam.aspect<1?1.6:1;cam.updateProjectionMatrix()}
