@@ -904,7 +904,7 @@ function cpuOffCall(){
   let pRun=dn===1?.5:tg<=3?.6:tg>=8?.15:.38;
   if(G.ballOn>=97)pRun=.6;
   if(Math.random()<pRun)return pick(OPLAYS.filter(p=>p.type==='run'));
-  const pass=OPLAYS.filter(p=>p.type==='pass');
+  const pass=OPLAYS.filter(p=>p.type==='pass'&&!p.custom);
   if(tg>=12)return pick(pass.filter(p=>['verts','pa','smash','mesh'].includes(p.id)));
   if(tg<=5)return pick(pass.filter(p=>['slants','mesh','screen','smash'].includes(p.id)));
   return pick(pass);
@@ -1283,7 +1283,7 @@ function renderPanel(){
       if(fgOption()){const d=fgDist();h+=playBtn('o','fg',`Field goal`,`${d} yards · about ${Math.round(fgProb(d)*100)}%`,'kick')}
       h+=`</div>`}
     h+=`<h4>Run</h4><div class="plays">${OPLAYS.filter(p=>p.type==='run').map(p=>playBtn('o',p.id,p.name,p.desc)).join('')}</div>`;
-    h+=`<h4>Pass</h4><div class="plays">${OPLAYS.filter(p=>p.type==='pass').map(p=>playBtn('o',p.id,p.name,p.desc)).join('')}</div>`;
+    h+=`<h4>Pass</h4><div class="plays">${OPLAYS.filter(p=>p.type==='pass'&&!p.custom).map(p=>playBtn('o',p.id,p.name,p.desc)).join('')}</div>`;
   }else if(G.phase==='call'){
     h=`<h3>Defense · ${esc(ddText())}</h3><p>${esc(club(1).name)} have the ball at the ${esc(spotText())}.</p><div class="plays">${DPLAYS.map(p=>playBtn('d',p.id,p.name,p.desc)).join('')}</div>`;
   }else if(G.phase==='presnap'&&G.poss===0){
@@ -2349,7 +2349,7 @@ const TWO=(()=>{const KEY='two-player';let en=false;try{en=localStorage.getItem(
     if(!G.dCall){h=`<h3>${who(d)}: call your defense</h3><p>${esc(ddText())} · ${esc(spotText())}. ${esc(club(o).name)} have the ball. Player ${o+1}, look away!</p><div class="plays">${DPLAYS.map(p=>playBtn('d',p.id,p.name,p.desc)).join('')}</div>`}
     else{h=`<h3>${who(o)}: call your play</h3><p>${esc(ddText())} · ${esc(spotText())}. Defense is set. Player ${d+1}, look away!</p>`;
       if(G.down===4||fgOption()){h+=`<h4>Special teams</h4><div class="plays">`;if(G.down===4&&G.q!==5)h+=playBtn('o','punt','Punt','About 40 net yards','kick');if(fgOption()){const fd=fgDist();h+=playBtn('o','fg','Field goal',`${fd} yards · about ${Math.round(fgProb(fd)*100)}%`,'kick')}h+=`</div>`}
-      h+=`<h4>Run</h4><div class="plays">${OPLAYS.filter(p=>p.type==='run').map(p=>playBtn('o',p.id,p.name,p.desc)).join('')}</div><h4>Pass</h4><div class="plays">${OPLAYS.filter(p=>p.type==='pass').map(p=>playBtn('o',p.id,p.name,p.desc)).join('')}</div>`}
+      h+=`<h4>Run</h4><div class="plays">${OPLAYS.filter(p=>p.type==='run').map(p=>playBtn('o',p.id,p.name,p.desc)).join('')}</div><h4>Pass</h4><div class="plays">${OPLAYS.filter(p=>p.type==='pass'&&!p.custom).map(p=>playBtn('o',p.id,p.name,p.desc)).join('')}</div>`}
     el.innerHTML=h};
   const _rs=drawRoutesScene;drawRoutesScene=function(){_rs.apply(this,arguments);if(!on()||!ctrl2||!P.includes(ctrl2))return;try{if(ctrl2!==carrier())groundRing(ctrl2.x,ctrl2.y,1.2,'#4ea1ff');if(G.phase==='live'&&pocket()){const rs=rcvs();if(rs.length)groundRing(rs[tgt%rs.length].x,rs[tgt%rs.length].y,1.5,'#4ea1ff',[2,2])}}catch(e){}};
   const _dt=drawTags;drawTags=function(){_dt.apply(this,arguments);if(!on()||!ctrl2||!P.includes(ctrl2)||G.phase==='replay')return;const q=toScr(PE(ctrl2,2.9)),s=`P2 #${ctrl2.num} ${ctrl2.name.toUpperCase()}`;ctx.font='600 15px Teko, "Arial Narrow", sans-serif';const w=ctx.measureText(s).width+10;ctx.fillStyle='rgba(8,12,10,.82)';ctx.fillRect(q.x-w/2,q.y-17,w,16);ctx.fillStyle='#4ea1ff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(s,q.x,q.y-8)};
@@ -3025,6 +3025,71 @@ const PMODE=(()=>{const MODES=[['all','Every snap','play the whole game'],['off'
     b.onclick=()=>{if(G.demo||G.phase==='final')return;G.simRest=true;toast('Simulating the rest of the game…');if(G.phase==='call'||G.phase==='presnap')startCall()};
     setInterval(()=>{b.hidden=G.demo||G.phase==='final'||$('pause').hidden},500)}
   return{mode,yours}})();
+/* ---------- playbook: design your own pass plays, audibles and hot routes, clock tools ---------- */
+const PB=(()=>{const RNAME={go:'Go',slant:'Slant',out5:'Quick out',in:'Dig',post:'Post',corner:'Corner',curl:'Curl',hitch:'Hitch',seam:'Seam',drag:'Drag',flat:'Flat',screen:'Screen',block:'Block',check:'Check-down'};
+  const WR=['go','slant','out5','in','post','corner','curl','hitch','seam','drag','flat'],RBR=['check','flat','drag','screen','block','slant','go'],TER=['seam','drag','curl','flat','out5','corner','block'];
+  const DROPS={quick:[.45,.55,'Quick'],normal:[.7,1,'Normal'],deep:[.9,1.5,'Deep']};
+  let mine=[];try{mine=JSON.parse(localStorage.getItem('fb-myplays')||'[]')}catch(e){}
+  function toPlay(s,i){const d=DROPS[s.drop]||DROPS.normal,routes={X:s.r.X,SL:s.r.SL,Z:s.r.Z,TE:s.r.TE,RB:s.pa?'fake':s.r.RB},reads=['X','SL','Z','TE','RB'].filter(k=>routes[k]&&!['block','fake'].includes(routes[k])).sort((a,b)=>(ROUTES[routes[b]]?ROUTES[routes[b]].pts[1][1]:0)-(ROUTES[routes[a]]?ROUTES[routes[a]].pts[1][1]:0));
+    return{id:'my'+i,name:s.n,type:'pass',custom:true,pa:!!s.pa,dropT:s.pa?1.2:d[0],readT:s.pa?1.7:d[1],routes,reads,desc:`Your play · ${s.pa?'play action':d[2]+' drop'}`}}
+  function sync(){for(let k=OPLAYS.length-1;k>=0;k--)if(OPLAYS[k].custom)OPLAYS.splice(k,1);mine.forEach((s,i)=>OPLAYS.push(toPlay(s,i)));try{localStorage.setItem('fb-myplays',JSON.stringify(mine))}catch(e){}}
+  sync();
+  // the editor
+  const css=document.createElement('style');css.textContent=`#pbm{position:fixed;inset:0;z-index:60;background:rgba(4,8,12,.82);display:grid;place-items:center;padding:12px}#pbm[hidden]{display:none}#pbm .box{background:#11181d;border:1px solid #2a353c;border-radius:14px;padding:16px;max-width:760px;width:100%;max-height:94vh;overflow:auto;color:#e9eef2;font:15px system-ui,sans-serif}
+  #pbm h3{margin:0 0 8px}#pbm .grid{display:grid;grid-template-columns:360px 1fr;gap:14px}#pbm canvas{width:100%;max-width:360px;border-radius:10px;background:#2d6a2f}#pbm label{display:grid;gap:3px;font-size:13px;color:#9fb0ba;margin-bottom:6px}#pbm select,#pbm input[type=text]{background:#0b0f11;color:#fff;border:1px solid #2a353c;border-radius:8px;padding:7px;font:14px system-ui}
+  #pbm .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}#pbm button{min-height:38px;padding:0 14px;border-radius:9px;border:1px solid #2a353c;background:#1b252b;color:#fff;font:700 14px system-ui;cursor:pointer}#pbm button.p{background:#ffd23f;color:#1a1405;border-color:#ffd23f}#pbm .list div{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid #222c32}
+  @media (max-width:720px){#pbm .grid{grid-template-columns:1fr}}`;document.head.appendChild(css);
+  const M=document.createElement('div');M.id='pbm';M.hidden=true;document.body.appendChild(M);let ed=null,edIdx=-1;
+  const blank=()=>({n:'My play '+(mine.length+1),drop:'normal',pa:false,r:{X:'post',SL:'drag',Z:'curl',TE:'seam',RB:'check'}});
+  const sel=(k,opts)=>`<label>${{X:'X (left receiver)',SL:'Slot',Z:'Z (right receiver)',TE:'Tight end',RB:'Running back'}[k]}<select data-r="${k}">${opts.map(o=>`<option value="${o}"${ed.r[k]===o?' selected':''}>${RNAME[o]}</option>`).join('')}</select></label>`;
+  function draw(){const cv=M.querySelector('canvas');if(!cv)return;const x=cv.getContext('2d'),W=cv.width,H=cv.height,s=W/40,cx=W/2,los=H-70;x.fillStyle='#2d6a2f';x.fillRect(0,0,W,H);x.strokeStyle='rgba(255,255,255,.25)';x.lineWidth=1;for(let y=los;y>0;y-=5*s){x.beginPath();x.moveTo(0,y);x.lineTo(W,y);x.stroke()}
+    x.strokeStyle='#5fa8ff';x.lineWidth=2;x.beginPath();x.moveTo(0,los);x.lineTo(W,los);x.stroke();
+    const pos={X:[-15.5,-.6],SL:[-8.5,-1.4],Z:[15.5,-.6],TE:[3.9,-1],RB:[0,-7.2]},px=(ix,iy)=>[cx+ix*s,los-iy*s];
+    for(const o of[-2.6,-1.3,0,1.3,2.6]){const[a,b]=px(o,-.7);x.fillStyle='#ddd';x.fillRect(a-4,b-4,8,8)}{const[a,b]=px(0,-5);x.fillStyle='#fff';x.beginPath();x.arc(a,b,5,0,6.283);x.fill()}
+    for(const k of Object.keys(pos)){const[ox,oy]=pos[k],rt=ed.pa&&k==='RB'?'fake':ed.r[k],[a,b]=px(ox,oy);x.fillStyle='#ffd23f';x.beginPath();x.arc(a,b,6,0,6.283);x.fill();x.fillStyle='#000';x.font='bold 9px system-ui';x.fillText(k,a-6,b+3);
+      const R=ROUTES[rt];x.strokeStyle='#ffd23f';x.lineWidth=2.5;if(rt==='block'||rt==='fake'){x.beginPath();x.moveTo(a,b);x.lineTo(a,b-10);x.stroke();x.beginPath();x.moveTo(a-6,b-10);x.lineTo(a+6,b-10);x.stroke();continue}
+      if(rt==='check'){x.setLineDash([4,3]);x.beginPath();x.moveTo(a,b);x.lineTo(a+(ox<=0?-1:1)*20,b-18);x.stroke();x.setLineDash([]);continue}if(!R)continue;
+      const sg=ox<=0?1:-1;x.beginPath();x.moveTo(a,b);let la=a,lb=b,pa2=a,pb2=b;for(const[i,u]of R.pts){pa2=la;pb2=lb;la=a+i*sg*s;lb=b-u*s;x.lineTo(la,lb)}x.stroke();
+      const ang=Math.atan2(lb-pb2,la-pa2);x.fillStyle='#ffd23f';x.beginPath();x.moveTo(la+Math.cos(ang)*7,lb+Math.sin(ang)*7);x.lineTo(la+Math.cos(ang+2.5)*7,lb+Math.sin(ang+2.5)*7);x.lineTo(la+Math.cos(ang-2.5)*7,lb+Math.sin(ang-2.5)*7);x.fill()}}
+  function open(idx){edIdx=idx==null?-1:idx;ed=idx==null?blank():JSON.parse(JSON.stringify(mine[idx]));render()}
+  function render(){M.hidden=false;M.innerHTML=`<div class="box"><h3>Playbook · design a pass play</h3><div class="grid"><canvas width="360" height="330"></canvas><div>
+    <label>Name<input type="text" id="pbn" maxlength="22" value="${esc(ed.n)}"></label>${sel('X',WR)}${sel('SL',WR)}${sel('Z',WR)}${sel('TE',TER)}${ed.pa?'':sel('RB',RBR)}
+    <label>QB drop<select id="pbd">${Object.entries(DROPS).map(([k,v])=>`<option value="${k}"${ed.drop===k?' selected':''}>${v[2]}${k==='quick'?' (ball out fast)':k==='deep'?' (time for long routes)':''}</option>`).join('')}</select></label>
+    <label><span><input type="checkbox" id="pbpa"${ed.pa?' checked':''}> Play action (fake the handoff first)</span></label>
+    <div class="row"><button class="p" type="button" data-pb="save">${edIdx>=0?'Save changes':'Add to playbook'}</button>${edIdx>=0?'<button type="button" data-pb="del">Delete</button>':''}<button type="button" data-pb="close">Close</button></div></div></div>
+    ${mine.length?`<h3 style="margin-top:14px">Your plays (${mine.length} of 8)</h3><div class="list">${mine.map((s,i)=>`<div><span>${esc(s.n)}</span><button type="button" data-pbe="${i}">Edit</button></div>`).join('')}</div>`:''}
+    <p style="color:#9fb0ba;font-size:13px">Your plays show up under “My plays” when you call a play on offense.</p></div>`;draw()}
+  M.addEventListener('change',e=>{const t=e.target;if(t.dataset.r){ed.r[t.dataset.r]=t.value;draw()}else if(t.id==='pbd')ed.drop=t.value;else if(t.id==='pbpa'){ed.pa=t.checked;render()}});
+  M.addEventListener('input',e=>{if(e.target.id==='pbn')ed.n=e.target.value.replace(/[<>]/g,'').slice(0,22)});
+  M.addEventListener('click',e=>{const b=e.target.closest('button');if(!b){if(e.target===M)close();return}
+    if(b.dataset.pbe!=null){open(+b.dataset.pbe);return}const a=b.dataset.pb;
+    if(a==='save'){ed.n=(ed.n||'').trim()||'My play';if(edIdx>=0)mine[edIdx]=ed;else{if(mine.length>=8){alert('Your playbook is full (8 plays). Delete one first.');return}mine.push(ed);edIdx=mine.length-1}sync();render();try{renderPanel()}catch(_){}}
+    else if(a==='del'){mine.splice(edIdx,1);sync();open(null)}else if(a==='close')close()});
+  function close(){M.hidden=true;try{renderPanel()}catch(_){}}
+  addEventListener('keydown',e=>{if(!M.hidden){if(e.code==='Escape')close();e.stopPropagation()}},true);
+  // panels: my plays, audibles, hot routes, clock tools
+  const AUD=['iz','stretch','slants','verts','screen'];
+  {const _rp=renderPanel;renderPanel=function(){_rp.apply(this,arguments);try{const el=$('call');if(G.demo){el.insertAdjacentHTML('beforeend',`<div class="row"><button class="btn" type="button" data-act="playbook">Playbook: design plays</button></div>`);return}
+    if(G.phase==='call'&&G.poss===0&&!G.tryMode){const my=OPLAYS.filter(p=>p.custom);el.insertAdjacentHTML('beforeend',`<h4>My plays</h4><div class="plays">${my.map(p=>playBtn('o',p.id,p.name,p.desc)).join('')}<button type="button" class="play" data-act="playbook"><b>+ Design a play</b><span>Draw your own routes</span></button></div>
+      <h4>Clock</h4><div class="row">${G.down<4?'<button class="btn" type="button" data-act="spike">Spike it (stop the clock)</button>':''}<button class="btn" type="button" data-act="kneel">Take a knee</button><button class="btn" type="button" data-act="hurry" aria-pressed="${!!G.hurry}">Hurry-up offense: ${G.hurry?'on':'off'}</button></div><p style="font-size:12px;color:var(--muted,#9fb0ba)">Run out of bounds to stop the clock. Hurry-up cuts the time between plays from about 20 seconds to 7.</p>`)}
+    if(G.phase==='presnap'&&G.poss===0&&!G.tryMode&&G.oCall&&G.oCall.id!=='punt'&&G.oCall.id!=='fg'){const pl=G.oCall;let h=`<h4>Audible</h4><div class="row">${AUD.filter(id=>id!==pl.id).map(id=>{const q=OPLAYS.find(p=>p.id===id);return`<button class="btn" type="button" data-act="audible" data-id="${id}">${esc(q.name)}</button>`}).join('')}</div>`;
+      if(pl.type==='pass')h+=`<h4>Hot routes</h4><div class="row">${['X','SL','Z','TE','RB'].filter(k=>pl.routes[k]&&pl.routes[k]!=='fake').map(k=>`<label style="display:grid;font-size:12px;color:var(--muted,#9fb0ba)">${k}<select data-hot="${k}" style="background:#0b0f11;color:#fff;border:1px solid #2a353c;border-radius:7px;padding:5px">${(k==='RB'?RBR:k==='TE'?TER:WR).concat(pl.routes[k]&&!(k==='RB'?RBR:k==='TE'?TER:WR).includes(pl.routes[k])?[pl.routes[k]]:[]).map(o=>`<option value="${o}"${pl.routes[k]===o?' selected':''}>${RNAME[o]||o}</option>`).join('')}</select></label>`).join('')}</div>`;
+      el.insertAdjacentHTML('beforeend',h)}}catch(e){console.warn(e)}}}
+  function clockPlay(kind){const O=0;G.pendRun=0;let txt;
+    if(kind==='spike'){G.down++;G.clock=Math.max(0,G.clock-3);txt='Spiked to stop the clock.'}
+    else{G.down++;G.ballOn=Math.max(1,G.ballOn-1);G.togo+=1;G.clock=Math.max(0,G.clock-(G.q===5?0:40));txt='Takes a knee.'}
+    logIt(`${club(O).abbr} · ${ddText()}`,txt);toast(txt);if(G.down>4){changePoss(100-G.ballOn);toast('Turnover on downs')}
+    if(G.clock<=0&&G.q!==5)endQuarter();else startCall()}
+  $('call').addEventListener('click',e=>{const b=e.target.closest('button[data-act]');if(!b)return;const a=b.dataset.act;
+    if(a==='playbook'){open(null)}else if(a==='spike'&&G.phase==='call'&&G.poss===0)clockPlay('spike');else if(a==='kneel'&&G.phase==='call'&&G.poss===0)clockPlay('kneel');
+    else if(a==='hurry'){G.hurry=!G.hurry;renderPanel()}
+    else if(a==='audible'&&G.phase==='presnap'&&G.poss===0){G.oCall=OPLAYS.find(p=>p.id===b.dataset.id);setupPlay();say('Audible! Audible!',1);toast(`Audible: ${G.oCall.name}`);renderPanel()}});
+  $('call').addEventListener('change',e=>{const s=e.target.closest('select[data-hot]');if(!s||G.phase!=='presnap'||G.poss!==0)return;const pl=G.oCall;G.oCall=Object.assign({},pl,{routes:Object.assign({},pl.routes,{[s.dataset.hot]:s.value}),hot:true});
+    if(!/ \(hot\)$/.test(G.oCall.name))G.oCall.name+=' (hot)';setupPlay();toast(`Hot route: ${s.dataset.hot} runs a ${RNAME[s.value]||s.value}`);renderPanel()});
+  // hurry-up: less time off the clock between your plays
+  {const _sn=snap;snap=function(){G.snapPoss=G.poss;return _sn.apply(this,arguments)}}
+  {const _fi=finish;finish=function(){const r=_fi.apply(this,arguments);if(G.hurry&&G.snapPoss===0&&G.pendRun>0&&!G.demo)G.pendRun=7;return r}}
+  return{open,mine:()=>mine}})();
 /* ---------- franchise hooks ---------- */
 function frPois(l){l=Math.max(.2,l);const L=Math.exp(-l);let k=0,p=1;do{k++;p*=Math.random()}while(p>L);return k-1}
 const FRCFG={sport:'football',stateFr:true,even:true,otPts:3,strength:()=>.5,sim:(a,b)=>{const d=0;return[7*frPois(2.4+d*5)+3*frPois(1.2),7*frPois(2.4-d*5)+3*frPois(1.2)]}};
