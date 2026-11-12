@@ -95,6 +95,7 @@ html.touch.playing .pbar{display:flex}
 .pbar button{min-height:34px;padding:0 10px;border-radius:8px;border:1px solid rgba(255,255,255,.3);background:rgba(20,28,40,.85);color:#fff;font:700 13px var(--body)}
 #confetti{position:absolute;inset:0;pointer-events:none;z-index:7}
 .readout{position:absolute;right:12px;top:96px;z-index:4;min-width:180px;padding:9px 12px;border-radius:10px;background:rgba(10,16,22,.78);border:1px solid rgba(255,255,255,.16);color:#fff;font:600 13px/1.5 var(--body);display:grid;grid-template-columns:auto auto;gap:0 14px}.readout b{font:800 12px var(--body);color:var(--muted);text-transform:uppercase;letter-spacing:.04em;grid-column:1/-1;margin-bottom:2px}.readout span:nth-child(odd){color:var(--muted)}.readout span:nth-child(even){text-align:right;font-weight:800}.readout[hidden]{display:none}
+.bwrap{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start}.bwrap canvas{width:340px;max-width:100%;height:auto;border-radius:10px;border:1px solid var(--line);touch-action:none;cursor:crosshair;background:#24461f}.bside{display:grid;gap:8px}.bside label{display:grid;gap:4px;color:var(--muted);font-size:13px}.bside input[type=text],.bside input:not([type]){background:#0b0f11;color:#fff;border:1px solid var(--line);border-radius:8px;padding:8px}@media (max-width:700px){.bwrap{grid-template-columns:1fr}}
 .cad{margin-top:6px;max-width:340px;padding:7px 10px;border-radius:9px;background:rgba(10,16,22,.72);border:1px solid rgba(255,255,255,.16);color:#fff;font:600 13px/1.35 var(--body)}.cad[hidden],.dragpad[hidden]{display:none}
 .dragpad{position:absolute;left:28%;right:28%;top:50%;bottom:8%;border:2px dashed rgba(255,255,255,.35);border-radius:18px;display:grid;place-items:end center;padding:10px;text-align:center;color:rgba(255,255,255,.85);font:700 13px/1.3 var(--body);text-shadow:0 1px 2px rgba(0,0,0,.8);pointer-events:none}
 .stg{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}.stt{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:10px;display:grid;gap:2px}.stt b{font:900 24px/1 var(--display);color:var(--led)}.stt small{color:var(--muted)}
@@ -671,7 +672,7 @@ function leaderHtml(){const me=S.players[0],all=[{name:me.name,total:me.total,pa
 function endRound(){S.phase='done';const m=S.mode;let h='';
   if(m==='ld'){const b=S.ld.best,best=store.get('golf-ld',0);if(b>best)store.set('golf-ld',b);if(b>=320)ach('ld');addCoins(Math.round(b/30));addXP(20+Math.round(b/8));h=`<h2>Long drive</h2><p class="bigt">${b?b+' yards':'No drives in the fairway'}</p><p>Your record: ${Math.max(b,best)} yards · +${Math.round(b/30)} coins</p>`}
   else if(m==='ctp'){const b=S.ctp.best,best=store.get('golf-ctp',null);if(b!=null&&(best==null||b<best))store.set('golf-ctp',b);if(b!=null&&b<=3)ach('ctp');addXP(b==null?10:Math.round(clamp(70-b,15,70)));const c=b==null?0:b<3?30:b<10?15:b<25?8:3;addCoins(c);h=`<h2>Closest to the pin</h2><p class="bigt">${b==null?'No balls on the green':b===0?'Hole in one!':b.toFixed(1)+' feet'}</p><p>Your record: ${best==null&&b==null?'—':Math.min(b==null?1e9:b,best==null?1e9:best).toFixed(1)+' ft'} · +${c} coins</p>`}
-  else{const full=S.h1-S.h0,key=S.mode==='daily'?'daily':S.mode==='par3'?'par3':S.course,best=store.get('golf-best',{}),done=Object.keys(S.players[0].card).length===full;
+  else{const full=S.h1-S.h0,key=S.mode==='daily'?'daily':S.mode==='par3'?'par3':S.mode==='custom'?'custom':S.course,best=store.get('golf-best',{}),done=Object.keys(S.players[0].card).length===full;
     if(done){const pl=new Set(store.get('golf-played',[]));pl.add(S.course);store.set('golf-played',[...pl]);if(pl.size>=3)ach('courses')}
     for(const p of S.players){const d=p.total-parThru(p);if(done&&d<0)ach('under',p)}
     {const p=S.players[0],st=p.stats;if(done){addXP(60+(p.total-parThru(p)<0?40:0),p);if(st.birdies>=3)ach('birdie3',p);if(st.bog===0&&st.holes>=9)ach('clean',p);if(st.fw>=8)ach('fairways',p);if(st.gir>=10)ach('gir',p)}}
@@ -1124,7 +1125,7 @@ function cpuHole(par,sk,style,o){let base=.15+(1-sk)*1.1,sd=.75;if(style==='bomb
   if(S.mode==='par3'){const [c,i]=P3COURSE[S.hole%P3COURSE.length],H=makeHole(c,i);H.name=`Short course · ${COURSES[c].name}`;return H}
   if(S.mode==='ctp'&&S.aceCh){const [c,i]=P3POOL[S.aceCh.pick],H=makeHole(c,i);H.par=0;H.name='Hole-in-one challenge';H.hname=`${H.hname} · ${COURSES[c].name}`;return H}
   return _hf.apply(this,arguments)}}
-{const _nr=newRound;newRound=function(mode,opts){opts=opts||{};if(mode==='par3')opts.range=[0,9];
+{const _nr=newRound;newRound=function(mode,opts){opts=opts||{};if(mode==='par3')opts.range=[0,9];if(mode==='custom')opts.range=[0,1];
   if(mode==='scramble'&&cfg.names.filter(n=>n.trim()).length<2){const nm=cfg.names[0]||'Blake Yoakam',keep=cfg.names;cfg.names=[nm+' (ball A)',nm+' (ball B)'];try{return _nr.call(this,mode,opts)}finally{cfg.names=keep}}
   return _nr.call(this,mode,opts)}}
 {const _sh=startHole;startHole=function(){if(S){if(S.mode==='par3'&&!S.pars)S.pars=Array(18).fill(3);
@@ -1166,7 +1167,99 @@ function scrScore(p){const why=S.scr.why[p.k],b=p.ball;if(why==='water'||why==='
   if(S.mode==='ctp'&&S.aceCh)sub.textContent=`${S.ctp.left} balls left · an ace wins 500 coins · ${HOLE.hname}`}catch(e){}return r}}
 {const _m=menu;menu=function(){const r=_m.apply(this,arguments);try{const md=$('ovc').querySelector('.modes');if(md)md.insertAdjacentHTML('beforeend',`<button class="mode" type="button" data-m="skins"><b>Skins</b><small>Every hole is worth a skin (10 coins). Ties carry over. ${cfg.names.length>1?'Your golfers play for them.':'You against two rivals.'}</small></button><button class="mode" type="button" data-m="scramble"><b>Scramble</b><small>${cfg.names.length>1?'Everyone hits, the team plays the best ball.':'Hit two balls every time and play the better one.'}</small></button><button class="mode" type="button" data-m="par3"><b>Par-3 course</b><small>Nine short holes from all four courses. Best: ${store.get('golf-best',{})['par3-f9']||'—'}</small></button><button class="mode" type="button" data-a="ace"><b>Hole-in-one challenge</b><small>Five balls at a par 3. An ace wins 500 coins.</small></button>`)}catch(e){}return r}}
 $('ovc').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.m==='ctp')aceMode=false;if(b.dataset.a==='ace'){aceMode=true;camInit=false;newRound('ctp')}},true);
- window.__golf={P3POOL,get aceMode(){return aceMode},lieCond,EVENTS,endHoleT:()=>endHole(),get ST(){return ST},get CU(){return CU},set CU(v){CU=v},RIVALS,caddieTalk,rangeHole,applyWx,WX,say,crowd,get rainOn(){return rain.m.visible},readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
+ /* ---------- highlights, a scorecard picture, and the ghost of your best round ---------- */
+const HLMODES=['stroke','tour','career','daily','match','skins','par3','scramble','custom'];
+{const _sr=shotReport;shotReport=function(why){const p=cur(),st=S&&S.shotStart,cl=S&&S.shotClub,B=S&&S.ball,hole=S&&S.hole;const r=_sr.apply(this,arguments);try{if(!S||!HLMODES.includes(S.mode)||!p||p.k!==0||!st)return r;
+    // the ghost: where each shot was played from
+    S.path=S.path||{};(S.path[hole]=S.path[hole]||[]).push([Math.round(st.x*10)/10,Math.round(st.z*10)/10]);if(why==='holed')S.path[hole].push([HOLE.pin.x,HOLE.pin.z]);
+    // highlights
+    const L=S.lastRec;if(!L||!L.rec||L.rec.length<6||!B)return r;const putt=cl===PUTTER,far=hyp(st.x-HOLE.pin.x,st.z-HOLE.pin.z),tot=hyp(B.x-st.x,B.z-st.z),d=why==='rest'?pinDist(p.ball):99;let sc=0,lab='';
+    if(why==='holed'&&!putt){sc=120;lab=p.strokes===1?'Hole in one!':`Holed out from ${Math.round(far)} yards`}else if(why==='holed'&&putt&&far*3>=18){sc=50+far*3;lab=`${Math.round(far*3)}-foot putt`}
+    else if(!putt&&why==='rest'&&d<3.5&&far>40){sc=60-d*8;lab=`Stuck it to ${Math.round(d*3)} feet`}else if(!putt&&cl===0&&why==='rest'&&tot>=285){sc=tot-250;lab=`${Math.round(tot)}-yard drive`}
+    if(sc>0){S.hl=S.hl||[];S.hl.push({sc,lab,H:HOLE,hole,rec:L.rec,club:L.club,start:L.start,why});S.hl.sort((a,b)=>b.sc-a.sc);S.hl=S.hl.slice(0,5)}}catch(e){}return r}}
+function playReel(){if(!S||!S.hl||!S.hl.length)return;S.reel={list:S.hl.slice().sort((a,b)=>a.hole-b.hole),i:0,card:$('ovc').innerHTML};hideCard();reelNext()}
+function reelNext(){const R=S.reel,it=R.list[R.i];if(!it){S.reel=null;S.phase='done';golfer.visible=false;showCard(R.card);return}
+  if(HOLE!==it.H){buildHole(it.H);S.H=it.H}golfer.visible=false;S.why=it.why;S.lastRec={rec:it.rec,why:it.why,club:it.club,start:it.start};startReplay(false);note(`Highlight ${R.i+1} of ${R.list.length}`,`Hole ${it.hole+1} · ${it.lab}`,2.6)}
+{const _er=endReplay;endReplay=function(){if(S&&S.reel){S.rp=null;trailReset();S.reel.i++;reelNext();return}return _er.apply(this,arguments)}}
+function cardPicture(){const p=S.players[0],hs=[];for(let k=S.h0;k<S.h1;k++)if(p.card[k]!=null)hs.push(k);const cw=Math.max(900,170+hs.length*52+120),c=document.createElement('canvas');c.width=cw;c.height=330+S.players.length*46;const x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,0,c.height);g.addColorStop(0,'#123a22');g.addColorStop(1,'#0b1a12');x.fillStyle=g;x.fillRect(0,0,c.width,c.height);
+  x.fillStyle='#ffc23d';x.font='900 54px system-ui,sans-serif';x.fillText('PIN HIGH',40,78);x.fillStyle='#fff';x.font='700 24px system-ui,sans-serif';x.fillText(`${S.H.name}`,40,118);x.fillStyle='#b7c6bd';x.font='600 18px system-ui,sans-serif';x.fillText(`${today()} · ${DIFF[S.diff].n}`,40,146);
+  const y0=190,cx=k=>170+k*52;x.font='700 18px system-ui,sans-serif';x.fillStyle='#b7c6bd';x.fillText('Hole',40,y0);x.fillText('Par',40,y0+40);hs.forEach((h,k)=>{x.fillText(String(h+1),cx(k),y0);x.fillText(String(parOf(h)),cx(k),y0+40)});x.fillText('Total',cx(hs.length)+10,y0);
+  S.players.forEach((q,j)=>{const y=y0+90+j*46;x.fillStyle='#fff';x.font='800 20px system-ui,sans-serif';x.fillText(q.name.slice(0,12),40,y);hs.forEach((h,k)=>{const v=q.card[h];if(v==null)return;const d=v-parOf(h);x.fillStyle=d<=-2?'#ffc23d':d===-1?'#ff6b6b':d>0?'#9fb4ff':'#fff';if(d<0){x.beginPath();x.arc(cx(k)+8,y-7,17,0,6.283);x.strokeStyle=x.fillStyle;x.lineWidth=2;x.stroke()}x.fillText(String(v),cx(k),y)});
+    x.fillStyle='#ffc23d';x.fillText(`${q.total} (${toPar(q)})`,cx(hs.length)+10,y)});
+  return c.toDataURL('image/png')}
+{const _er=endRound;endRound=function(){const r=_er.apply(this,arguments);try{if(!S||!HLMODES.includes(S.mode))return r;const row=$('ovc').querySelector('.row:last-of-type');if(!row)return r;
+    if(S.hl&&S.hl.length){const b=document.createElement('button');b.className='btn';b.type='button';b.textContent=`🎬 Watch highlights (${S.hl.length})`;b.onclick=()=>playReel();row.prepend(b)}
+    if(Object.keys(S.players[0].card).length){const a=document.createElement('a');a.className='btn';a.textContent='📸 Save scorecard picture';a.download='pin-high-scorecard.png';a.href='#';a.onclick=ev=>{try{a.href=cardPicture()}catch(e){ev.preventDefault()}};row.append(a)}
+    // save the ghost if this was your best full round here
+    if(S.mode==='stroke'&&S.path){const p=S.players[0],full=S.h1-S.h0;if(Object.keys(p.card).length===full){const key=S.course+'-'+(full===18?'18':S.h0?'b9':'f9'),G=store.get('golf-ghost',{}),d=p.total-parThru(p);
+      if(!G[key]||d<G[key].d){const holes={};for(const k in p.card)holes[k]={s:p.card[k],pts:S.path[k]||[]};G[key]={d,t:p.total,date:today(),holes};store.set('golf-ghost',G);const pp=document.createElement('p');pp.textContent='New best round here: your ghost will play along next time.';row.before(pp)}}}}catch(e){}return r}}
+function ghostKey(){return S&&S.mode==='stroke'?S.course+'-'+(S.h1-S.h0===18?'18':S.h0?'b9':'f9'):null}
+function showGhost(){try{const key=ghostKey();if(!key)return;const G=store.get('golf-ghost',{})[key];if(!G||!G.holes[S.hole])return;const gh=G.holes[S.hole],pts=gh.pts;if(!pts.length)return;
+  const mat=new T3.MeshBasicMaterial({color:0xbfe6ff,transparent:true,opacity:.55,depthWrite:false}),geo=new T3.SphereGeometry(.45,12,8),line=[];
+  pts.forEach((q,k)=>{const y=hAt(q[0],q[1]);if(k>0){const m=new T3.Mesh(geo,mat);m.position.set(q[0],y+.45,q[1]);world.add(m)}line.push(new T3.Vector3(q[0],y+.6,q[1]))});
+  if(line.length>1){const lg=new T3.BufferGeometry().setFromPoints(line),l=new T3.Line(lg,new T3.LineDashedMaterial({color:0xbfe6ff,dashSize:3,gapSize:2,transparent:true,opacity:.6}));l.computeLineDistances();world.add(l)}
+  S.ghost={s:gh.s,d:G.d}}catch(e){}}
+{const _sh=startHole;startHole=function(){if(S)S.ghost=null;const r=_sh.apply(this,arguments);showGhost();return r}}
+{const _hu=hud;hud=function(){const r=_hu.apply(this,arguments);try{if(S&&S.ghost)$('hHoleSub').textContent+=` · 👻 Ghost made ${S.ghost.s} here`}catch(e){}return r}}
+
+/* ---------- hole builder ---------- */
+let BSPEC=null,curSpec=null,BTOOL='move';
+const B0=()=>({n:'My hole',c:'hills',p:[[0,130],[18,260],[0,390]],w:36,g:1,b:[],wt:[],t:[]});
+function customHole(sp){const c=COURSES[sp.c]?sp.c:'hills',C=COURSES[c],H=makeHole(c,0,7000+(hashStr(JSON.stringify(sp.p))%9999)),P=sp.p.map(q=>({x:q[0],z:q[1]}));
+  const CL=[];for(let k=0;k<=64;k++){const t=k/64,u=1-t,a=3*u*u*t,b=3*u*t*t,cc=t*t*t;CL.push({x:a*P[0].x+b*P[1].x+cc*P[2].x,z:a*P[0].z+b*P[1].z+cc*P[2].z})}
+  {const a=CL[63],b=CL[64],dx=b.x-a.x,dz=b.z-a.z,l=hyp(dx,dz)||1;for(let k=1;k<=6;k++)CL.push({x:b.x+dx/l*k*8,z:b.z+dz/l*k*8})}
+  const acc=[0];for(let k=1;k<CL.length;k++)acc.push(acc[k-1]+hyp(CL[k].x-CL[k-1].x,CL[k].z-CL[k-1].z));const gEnd=acc[64],ang=Math.atan2(CL[64].x-CL[62].x,CL[64].z-CL[62].z),gs=clamp(sp.g||1,.7,1.4);
+  const G={x:P[2].x,z:P[2].z,rx:13*gs,rz:15*gs,rot:ang,sx:H.G.sx,sz:H.G.sz,tier:0,bowl:false},par=gEnd<240?3:gEnd<480?4:5,pin={x:G.x+Math.sin(ang+1.2)*3,z:G.z+Math.cos(ang+1.2)*3};
+  Object.assign(H,{par,L:gEnd,CL,acc,gEnd,G,pin,B:(sp.b||[]).map(([x,z,r])=>({x,z,a:r||5,b:(r||5)*.8,rot:0})),W:(sp.wt||[]).map(([x,z,a,b])=>({x,z,a:a||22,b:b||14,rot:0})),
+    trees0:H.trees,trees:(sp.t||[]).map(([x,z],k)=>({x,z,r:C.desert?1:3.6,h:C.desert?6:15,k:(k*.37)%1})),tp:'custom',hname:(sp.n||'My hole').slice(0,30),fwW:clamp(sp.w||36,20,70),fwStart:par===3?Math.max(20,gEnd-40):70,E:0,i:0,name:`Custom hole · ${C.name}`});H.tee={x:0,z:0};const auto=(H.trees0||[]).filter(tr=>{const n=near(H,tr.x,tr.z);return n.d>H.fwW/2+7&&hyp(tr.x-G.x,tr.z-G.z)>28&&hyp(tr.x,tr.z)>16&&!H.W.some(w=>ndE(w,tr.x,tr.z)<1.3)&&!H.B.some(b=>ndE(b,tr.x,tr.z)<1.4)});H.trees=H.trees.concat(auto);delete H.trees0;return H}
+const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''),dec=s=>JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g,'+').replace(/_/g,'/')))));
+function cleanSpec(o){const n=v=>Math.round(clamp(+v||0,-400,800));const L=(a,k)=>Array.isArray(a)?a.slice(0,40).map(q=>q.slice(0,k).map(n)):[];return{n:String(o.n||'Shared hole').replace(/[<>]/g,'').slice(0,30),c:COURSES[o.c]?o.c:'hills',p:(o.p||B0().p).slice(0,3).map(q=>[n(q[0]),n(q[1])]),w:clamp(+o.w||36,20,70),g:clamp(+o.g||1,.7,1.4),b:L(o.b,3),wt:L(o.wt,4),t:L(o.t,2)}}
+let SHARED=null;try{const q=new URLSearchParams(location.search).get('hole');if(q)SHARED=cleanSpec(dec(q))}catch(e){}
+const BX0=-170,BX1=170,BZ0=-30,BZ1=630;
+function bScale(cv){return Math.min(cv.width/(BX1-BX0),cv.height/(BZ1-BZ0))}
+function bToPx(cv,x,z){const s=bScale(cv);return[(BX1-x)*s,(BZ1-z)*s]}
+function bToW(cv,px,py){const s=bScale(cv);return[BX1-px/s,BZ1-py/s]}
+function bDraw(){const cv=$('bcv');if(!cv||!BSPEC)return;const x=cv.getContext('2d'),prev=HOLE,H=customHole(BSPEC);prepHole(H);const s=bScale(cv),col={F:'#5fae4a',G:'#8fe07a',X:'#6fc35d',B:'#ecdcab',T:'#7cc865',W:'#3a8fd0',O:'#24461f',R:'#356f2f',D:'#b6935c'},st=4;
+  for(let py=0;py<cv.height;py+=st)for(let px=0;px<cv.width;px+=st){const[wx,wz]=bToW(cv,px+st/2,py+st/2);x.fillStyle=col[surfAt(wx,wz)]||'#24461f';x.fillRect(px,py,st,st)}
+  for(const t of H.trees){const[a,b]=bToPx(cv,t.x,t.z);x.fillStyle='#173d1c';x.beginPath();x.arc(a,b,Math.max(3,t.r*s*1.2),0,6.283);x.fill()}
+  {const[a,b]=bToPx(cv,H.pin.x,H.pin.z);x.fillStyle='#fff';x.fillRect(a-1,b-14,2,14);x.fillStyle='#c8202f';x.fillRect(a+1,b-14,8,6)}
+  {const[a,b]=bToPx(cv,0,0);x.fillStyle='#fff';x.font='700 12px system-ui';x.fillText('TEE',a-11,b+16)}
+  x.strokeStyle='rgba(255,255,255,.35)';x.setLineDash([4,4]);x.beginPath();const pts=[[0,0]].concat(BSPEC.p);pts.forEach((q,k)=>{const[a,b]=bToPx(cv,q[0],q[1]);k?x.lineTo(a,b):x.moveTo(a,b)});x.stroke();x.setLineDash([]);
+  BSPEC.p.forEach((q,k)=>{const[a,b]=bToPx(cv,q[0],q[1]);x.fillStyle=k===2?'#ffc23d':'#fff';x.strokeStyle='#000';x.lineWidth=2;x.beginPath();x.arc(a,b,9,0,6.283);x.fill();x.stroke();x.fillStyle='#000';x.font='800 11px system-ui';x.fillText(k===2?'G':String(k+1),a-3.5,b+4)});
+  const info=$('binfo');if(info)info.textContent=`Par ${H.par} · ${Math.round(H.gEnd)} yards`;if(prev){prepHole(prev)}}
+function builder(msg){if(!BSPEC)BSPEC=B0();const mine=store.get('golf-myholes',[]);
+  showCard(`<h2>Hole builder</h2><p>Drag the white dots to bend the fairway and the gold dot to move the green. Pick a tool and tap the map to add bunkers, water and trees.</p>${msg?`<p style="color:var(--led)">${esc(msg)}</p>`:''}
+  <div class="bwrap"><canvas id="bcv" width="340" height="560"></canvas><div class="bside">
+    <div class="row">${[['move','Move'],['bunker','Bunker'],['water','Water'],['tree','Tree'],['erase','Erase']].map(([k,t])=>`<button class="chip" type="button" data-btool="${k}" aria-pressed="${BTOOL===k}">${t}</button>`).join('')}</div>
+    <p id="binfo"></p><label>Name <input id="bname" maxlength="30" value="${esc(BSPEC.n)}"></label>
+    <div class="row">${Object.entries(COURSES).map(([k,c])=>`<button class="chip" type="button" data-bcourse="${k}" aria-pressed="${BSPEC.c===k}">${c.name}</button>`).join('')}</div>
+    <label>Fairway width <input id="bw" type="range" min="20" max="70" value="${BSPEC.w}"></label><label>Green size <input id="bg" type="range" min="70" max="140" value="${Math.round(BSPEC.g*100)}"></label>
+    <div class="row"><button class="go" type="button" data-a="bplay">Play it</button><button class="btn" type="button" data-a="bsave">Save</button><button class="btn" type="button" data-a="bshare">Share link</button><button class="btn" type="button" data-a="bnew">Start over</button></div>
+    ${mine.length?`<h3>My holes</h3><div class="lb">${mine.map((h,k)=>`<div><span>${k+1}</span><span>${esc(h.n)} <small>${COURSES[h.c]?COURSES[h.c].name:''}</small></span><span><button class="btn" type="button" data-bedit="${k}">Edit</button></span><span><button class="btn" type="button" data-bdel="${k}">✕</button></span></div>`).join('')}</div>`:''}
+    <div class="row"><button class="btn" type="button" data-a="menu">Back</button></div></div></div>`);
+  const cv=$('bcv');bDraw();let dragK=-1;
+  const wpos=e=>{const r=cv.getBoundingClientRect();return bToW(cv,(e.clientX-r.left)/r.width*cv.width,(e.clientY-r.top)/r.height*cv.height)};
+  cv.addEventListener('pointerdown',e=>{e.preventDefault();const[wx,wz]=wpos(e);if(BTOOL==='move'){let bd=18/bScale(cv);dragK=-1;BSPEC.p.forEach((q,k)=>{const d=hyp(q[0]-wx,q[1]-wz);if(d<bd){bd=d;dragK=k}});if(dragK>=0)try{cv.setPointerCapture(e.pointerId)}catch(_){}return}
+    const X=Math.round(wx),Z=Math.round(wz);if(BTOOL==='bunker')BSPEC.b.push([X,Z,6]);else if(BTOOL==='water')BSPEC.wt.push([X,Z,24,15]);else if(BTOOL==='tree')BSPEC.t.push([X,Z]);
+    else if(BTOOL==='erase'){let best=null,bd=14;for(const k of['b','wt','t'])BSPEC[k].forEach((q,i)=>{const d=hyp(q[0]-wx,q[1]-wz)-(k==='wt'?q[2]*.6:0);if(d<bd){bd=d;best=[k,i]}});if(best)BSPEC[best[0]].splice(best[1],1)}
+    if(BSPEC.b.length+BSPEC.wt.length+BSPEC.t.length>60){BSPEC[BTOOL==='bunker'?'b':BTOOL==='water'?'wt':'t'].pop();note('','That is the most this hole can hold',1.4)}bDraw()});
+  cv.addEventListener('pointermove',e=>{if(dragK<0)return;const[wx,wz]=wpos(e);const k=dragK,lo=k===2?90:20;BSPEC.p[k]=[Math.round(clamp(wx,-150,150)),Math.round(clamp(wz,lo,600))];if(!cv._raf){cv._raf=requestAnimationFrame(()=>{cv._raf=0;bDraw()})}});
+  cv.addEventListener('pointerup',()=>{dragK=-1});
+  $('bname').addEventListener('input',e=>{BSPEC.n=e.target.value.replace(/[<>]/g,'').slice(0,30)});$('bw').addEventListener('input',e=>{BSPEC.w=+e.target.value;bDraw()});$('bg').addEventListener('input',e=>{BSPEC.g=+e.target.value/100;bDraw()})}
+function playSpec(sp){curSpec=cleanSpec(sp);camInit=false;newRound('custom',{range:[0,1]})}
+{const _hf=holeFor;holeFor=function(){if(S.mode==='custom'&&S.spec)return customHole(S.spec);return _hf.apply(this,arguments)}}
+{const _sh=startHole;startHole=function(){if(S&&S.mode==='custom'&&!S.spec){S.spec=curSpec||B0();S.pars=[customHole(S.spec).par]}return _sh.apply(this,arguments)}}
+{const _er=endRound;endRound=function(){if(S&&S.mode==='custom'){const p=S.players[0],r=_er.apply(this,arguments);try{const row=$('ovc').querySelector('.row:last-of-type');if(row){const b=document.createElement('button');b.className='btn';b.type='button';b.textContent='Back to the builder';b.dataset.a='builder';row.prepend(b)}}catch(e){}return r}return _er.apply(this,arguments)}}
+$('ovc').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a;
+  if(b.dataset.btool){BTOOL=b.dataset.btool;builder();return}if(b.dataset.bcourse){BSPEC.c=b.dataset.bcourse;builder();return}
+  if(b.dataset.bedit!=null){BSPEC=cleanSpec(store.get('golf-myholes',[])[+b.dataset.bedit]);builder('Loaded');return}if(b.dataset.bdel!=null){const L=store.get('golf-myholes',[]);L.splice(+b.dataset.bdel,1);store.set('golf-myholes',L);builder('Deleted');return}
+  if(a==='builder'){builder();return}if(a==='bnew'){BSPEC=B0();builder();return}if(a==='bplay'){playSpec(BSPEC);return}if(a==='playshared'&&SHARED){playSpec(SHARED);return}if(a==='editshared'&&SHARED){BSPEC=cleanSpec(SHARED);builder('Loaded the shared hole');return}
+  if(a==='bsave'){const L=store.get('golf-myholes',[]),sp=cleanSpec(BSPEC),i=L.findIndex(h=>h.n===sp.n);if(i>=0)L[i]=sp;else L.unshift(sp);store.set('golf-myholes',L.slice(0,12));builder(`Saved “${sp.n}”`);return}
+  if(a==='bshare'){const url=`${location.origin}${location.pathname}?hole=${enc(cleanSpec(BSPEC))}`,txt=`Play my Pin High hole “${BSPEC.n}”!`;try{if(navigator.share){await navigator.share({title:'Pin High hole',text:txt,url});return}}catch(err){if(err&&err.name==='AbortError')return}try{await navigator.clipboard.writeText(txt+' '+url);b.textContent='Link copied!'}catch(err){b.textContent='Copy failed'}return}});
+{const _m=menu;menu=function(){const r=_m.apply(this,arguments);try{const o=$('ovc'),md=o.querySelector('.modes');if(md)md.insertAdjacentHTML('beforeend',`<button class="mode" type="button" data-a="builder"><b>Hole builder</b><small>Design your own hole, play it and send it to friends.</small></button>`);
+  if(SHARED)o.querySelector('h2').insertAdjacentHTML('afterend',`<div class="chal"><b>A friend sent you a hole: “${esc(SHARED.n)}”</b> on ${esc(COURSES[SHARED.c].name)}.<div class="row"><button class="go" type="button" data-a="playshared">Play it</button><button class="btn" type="button" data-a="editshared">Open in the builder</button></div></div>`)}catch(e){}return r}}
+window.__golf={customHole,playReel,cardPicture,get BSPEC(){return BSPEC},set BSPEC(v){BSPEC=v},P3POOL,get aceMode(){return aceMode},lieCond,EVENTS,endHoleT:()=>endHole(),get ST(){return ST},get CU(){return CU},set CU(v){CU=v},RIVALS,caddieTalk,rangeHole,applyWx,WX,say,crowd,get rainOn(){return rain.m.visible},readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 lin(scene);menu();requestAnimationFrame(frame);
 })();
