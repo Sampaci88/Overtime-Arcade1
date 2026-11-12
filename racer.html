@@ -461,7 +461,56 @@ const PADS=(cfg=>{
   ui:()=>!$('ov').hidden,roots:()=>[$('ov')],first:()=>$('ovc').querySelector('.go'),start:()=>$('ovc').querySelector('.go'),
   back:()=>{const b=$('ovc').querySelector('[data-a="menu"]');if(b)b.click()},
   map:(pl,{stick:s})=>({dirs:s.x<0?['KeyA']:s.x>0?['KeyD']:[],btn:{0:'KeyW',7:'KeyW',1:'KeyS',6:'KeyS',2:'Space',5:'Space',4:'Space',3:'Enter',8:'KeyR'}})});
-window.__apex={GX,RACE,get G(){return G},get TR(){return TR},C,keys,makeTrack,load,step};
+/* ---------- drafting, the championship cup, and decals in the garage ---------- */
+const APX=(()=>{
+  // ---- drafting: tuck in behind a car to pick up speed (the CPU drivers do it too)
+  const dEl=document.createElement('div');dEl.id='draftTag';dEl.textContent='DRAFT';dEl.style.cssText='position:absolute;left:50%;top:58%;transform:translateX(-50%);font:900 18px system-ui;letter-spacing:.12em;color:#7fd3ff;text-shadow:0 2px 6px rgba(0,0,0,.6);pointer-events:none;display:none;z-index:5';$('stage').appendChild(dEl);
+  let draftT=0;
+  {const _st=step;step=function(dt){const r=_st.apply(this,arguments);try{if(SIM||!G||G.phase!=='race'||!RACE.on())return r;const O=RACE.O;let d=false;
+      for(const o of O){if(o.s==null||o.done!=null)continue;const ahead=o.s-C.s;if(ahead>3&&ahead<16&&Math.abs(o.d-C.d)<1.7&&!C.air){d=true;break}}
+      if(d){C.v=Math.min(Math.max(C.v,0)+8*dt,(C.boostT>0?BOOST:VMAX)*1.07);draftT=.25}else draftT=Math.max(0,draftT-dt);
+      for(const o of O){if(o.s==null||o.done!=null)continue;for(const p of O.concat([{s:C.s,d:C.d}])){if(p===o||p.s==null)continue;const ah=p.s-o.s;if(ah>3&&ah<14&&Math.abs(p.d-o.d)<1.7){o.v+=4*dt;break}}}}catch(e){}return r}}
+  setInterval(()=>{dEl.style.display=draftT>0&&G&&G.phase==='race'?'block':'none'},100);
+  // ---- championship cups: four races, points for every finish
+  const CUPS=[['Rookie Cup',[0,1,2,3]],['Pro Cup',[4,5,6,7]],['Legend Cup',[6,7,8,9]]],PTS=[10,6,4,2],DRV=['You','Viper','Comet','Blitz'];
+  let CUP=null,saveMode=null;let TROPHY={};try{TROPHY=JSON.parse(localStorage.getItem('apex-cups')||'{}')}catch(e){}
+  function cupStart(k){saveMode=MODE;MODE='race';CUP={k,i:0,pts:{You:0,Viper:0,Comet:0,Blitz:0},log:[]};cupRace()}
+  function cupRace(){const c=CUPS[CUP.k];startIdx(c[1][CUP.i]);setTimeout(()=>note(`${c[0]} · race ${CUP.i+1} of 4`),600)}
+  function table(){return Object.entries(CUP.pts).sort((a,b)=>b[1]-a[1]).map(([n,p],i)=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-bottom:1px solid #263039${n==='You'?';color:#ffc23d;font-weight:800':''}"><span>${i+1}. ${n}</span><span>${p} pts</span></div>`).join('')}
+  {const _fi=finish;finish=function(){const r=_fi.apply(this,arguments);try{if(!CUP||SIM||!G||G.phase!=='done')return r;const rows=RACE.results(G.t);rows.forEach((row,i)=>{const n=row.you?'You':row.name;CUP.pts[n]+=PTS[i]||0});
+      const pl=rows.findIndex(x=>x.you)+1;CUP.log.push(pl);CUP.i++;const c=CUPS[CUP.k],done=CUP.i>=4,row=$('ovc').querySelector('.row:last-of-type');
+      const box=document.createElement('div');box.innerHTML=`<h3 style="margin:8px 0 4px;text-align:left">${c[0]} standings${done?' · final':` after ${CUP.i} of 4`}</h3><div style="max-width:340px;margin:0 auto 8px;text-align:left">${table()}</div>`;row.before(box);
+      if(done){const top=Object.entries(CUP.pts).sort((a,b)=>b[1]-a[1])[0][0],won=top==='You',coins=won?60+CUP.k*40:10;addCoins(coins);if(won){TROPHY[c[0]]=(TROPHY[c[0]]||0)+1;try{localStorage.setItem('apex-cups',JSON.stringify(TROPHY))}catch(e){}fanfare()}
+        box.insertAdjacentHTML('afterbegin',`<p class="bigt" style="color:#ffc23d">${won?`You win the ${c[0]}! 🏆`:`${top} wins the ${c[0]}.`} +${coins} coins</p>`);
+        row.innerHTML=`<button class="go" type="button" data-cup="${CUP.k}">Race this cup again</button><button class="btn" type="button" data-a="menu">All tracks</button>`;CUP=null;if(saveMode)MODE=saveMode}
+      else row.innerHTML=`<button class="go" type="button" data-cupnext="1">Next race (${CUP.i+1} of 4): ${TRACKS[c[1][CUP.i]][0]}</button><button class="btn" type="button" data-a="retry">Race again (no points)</button><button class="btn" type="button" data-cupquit="1">Quit the cup</button>`}catch(e){console.warn(e)}return r}}
+  // ---- decals
+  const DEC={stripe:[['none','No stripes',0],['twin','Twin stripes',40],['center','Center stripe',40]],flames:[['off','No flames',0],['on','Flames',60]]};
+  let DS={stripe:'none',flames:'off',num:7,stc:0xffffff};try{Object.assign(DS,JSON.parse(localStorage.getItem('apex-decals')||'{}'))}catch(e){}
+  const saveD=()=>{try{localStorage.setItem('apex-decals',JSON.stringify(DS))}catch(e){}};
+  const coinsD=()=>{try{return JSON.parse(localStorage.getItem('overtime-coins')||'null')||{c:0,own:{},earned:0}}catch(e){return{c:0,own:{},earned:0}}};
+  const own=k=>k==='dec-none'||k==='dec-off'||!!coinsD().own['dec-'+k];
+  function buyD(k,cost){const d=coinsD();if(d.own['dec-'+k])return true;if(d.c<cost)return false;d.c-=cost;d.own['dec-'+k]=Date.now();try{localStorage.setItem('overtime-coins',JSON.stringify(d))}catch(e){}return true}
+  const TOPY={classic:1.01,wedge:.79,buggy:1.26,rocket:.96};
+  function numTex(n){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');x.fillStyle='#fff';x.beginPath();x.arc(64,64,58,0,6.283);x.fill();x.fillStyle='#111';x.font='900 78px system-ui';x.textAlign='center';x.textBaseline='middle';x.fillText(String(n),64,70);const t=new T3.CanvasTexture(c);return t}
+  {const _mk=makeCar;makeCar=function(color,op,cpu,shape){const g=_mk.apply(this,arguments);if(cpu||op<1)return g;try{const y=TOPY[shape||'classic']||1,len=shape==='rocket'?4.6:shape==='buggy'?3:4;
+      const sm=new T3.MeshPhongMaterial({color:DS.stc,flatShading:true});
+      if(DS.stripe==='twin')for(const x of[-.35,.35]){const s=new T3.Mesh(new T3.BoxGeometry(.22,.04,len),sm);s.position.set(x,y,0);g.add(s)}
+      if(DS.stripe==='center'){const s=new T3.Mesh(new T3.BoxGeometry(.5,.04,len),sm);s.position.set(0,y,0);g.add(s)}
+      if(DS.flames==='on'){const fm=new T3.MeshPhongMaterial({color:0xff7a1a,flatShading:true,emissive:0x5a1a00});for(const sx of[-1,1])for(let k=0;k<3;k++){const f=new T3.Mesh(new T3.ConeGeometry(.18,1.1-k*.2,4),fm);f.rotation.z=sx*Math.PI/2;f.rotation.y=0;f.position.set(sx*1.07,.6+k*.13,1.2-k*.45);g.add(f)}}
+      if(DS.num){const p=new T3.Mesh(new T3.PlaneGeometry(.8,.8),new T3.MeshBasicMaterial({map:numTex(DS.num),transparent:true}));p.rotation.x=-Math.PI/2;p.position.set(0,y+.03,shape==='buggy'?.8:1.6);g.add(p)}}catch(e){}return g}}
+  {const _h=GARAGE.html;GARAGE.html=function(){const h=_h.apply(this,arguments),c=coinsD().c;const dec=`<h3 style="margin:4px 0 0;text-align:left">Decals</h3><div class="trks">${DEC.stripe.concat(DEC.flames).map(([k,n,p])=>{const kind=DEC.stripe.find(x=>x[0]===k)?'stripe':'flames',on=DS[kind]===k;return`<button class="trk" type="button" data-gd="${kind}:${k}" style="${on?'border-color:#ffc23d':''}"><b>${n}</b><small>${own(k)?(on?'On your car':'Owned'):p+' coins'}</small></button>`}).join('')}</div>
+      <div class="row" style="justify-content:flex-start"><label style="display:flex;gap:8px;align-items:center">Car number <input id="gnum" type="number" min="0" max="99" value="${DS.num}" style="width:70px;padding:6px;border-radius:8px;border:1px solid #2a353c;background:#0b0f11;color:#fff"></label><label style="display:flex;gap:8px;align-items:center">Stripe color <select id="gstc" style="padding:6px;border-radius:8px;background:#0b0f11;color:#fff;border:1px solid #2a353c">${[[0xffffff,'White'],[0x111111,'Black'],[0xffc23d,'Gold'],[0x4aa3ff,'Blue']].map(([v,n])=>`<option value="${v}"${DS.stc===v?' selected':''}>${n}</option>`).join('')}</select></label></div>`;
+    return h.replace('<div class="row"><button class="go" type="button" data-a="menu">Done</button></div>',dec+'<div class="row"><button class="go" type="button" data-a="menu">Done</button></div>')}}
+  const refresh=()=>{showCard(GARAGE.html());if(TR){buildWorld(TR,TR.theme);if(G&&G.phase==='menu'){C.s=4.5;place()}}};
+  $('ovc').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+    if(b.dataset.gd){const[kind,k]=b.dataset.gd.split(':'),it=DEC[kind].find(x=>x[0]===k);if(!own(k)&&!buyD(k,it[2])){note(`You need ${it[2]} coins for ${it[1]}`);return}DS[kind]=k;saveD();refresh();return}
+    if(b.dataset.cupk!=null||b.dataset.cup!=null){cupStart(+(b.dataset.cupk!=null?b.dataset.cupk:b.dataset.cup));return}if(b.dataset.cupnext){cupRace();return}if(b.dataset.cupquit){CUP=null;if(saveMode)MODE=saveMode;menu();return}if(b.dataset.cupres){cupRace();return}});
+  $('ovc').addEventListener('change',e=>{if(e.target.id==='gnum'){DS.num=clamp(Math.round(+e.target.value||0),0,99);saveD();refresh()}else if(e.target.id==='gstc'){DS.stc=+e.target.value;saveD();refresh()}});
+  {const _m=menu;menu=function(){const r=_m.apply(this,arguments);try{const rows=$('ovc').querySelectorAll('.row');const anchor=rows[0];const h=`<h3 style="margin:6px 0 0;text-align:left">Championship cups</h3><div class="trks">${CUPS.map(([n,tr],k)=>`<button class="trk" type="button" data-cupk="${k}"><b>🏆 ${n}</b><small>${tr.map(i=>TRACKS[i][0]).join(' · ')}${TROPHY[n]?` · won ${TROPHY[n]}×`:''}</small></button>`).join('')}</div>${CUP?`<div class="row"><button class="go" type="button" data-cupres="1">Resume the ${CUPS[CUP.k][0]}: race ${CUP.i+1} of 4</button></div>`:''}`;
+    const p=$('ovc').querySelector('p');if(p)p.insertAdjacentHTML('afterend',h)}catch(e){}return r}}
+  return{get CUP(){return CUP},cupStart,get DS(){return DS},get draftT(){return draftT}}})();
+window.__apex={APX,finish,menu,GX,RACE,get G(){return G},get TR(){return TR},C,keys,makeTrack,load,step};
 })();
 </script>
 </body></html>
