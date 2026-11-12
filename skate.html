@@ -373,7 +373,68 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&S&&!paused
     for(const t of['pointerup','pointercancel','lostpointercapture'])b.addEventListener(t,()=>{K[k]=0});b.addEventListener('contextmenu',e=>e.preventDefault())}}
 resize();renderAch();menu();requestAnimationFrame(frame);
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
-window.__shred={get S(){return S},K,joy,update,press,reset,get RAILS(){return RAILS},get path(){return path},get SK(){return SK},buildPark,skStart,setPark:id=>{parkId=id;buildPark(id)},give,GOT,ACH,along,groundAt,setMode:m=>{mode=m}};
+/* ---------- combo challenges, the downtown street spot, and the replay editor ---------- */
+const SKX=(()=>{
+  // ---- the street spot
+  PARKS.street={name:'Downtown',L:110,cop:4,build(){pt(0,4,'vert');pt(0,3.6,'vert');arc(3.6,3.6,3.6,Math.PI,Math.PI*1.5,16,'qp');
+      pt(14,0);pt(16,.35,'kick');pt(16.2,.35,'top');pt(21,.35,'top');pt(21.3,0,'down');                 // curb
+      pt(30,0);pt(33.5,1.9,'kick');pt(34,1.9,'top');pt(40,1.9,'top');pt(46,0,'stairs');                // plaza and the 5 stair
+      pt(56,0);pt(59.5,2.6,'kick');pt(60,2.6,'top');pt(65,2.6,'top');pt(73,0,'stairs');               // the big 10
+      pt(84,0);pt(86.5,1.2,'kick');pt(87,1.2,'top');pt(93.5,1.2,'top');pt(95.5,0,'down');             // planter
+      pt(110-3.6,0);arc(110-3.6,3.6,3.6,Math.PI*1.5,Math.PI*2,16,'qp');pt(110,4,'vert')},
+    rails:[{name:'Curb',x0:16.3,y0:.47,x1:20.9,y1:.47,kind:'ledge'},{name:'Plaza Ledge',x0:34.2,y0:2.02,x1:39.8,y1:2.02,kind:'ledge'},{name:'Handrail',x0:40,y0:2.85,x1:46,y1:.95,kind:'rail'},
+      {name:'Big Rail',x0:65,y0:3.55,x1:73,y1:.95,kind:'rail'},{name:'Bench',x0:76,y0:.55,x1:81,y1:.55,kind:'ledge'},{name:'Planter Ledge',x0:87.2,y0:1.32,x1:93.3,y1:1.32,kind:'ledge'}],
+    gaps:[{name:'5 Stair',from:[39,40.5],to:[45.5,52],pts:700},{name:'Big 10',from:[64,65.5],to:[72.5,80],pts:1400},{name:'Curb to Plaza',rail:true,from:[16,21],to:[34,40],pts:800},{name:'Ledge to Handrail',rail:true,from:[34,40],to:[40,46],pts:900},{name:'Bench to Planter',rail:true,from:[76,81],to:[87,94],pts:900}]};
+  SIGNX_.street=24;
+  {const _dw=drawWorld;drawWorld=function(){_dw.apply(this,arguments);if(PARK!=='street')return;try{
+    // street lamps and a crosswalk so it reads as downtown
+    for(let x=8;x<L;x+=22){const px=X(x),gy=Y(0);ctx.fillStyle='#3a3f46';ctx.fillRect(px-Z*.05,gy-Z*4.2,Z*.1,Z*4.2);ctx.fillRect(px-Z*.05,gy-Z*4.2,Z*.7,Z*.08);ctx.fillStyle='rgba(255,236,170,.9)';ctx.beginPath();ctx.arc(px+Z*.62,gy-Z*4.05,Z*.13,0,6.283);ctx.fill()}
+    for(let x=47;x<55;x+=1.2){ctx.fillStyle='rgba(255,255,255,.75)';ctx.fillRect(X(x),Y(0)-2,Z*.6,4)}
+    ctx.fillStyle='#6b4a2f';ctx.fillRect(X(76),Y(.55),Z*5,Z*.12);for(const lx of[76.3,80.5])ctx.fillRect(X(lx),Y(.55),Z*.15,Z*.55);
+    ctx.fillStyle='#4f8a3c';ctx.beginPath();ctx.ellipse(X(90.2),Y(1.2)-Z*.5,Z*2.4,Z*.7,0,0,6.283);ctx.fill()}catch(e){}}}
+  // ---- combo challenges
+  const isGrind=c=>['50-50','Nosegrind','5-0','Boardslide'].includes(c.name),isMan=c=>c.name==='Manual'||c.name==='Nose Manual',isFlip=c=>['Kickflip','Heelflip','Pop Shove-it','360 Flip','Varial Kickflip'].includes(c.name),isGrab=c=>['Indy','Melon','Method','Stalefish','Nose Grab'].includes(c.name),isGap=c=>c.kind==='g',spin=c=>/^\d+$/.test(c.name)?+c.name:/spin$/.test(c.name)?999:0;
+  const seq=(...fs)=>cb=>{let i=0;for(const c of cb){if(fs[i]&&fs[i](c))i++;if(i>=fs.length)return true}return false};
+  const CH=[['kgm','Kickflip into a grind into a manual',seq(c=>c.name==='Kickflip',isGrind,isMan),30],['gapgrab','Ollie a gap, then land a grab',seq(isGap,isGrab),25],['360grind','360 Flip, then any grind',seq(c=>c.name==='360 Flip',isGrind),35],
+    ['five','A 5-trick combo with a manual in it',cb=>cb.length>=5&&cb.some(isMan),30],['twogrind','Two grinds in one combo',cb=>cb.filter(isGrind).length>=2,30],['spinmelon','A 360 spin, then a Melon',seq(c=>spin(c)>=360,c=>c.name==='Melon'),35],
+    ['hbn','Heelflip, Boardslide, Nose Manual',seq(c=>c.name==='Heelflip',c=>c.name==='Boardslide',c=>c.name==='Nose Manual'),40],['vstale','Varial Kickflip and a Stalefish in one combo',cb=>cb.some(c=>c.name==='Varial Kickflip')&&cb.some(c=>c.name==='Stalefish'),30],
+    ['threeflips','Three different flips in one combo',cb=>new Set(cb.filter(isFlip).map(c=>c.name)).size>=3,40],['tenk','A 10,000-point combo with a gap in it',(cb,pts)=>pts>=10000&&cb.some(isGap),50],
+    ['big10','Downtown: clear the Big 10',cb=>cb.some(c=>c.name==='Big 10'),40],['bigrail','Downtown: grind the Big Rail into a manual',cb=>{let r=false;for(const c of cb){if(c.name==='Big Rail'||(r&&isGrind(c)))r=true;if(r&&isMan(c))return true}return false},50]];
+  let DONE={};try{DONE=JSON.parse(localStorage.getItem('shred-challenges')||'{}')}catch(e){}
+  {const _bk=bank;bank=function(){const cb=S&&S.combo?S.combo.slice():[],pts=S&&S.combo&&S.combo.length?comboScore():0;const r=_bk.apply(this,arguments);try{if(!cb.length)return r;
+      // grind names are tricks; the rail itself is the gap name when you hit it, so remember which rail you were on
+      for(const[id,txt,fn,coins]of CH){if(DONE[id])continue;if(fn(cb,pts)){DONE[id]=Date.now();try{localStorage.setItem('shred-challenges',JSON.stringify(DONE))}catch(e){}addCoins(coins);setTimeout(()=>{if(S)flash('Challenge complete!',`${txt} · +${coins} coins`);chime()},700)}}}catch(e){}return r}}
+  // remember the rail you grind so “Big Rail” can count as part of the combo
+  {const _at=addTrick;addTrick=function(name,pts,kind){const r=_at.apply(this,arguments);try{if(S&&S.st==='grind'&&S.rail&&S.rail.name&&isGrind({name}))S.combo[S.combo.length-1].rail=S.rail.name}catch(e){}return r}}
+  // ---- replay editor
+  const FR=[],MAXF=60*14;let RP=null;
+  const snap=()=>({x:S.x,y:S.y,s:S.s,st:S.st,face:S.face,spin:S.spin,flip:S.flip,flipT:S.flipT,grab:S.grab,crouch:S.crouch,rail:S.rail,man:S.man,bailT:S.bailT,cx:camX,cy:camY,tt:S.trickText});
+  const bar=document.createElement('div');bar.id='rpbar';bar.hidden=true;bar.style.cssText='position:absolute;left:8px;right:8px;bottom:8px;z-index:8;background:rgba(12,16,22,.9);border:1px solid #39424c;border-radius:12px;padding:8px;display:none;flex-wrap:wrap;gap:6px;align-items:center;color:#fff;font:600 13px system-ui';
+  bar.innerHTML=`<button type="button" data-rp="play">⏯ Play</button><span>Speed</span>${[.25,.5,1].map(s=>`<button type="button" data-rps="${s}">${s}×</button>`).join('')}<span>Camera</span>${[['follow','Follow'],['wide','Wide'],['close','Close-up']].map(([k,n])=>`<button type="button" data-rpc="${k}">${n}</button>`).join('')}<input type="range" id="rpscrub" min="0" max="100" value="0" style="flex:1;min-width:120px"><button type="button" data-rp="save">Save clip</button><button type="button" data-rp="load">My clip</button><button type="button" data-rp="close">Close</button>`;
+  $('stage').appendChild(bar);{const st=document.createElement('style');st.textContent='#rpbar button{min-height:32px;padding:0 10px;border-radius:8px;border:1px solid #39424c;background:#1b232b;color:#fff;font:700 13px system-ui;cursor:pointer}#rpbar button[aria-pressed="true"]{background:#ffc23d;color:#1a1405;border-color:#ffc23d}';document.head.appendChild(st)}
+  function syncBar(){for(const b of bar.querySelectorAll('[data-rps]'))b.setAttribute('aria-pressed',String(+b.dataset.rps===RP.sp));for(const b of bar.querySelectorAll('[data-rpc]'))b.setAttribute('aria-pressed',String(b.dataset.rpc===RP.cam));bar.querySelector('[data-rp="play"]').textContent=RP.play?'⏸ Pause':'▶ Play';const sc=$('rpscrub');sc.max=String(RP.f.length-1);sc.value=String(Math.floor(RP.t))}
+  function open(frames,label){if(!S)return;const f=frames||FR.slice();if(f.length<20){if(S)flash('Nothing to replay yet','Skate for a few seconds first');return}RP={f,t:0,sp:.5,cam:'follow',play:true,wasPaused:paused,z0:Z,live:S,label:label||'Replay'};paused=true;bar.hidden=false;bar.style.display='flex';syncBar()}
+  function close(){if(!RP)return;S=RP.live;Z=RP.z0;paused=RP.wasPaused;RP=null;bar.hidden=true;bar.style.display='none'}
+  bar.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!RP)return;if(b.dataset.rps){RP.sp=+b.dataset.rps}else if(b.dataset.rpc){RP.cam=b.dataset.rpc}else{const a=b.dataset.rp;
+      if(a==='play'){if(RP.t>=RP.f.length-1)RP.t=0;RP.play=!RP.play}else if(a==='close'){close();return}
+      else if(a==='save'){try{const lite=RP.f.map(q=>[+q.x.toFixed(2),+q.y.toFixed(2),+q.s.toFixed(2),q.st,q.face,Math.round(q.spin),q.flip?q.flip[0]:0,+(q.flipT||0).toFixed(2),q.grab?q.grab[0]:0,+(q.crouch||0).toFixed(2),q.rail?RAILS.indexOf(q.rail):-1,q.man||0,+(q.bailT||0).toFixed(2),+q.cx.toFixed(2),+q.cy.toFixed(2)]);localStorage.setItem('shred-clip',JSON.stringify({park:PARK,f:lite}));b.textContent='Saved!'}catch(err){b.textContent='Too big to save'}}
+      else if(a==='load'){let c=null;try{c=JSON.parse(localStorage.getItem('shred-clip')||'null')}catch(_){}if(!c){b.textContent='No clip saved';return}if(c.park!==PARK){b.textContent=`Load the ${(PARKS[c.park]||{}).name||'same'} park first`;return}
+        const fl=Object.values(FLIPS).concat([]);RP.f=c.f.map(a=>({x:a[0],y:a[1],s:a[2],st:a[3],face:a[4],spin:a[5],flip:a[6]?fl.find(z=>z[0]===a[6])||null:null,flipT:a[7],grab:a[8]?Object.values(GRABS).find(z=>z[0]===a[8])||null:null,crouch:a[9],rail:a[10]>=0?RAILS[a[10]]:null,man:a[11]||null,bailT:a[12],cx:a[13],cy:a[14]}));RP.t=0;RP.play=true;RP.label='My clip'}}
+    syncBar()});
+  $('rpscrub').addEventListener('input',e=>{if(RP){RP.t=+e.target.value;RP.play=false;syncBar()}});
+  addEventListener('keydown',e=>{if(e.target&&e.target.closest&&e.target.closest('input,select,textarea'))return;if(e.code==='KeyT'&&!e.repeat&&$('ov').hidden){RP?close():open();e.preventDefault()}else if(RP&&e.code==='Space'){RP.play=!RP.play;syncBar();e.preventDefault();e.stopImmediatePropagation()}else if(RP&&e.code==='Escape'){close()}},true);
+  {const b=document.createElement('button');b.className='btn';b.id='bReplay';b.type='button';b.textContent='Replay (T)';const pz=$('bPause');if(pz)pz.insertAdjacentElement('afterend',b);b.addEventListener('click',()=>{RP?close():open()})}
+  {const _d=draw;draw=function(){if(!RP){const r=_d.apply(this,arguments);try{if(S&&!paused&&$('ov').hidden&&S.st!=='done'){FR.push(snap());if(FR.length>MAXF)FR.shift()}}catch(e){}return r}
+    try{const f=RP.f[Math.min(RP.f.length-1,Math.floor(RP.t))];if(RP.play){RP.t+=RP.sp;if(RP.t>=RP.f.length-1){RP.t=RP.f.length-1;RP.play=false;syncBar()}if(Math.floor(RP.t)%8===0)syncBar()}
+      ctx.setTransform(dpr,0,0,dpr,0,0);const live=RP.live;S=Object.assign({},live,f);
+      if(RP.cam==='follow'){Z=RP.z0;camX=f.cx;camY=f.cy}else if(RP.cam==='wide'){Z=RP.z0*.55;camX=clamp(f.x,cw/2/Z-1,L-cw/2/Z+1);camY=Math.max(2.5,f.y)}else{Z=RP.z0*1.7;camX=f.x;camY=Math.max(1,f.y-.3)}
+      drawWorld();drawSkater();S=live;
+      ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(10,10,190,30);ctx.fillStyle='#ffc23d';ctx.font='800 15px system-ui';ctx.textAlign='left';ctx.fillText(`● ${RP.label.toUpperCase()} · ${RP.sp}×`,20,30)}catch(e){console.warn(e);close()}}}
+  {const _m=menu;menu=function(){if(RP)close();const r=_m.apply(this,arguments);try{const n=CH.filter(c=>DONE[c[0]]).length;const h=`<h3 style="margin:6px 0 2px;text-align:left">Combo challenges · ${n} of ${CH.length}</h3><div style="text-align:left;max-height:180px;overflow:auto;border:1px solid #2a323b;border-radius:10px;padding:6px 10px">${CH.map(([id,txt,,c])=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;${DONE[id]?'color:#7ee07a':''}"><span>${DONE[id]?'✓':'○'} ${txt}</span><span>${c} coins</span></div>`).join('')}</div><p style="font-size:13px;color:#9fb0ba">Complete them in any mode. Press <b>T</b> (or Replay) any time to watch your last 14 seconds in slow motion.</p>`;
+    const k=$('ovc').querySelector('.keys');if(k)k.insertAdjacentHTML('beforebegin',h)}catch(e){}return r}}
+  try{if(!$('ov').hidden&&!S)menu()}catch(e){}
+  return{CH,get DONE(){return DONE},open,close,get RP(){return RP},FR}})();
+window.__shred={SKX,bank,addTrick,get PARK(){return PARK},get S(){return S},K,joy,update,press,reset,get RAILS(){return RAILS},get path(){return path},get SK(){return SK},buildPark,skStart,setPark:id=>{parkId=id;buildPark(id)},give,GOT,ACH,along,groundAt,setMode:m=>{mode=m}};
 /* ---------- game controllers: an Xbox, PlayStation or Switch controller works like the keyboard; in menus the D-pad or stick moves between buttons and A picks ---------- */
 const PADS=(cfg=>{
   const held=[new Map(),new Map()],dirs=[new Set(),new Set()],prev=[[],[]],block=[new Set(),new Set()],nav=[null,null],navT=[0,0];let foc=null,wasUI=null,seen=0;
