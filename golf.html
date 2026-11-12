@@ -660,18 +660,18 @@ function endHole(){const i=S.hole;for(const p of S.players){p.card[i]=p.strokes;
   if(S.field)for(const f of S.field){const d=Math.round(.15+(1-f.sk)*1.1+gauss()*.7);f.card[i]=clamp(HOLE.par+d,HOLE.par-2,HOLE.par+3);f.total=Object.values(f.card).reduce((a,b)=>a+b,0)}
   S.phase='card';setTimeout(()=>{if(S.hole+1>=S.h1)endRound();else showCard(cardHtml(true)+`<div class="row"><button class="go" type="button" data-a="next">Next hole</button><button class="btn" type="button" data-a="quit">Quit round</button></div>`)},1600)}
 function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(6.283*v)}
-const parThru=(p)=>{let s=0;for(const k in p.card)s+=PARS[k%18];return s};
+const parThru=(p)=>{let s=0;for(const k in p.card)s+=parOf(k);return s};
 const toPar=p=>{const d=p.total-parThru(p);return d===0?'E':d>0?'+'+d:String(d)};
 function cardHtml(mid){const hs=[];for(let k=S.h0;k<S.h1;k++)hs.push(k);const H=S.H;
-  let h=`<h2>${mid?`Hole ${S.hole+1} done`:'Scorecard'}</h2><p>${esc(H.name)}</p><div class="scw"><table class="sc"><tr><th>Hole</th>${hs.map(k=>`<th>${k+1}</th>`).join('')}<th>Tot</th></tr><tr><th>Par</th>${hs.map(k=>`<td>${PARS[k%18]}</td>`).join('')}<td>${hs.reduce((a,k)=>a+PARS[k%18],0)}</td></tr>`;
-  for(const p of S.players)h+=`<tr><td class="n" style="color:${PCSS[p.k]}">${esc(p.name)}</td>${hs.map(k=>{const v=p.card[k];if(v==null)return'<td></td>';const d=v-PARS[k%18];return`<td><span class="${d<=-2?'e':d===-1?'b':d>0?'o':'p'}">${v}</span></td>`}).join('')}<td><b>${p.total||''}</b> ${p.total?toPar(p):''}</td></tr>`;
+  let h=`<h2>${mid?`Hole ${S.hole+1} done`:'Scorecard'}</h2><p>${esc(H.name)}</p><div class="scw"><table class="sc"><tr><th>Hole</th>${hs.map(k=>`<th>${k+1}</th>`).join('')}<th>Tot</th></tr><tr><th>Par</th>${hs.map(k=>`<td>${parOf(k)}</td>`).join('')}<td>${hs.reduce((a,k)=>a+parOf(k),0)}</td></tr>`;
+  for(const p of S.players)h+=`<tr><td class="n" style="color:${PCSS[p.k]}">${esc(p.name)}</td>${hs.map(k=>{const v=p.card[k];if(v==null)return'<td></td>';const d=v-parOf(k);return`<td><span class="${d<=-2?'e':d===-1?'b':d>0?'o':'p'}">${v}</span></td>`}).join('')}<td><b>${p.total||''}</b> ${p.total?toPar(p):''}</td></tr>`;
   h+='</table></div>';if(S.field)h+=leaderHtml();return h}
 function leaderHtml(){const me=S.players[0],all=[{name:me.name,total:me.total,par:parThru(me),me:1}].concat(S.field.map(f=>({name:f.name,total:f.total,par:parThru(f)}))).map(x=>Object.assign(x,{d:x.total-x.par})).sort((a,b)=>a.d-b.d);
   let pos=0,last=null;return `<h3>Leaderboard · ${esc(S.evName||'St. Charles Invitational')}</h3><div class="lb">${all.slice(0,8).concat(all.slice(8).filter(x=>x.me)).map((x,k)=>{if(x.d!==last){pos=all.indexOf(x)+1;last=x.d}return`<div class="${x.me?'me':''}"><span>${pos}</span><span>${esc(x.name)}</span><span>${x.d===0?'E':x.d>0?'+'+x.d:x.d}</span><span>${x.total}</span></div>`}).join('')}</div>`}
 function endRound(){S.phase='done';const m=S.mode;let h='';
   if(m==='ld'){const b=S.ld.best,best=store.get('golf-ld',0);if(b>best)store.set('golf-ld',b);if(b>=320)ach('ld');addCoins(Math.round(b/30));addXP(20+Math.round(b/8));h=`<h2>Long drive</h2><p class="bigt">${b?b+' yards':'No drives in the fairway'}</p><p>Your record: ${Math.max(b,best)} yards · +${Math.round(b/30)} coins</p>`}
   else if(m==='ctp'){const b=S.ctp.best,best=store.get('golf-ctp',null);if(b!=null&&(best==null||b<best))store.set('golf-ctp',b);if(b!=null&&b<=3)ach('ctp');addXP(b==null?10:Math.round(clamp(70-b,15,70)));const c=b==null?0:b<3?30:b<10?15:b<25?8:3;addCoins(c);h=`<h2>Closest to the pin</h2><p class="bigt">${b==null?'No balls on the green':b===0?'Hole in one!':b.toFixed(1)+' feet'}</p><p>Your record: ${best==null&&b==null?'—':Math.min(b==null?1e9:b,best==null?1e9:best).toFixed(1)+' ft'} · +${c} coins</p>`}
-  else{const full=S.h1-S.h0,key=S.mode==='daily'?'daily':S.course,best=store.get('golf-best',{}),done=Object.keys(S.players[0].card).length===full;
+  else{const full=S.h1-S.h0,key=S.mode==='daily'?'daily':S.mode==='par3'?'par3':S.course,best=store.get('golf-best',{}),done=Object.keys(S.players[0].card).length===full;
     if(done){const pl=new Set(store.get('golf-played',[]));pl.add(S.course);store.set('golf-played',[...pl]);if(pl.size>=3)ach('courses')}
     for(const p of S.players){const d=p.total-parThru(p);if(done&&d<0)ach('under',p)}
     {const p=S.players[0],st=p.stats;if(done){addXP(60+(p.total-parThru(p)<0?40:0),p);if(st.birdies>=3)ach('birdie3',p);if(st.bog===0&&st.holes>=9)ach('clean',p);if(st.fw>=8)ach('fairways',p);if(st.gir>=10)ach('gir',p)}}
@@ -974,7 +974,7 @@ function shop(msg){const c=coinsHave();showCard(`<h2>Pro shop</h2><p>Spend Overt
 
 /* ---------- stats ---------- */
 let ST=Object.assign({rounds:0,holes:0,drives:0,driveYds:0,longDrive:0,fwHit:0,fwOpp:0,gir:0,girOpp:0,putts:0,puttHoles:0,birdies:0,eagles:0,aces:0,matchW:0,matchL:0,matchH:0,best:[]},store.get('golf-stats',{}));
-const saveST=()=>store.set('golf-stats',ST),COUNTED=m=>['stroke','tour','career','daily','match'].includes(m);
+const saveST=()=>store.set('golf-stats',ST),COUNTED=m=>['stroke','tour','career','daily','match','skins','par3'].includes(m);
 function statsScreen(){const pct=(a,b)=>b?Math.round(a/b*100)+'%':'—',tile=(v,l)=>`<div class="stt"><b>${v}</b><small>${l}</small></div>`;
   showCard(`<h2>Stats</h2><p>${esc(cfg.names[0]||'Blake Yoakam')} · ${ST.rounds} round${ST.rounds===1?'':'s'} · ${ST.holes} holes</p><div class="stg">
   ${tile(ST.drives?Math.round(ST.driveYds/ST.drives)+' yds':'—','Avg drive')}${tile(ST.longDrive?ST.longDrive+' yds':'—','Longest drive')}${tile(pct(ST.fwHit,ST.fwOpp),'Fairways hit')}${tile(pct(ST.gir,ST.girOpp),'Greens in regulation')}
@@ -1049,7 +1049,7 @@ function padShow(){const el=$('dragPad');if(el)el.hidden=!((cfg.swing||'meter')=
     if(COUNTED(S.mode)){const d=p.strokes-HOLE.par;ST.holes++;ST.girOpp++;if(p.gir)ST.gir++;ST.putts+=p._putts||0;ST.puttHoles++;if(p.strokes===1)ST.aces++;else if(d<=-2)ST.eagles++;else if(d===-1)ST.birdies++;saveST()}
     for(const q of S.players){q._putts=0;q._teeDone=0}return _eh.apply(this,arguments)}}
 {const _er=endRound;endRound=function(){if(S.mode==='match')return matchEnd();if(S.mode==='range'||S.mode==='pgreen')return practiceEnd();const r=_er.apply(this,arguments);
-  try{const p=S.players[0],full=S.h1-S.h0,done=Object.keys(p.card).length===full;if(done&&COUNTED(S.mode)){ST.rounds++;ST.best.push({c:S.mode==='daily'?'Daily 9':COURSES[S.course].name,h:full,d:p.total-parThru(p),t:p.total,dt:today()});ST.best.sort((a,b)=>(a.d/a.h)-(b.d/b.h));ST.best=ST.best.slice(0,5);saveST()}
+  try{const p=S.players[0],full=S.h1-S.h0,done=Object.keys(p.card).length===full;if(done&&COUNTED(S.mode)){ST.rounds++;ST.best.push({c:S.mode==='daily'?'Daily 9':S.mode==='par3'?'Par-3 course':COURSES[S.course].name,h:full,d:p.total-parThru(p),t:p.total,dt:today()});ST.best.sort((a,b)=>(a.d/a.h)-(b.d/b.h));ST.best=ST.best.slice(0,5);saveST()}
     if(S.mode==='daily'&&done){const row=$('ovc').querySelector('.row:last-child'),hs=[];for(let k=0;k<9;k++)hs.push(p.card[k]);
       if(S.ch){const me=p.total-parThru(p),fr=chThru(9),pa=document.createElement('p');pa.className='bigt';pa.textContent=me<fr?`You beat ${S.ch.name}! ${tp(me)} to ${tp(fr)}`:me>fr?`${S.ch.name} wins this one, ${tp(fr)} to ${tp(me)}`:`Tied with ${S.ch.name} at ${tp(me)}`;row.before(pa)}
       const b=document.createElement('button');b.className='btn';b.type='button';b.textContent='Challenge a friend';b.onclick=async()=>{const url=`${location.origin}${location.pathname}?d9=${S.dailyDate||today()}&c=${hs.map(v=>Math.min(35,v).toString(36)).join('')}&n=${encodeURIComponent((p.name||'').slice(0,22))}`,txt=`I shot ${p.total} (${toPar(p)}) on the Pin High Daily 9. Can you beat me hole by hole?`;
@@ -1114,7 +1114,59 @@ let roT=null;
     el.hidden=false;clearTimeout(roT);roT=setTimeout(()=>{el.hidden=true},6000)}}catch(e){}return r}}
 {const _m=menu;menu=function(){try{$('readout').hidden=true}catch(e){}return _m.apply(this,arguments)}}
 {const _hu=hud;hud=function(){const r=_hu.apply(this,arguments);try{if(S&&S.phase==='aim'&&club!==PUTTER){const t=lieCond(cur().ball,aim).tags;if(t.length)$('hLie').textContent+=' · '+t.join(' · ')}}catch(e){}return r}}
-window.__golf={lieCond,EVENTS,endHoleT:()=>endHole(),get ST(){return ST},get CU(){return CU},set CU(v){CU=v},RIVALS,caddieTalk,rangeHole,applyWx,WX,say,crowd,get rainOn(){return rain.m.visible},readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
+/* ---------- skins, scramble, the par-3 course and the hole-in-one challenge ---------- */
+const P3POOL=(()=>{const L=[];for(const c of['hills','lakes','canyon','links'])PARS.forEach((v,i)=>{if(v===3)L.push([c,i])});return L})();
+const P3COURSE=[[ 'hills',2],['lakes',6],['canyon',10],['links',15],['lakes',2],['hills',10],['links',6],['canyon',2],['lakes',15]];
+let aceMode=false;
+function cpuHole(par,sk,style,o){let base=.15+(1-sk)*1.1,sd=.75;if(style==='bomb'){sd=.95;base+=par===5?-.45:par===3?.12:0}if(style==='steady')sd=.45;if(style==='putt'){base-=.12;sd=.65}if(style==='streak'){base-=(o.mom||0)*.35;sd=.85}if(style==='rookie')sd=.8;
+  const s=clamp(par+Math.round(base+gauss()*sd),par-2,par+3);if(style==='streak')o.mom=clamp((o.mom||0)*.5+(s<par?1:s>par?-1:0),-1.5,1.5);return s}
+{const _hf=holeFor;holeFor=function(){
+  if(S.mode==='par3'){const [c,i]=P3COURSE[S.hole%P3COURSE.length],H=makeHole(c,i);H.name=`Short course · ${COURSES[c].name}`;return H}
+  if(S.mode==='ctp'&&S.aceCh){const [c,i]=P3POOL[S.aceCh.pick],H=makeHole(c,i);H.par=0;H.name='Hole-in-one challenge';H.hname=`${H.hname} · ${COURSES[c].name}`;return H}
+  return _hf.apply(this,arguments)}}
+{const _nr=newRound;newRound=function(mode,opts){opts=opts||{};if(mode==='par3')opts.range=[0,9];
+  if(mode==='scramble'&&cfg.names.filter(n=>n.trim()).length<2){const nm=cfg.names[0]||'Blake Yoakam',keep=cfg.names;cfg.names=[nm+' (ball A)',nm+' (ball B)'];try{return _nr.call(this,mode,opts)}finally{cfg.names=keep}}
+  return _nr.call(this,mode,opts)}}
+{const _sh=startHole;startHole=function(){if(S){if(S.mode==='par3'&&!S.pars)S.pars=Array(18).fill(3);
+    if(S.mode==='ctp'&&aceMode&&!S.aceCh)S.aceCh={pick:Math.floor(Math.random()*P3POOL.length)};
+    if(S.mode==='skins'&&!S.skins){const cpu=S.players.length<2?[RIVALS[0],RIVALS[2]].map(R=>({name:R[0],sk:R[3]+(S.diff==='am'?-.08:S.diff==='tour'?.06:0),style:R[4],card:{},mom:0})):[];S.skins={cpu,carry:0,won:{},log:[]}}
+    if(S.mode==='scramble')S.scr={team:0,hit:new Set(),why:{}}}
+  const r=_sh.apply(this,arguments);if(S&&S.mode==='scramble')S.scr.team=0;return r}}
+// pars for the scorecard
+function parOf(k){return S&&S.pars?S.pars[k]:PARS[k%18]}
+// skins: lowest score alone wins the hole's skins, ties carry over
+function skinsHole(){const K=S.skins,i=S.hole,par=HOLE.par,sc=S.players.map(p=>({name:p.name,s:p.strokes,me:p.k===0})).concat(K.cpu.map(c=>{const s=cpuHole(par,c.sk,c.style,c);c.card[i]=s;return{name:c.name,s}}));
+  const lo=Math.min(...sc.map(x=>x.s)),win=sc.filter(x=>x.s===lo),pot=1+K.carry;let msg;
+  if(win.length===1){K.won[win[0].name]=(K.won[win[0].name]||0)+pot;K.carry=0;msg=`${win[0].name} wins ${pot} skin${pot>1?'s':''} with a ${lo}`;K.log.push(msg);if(win[0].me){crowd('roar');say(`${pot} skin${pot>1?'s':''} for ${win[0].name}!`,true)}}
+  else{K.carry++;msg=`Tied at ${lo}. The skin carries over: ${K.carry+1} on the next hole`;K.log.push(`Hole ${i+1}: tie`)}
+  setTimeout(()=>note(win.length===1?'Skins!':'Carry over',msg,2.6),300);return sc}
+function skinsTable(){const K=S.skins,all=S.players.map(p=>p.name).concat(K.cpu.map(c=>c.name));return all.map(n=>({n,s:K.won[n]||0})).sort((a,b)=>b.s-a.s)}
+{const _eh=endHole;endHole=function(){if(S.mode==='skins'&&S.skins)skinsHole();return _eh.apply(this,arguments)}}
+{const _ch=cardHtml;cardHtml=function(mid){let h=_ch.apply(this,arguments);try{if(S&&S.mode==='skins'&&S.skins){h+=`<h3>Skins${S.skins.carry?` · ${S.skins.carry+1} riding on the next hole`:''}</h3><div class="lb">${skinsTable().map((x,k)=>`<div class="${x.n===S.players[0].name?'me':''}"><span>${k+1}</span><span>${esc(x.n)}</span><span></span><span>${x.s}</span></div>`).join('')}</div>`}}catch(e){}return h}}
+{const _er=endRound;endRound=function(){if(S&&S.mode==='skins'&&S.skins){const t=skinsTable(),me=S.players[0],mine=S.skins.won[me.name]||0,coins=mine*10;addCoins(coins);addXP(30+mine*15,me);S.phase='done';
+    const top=t[0],tie=t.length>1&&t[1].s===top.s;if(!tie&&top.n===me.name)setTimeout(()=>celebrate('Skins champion',`${me.name} wins ${mine} skins`),200);
+    showCard(cardHtml(false)+`<p class="bigt">${tie?'A tie at the top':`${esc(top.n)} wins the skins game`}</p><p>${esc(me.name)} won ${mine} skin${mine===1?'':'s'} · +${coins} coins</p><div class="row"><button class="go" type="button" data-a="again">Play again</button><button class="btn" type="button" data-a="menu">Menu</button></div>`);return}
+  if(S&&S.mode==='ctp'&&S.aceCh){const r=_er.apply(this,arguments);try{const h=$('ovc').querySelector('h2');if(h)h.textContent='Hole-in-one challenge'}catch(e){}return r}
+  return _er.apply(this,arguments)}}
+{const _sr=shotReport;shotReport=function(why){const p=cur();if(S&&S.mode==='scramble'&&S.scr)S.scr.why[p.k]=why;const r=_sr.apply(this,arguments);
+  try{if(S&&S.mode==='ctp'&&S.aceCh&&why==='holed'){addCoins(500);setTimeout(()=>celebrate('HOLE IN ONE!',`${p.name} wins 500 coins`),600);say('It went in! A hole in one! Five hundred coins!',true);crowd('roar',1)}}catch(e){}return r}}
+// scramble: everyone hits from the team's spot, then the best ball is picked
+function scrScore(p){const why=S.scr.why[p.k],b=p.ball;if(why==='water'||why==='ob')return 1e6+pinDist(b);const pen={B:14,R:7,D:9,X:-2,G:-4,F:0,T:0}[b.lie]||0;return pinDist(b)*(b.lie==='G'?1:1)+pen}
+{const _af=afterShot;afterShot=function(){if(!S||S.mode!=='scramble'||!S.scr)return _af.apply(this,arguments);const C=S.scr,P=S.players,me=cur();C.hit.add(S.turn);
+  if(me.holed){const d=me.strokes-C.team;C.team+=Math.max(1,d);for(const p of P){p.strokes=C.team;p.holed=true}return _af.apply(this,arguments)}
+  const next=P.find(p=>!C.hit.has(p.k));if(next){S.turn=next.k;S.phase='aim';setupShot();note('',`${next.name} is up`,1.2);return}
+  // everyone has hit: pick the best ball
+  let best=P[0];for(const p of P)if(scrScore(p)<scrScore(best))best=p;const d=best.strokes-C.team;C.team+=Math.max(1,d);
+  const spot={x:best.ball.x,z:best.ball.z,y:best.ball.y,lie:best.ball.lie};for(const p of P){p.ball=Object.assign({},spot);p.strokes=C.team}C.hit=new Set();C.why={};
+  if(C.team>=10){for(const p of P){p.holed=true;p.picked=true}note('Picked up','Ten team shots is the max',1.8);return _af.apply(this,arguments)}
+  S.turn=P[0].k;S.phase='aim';setupShot();note(`Using ${best.name.replace(/ \(ball [AB]\)$/,'')}${/ball [AB]/.test(best.name)?' '+best.name.match(/ball [AB]/)[0]:''}`,`${Math.round(pinDist(spot)*(spot.lie==='G'?3:1))} ${spot.lie==='G'?'feet':'yards'} to go · ${SURF[spot.lie]?SURF[spot.lie].n:''}`,1.8)}}
+{const _hu=hud;hud=function(){const r=_hu.apply(this,arguments);try{if(!S)return r;const sub=$('hHoleSub');
+  if(S.mode==='skins'&&S.skins)sub.textContent+=` · Skins: ${1+S.skins.carry} on this hole`;
+  if(S.mode==='scramble'&&S.scr)sub.textContent+=` · Scramble: team shot ${S.scr.team+1} · ${S.scr.hit.size} of ${S.players.length} hit`;
+  if(S.mode==='ctp'&&S.aceCh)sub.textContent=`${S.ctp.left} balls left · an ace wins 500 coins · ${HOLE.hname}`}catch(e){}return r}}
+{const _m=menu;menu=function(){const r=_m.apply(this,arguments);try{const md=$('ovc').querySelector('.modes');if(md)md.insertAdjacentHTML('beforeend',`<button class="mode" type="button" data-m="skins"><b>Skins</b><small>Every hole is worth a skin (10 coins). Ties carry over. ${cfg.names.length>1?'Your golfers play for them.':'You against two rivals.'}</small></button><button class="mode" type="button" data-m="scramble"><b>Scramble</b><small>${cfg.names.length>1?'Everyone hits, the team plays the best ball.':'Hit two balls every time and play the better one.'}</small></button><button class="mode" type="button" data-m="par3"><b>Par-3 course</b><small>Nine short holes from all four courses. Best: ${store.get('golf-best',{})['par3-f9']||'—'}</small></button><button class="mode" type="button" data-a="ace"><b>Hole-in-one challenge</b><small>Five balls at a par 3. An ace wins 500 coins.</small></button>`)}catch(e){}return r}}
+$('ovc').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.m==='ctp')aceMode=false;if(b.dataset.a==='ace'){aceMode=true;camInit=false;newRound('ctp')}},true);
+ window.__golf={P3POOL,get aceMode(){return aceMode},lieCond,EVENTS,endHoleT:()=>endHole(),get ST(){return ST},get CU(){return CU},set CU(v){CU=v},RIVALS,caddieTalk,rangeHole,applyWx,WX,say,crowd,get rainOn(){return rain.m.visible},readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 lin(scene);menu();requestAnimationFrame(frame);
 })();
