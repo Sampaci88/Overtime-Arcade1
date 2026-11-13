@@ -109,7 +109,7 @@ html.touch.playing .pbar{display:flex}
 .xpbar{height:12px;border-radius:6px;background:#0b0f11;border:1px solid var(--line);overflow:hidden}.xpbar i{display:block;height:100%;background:linear-gradient(90deg,#3ddc84,#ffc23d)}
 .skills{display:grid;gap:6px}.sk{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;background:#0b0f11;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .sk b{display:block;font:800 17px var(--display);letter-spacing:.04em;color:var(--fg)}.sk small{color:var(--muted);font-size:12px}
-.sk small.shnow{display:block;color:var(--led);margin-top:2px}.swatch{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;border:1px solid rgba(255,255,255,.4)}.pips{display:flex;gap:3px}.pips i{width:12px;height:12px;border-radius:3px;background:#2b3438}.pips i.on{background:var(--led)}
+.sk small.shnow{display:block;color:var(--led);margin-top:2px}.swatch{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;border:1px solid rgba(255,255,255,.4)}.cutl span{color:#ff8a7a;font-size:12px;font-weight:800;letter-spacing:.05em}.lb .cutl{border-top:1px dashed #ff8a7a}.rival{color:#ffb38a}.tnbox{border:1px solid var(--line);border-radius:12px;padding:10px;background:#0b0f11}.chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px}.stars{color:var(--led);letter-spacing:.06em}.stars i{font-style:normal;color:#3a4448}.stars.big{font-size:44px}.hcp{align-self:center;color:var(--led);font:800 14px var(--body);margin-left:8px}.flycard{position:absolute;left:16px;bottom:120px;max-width:min(360px,70%);background:rgba(6,10,14,.78);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:10px 14px;display:grid;gap:3px;color:#fff;pointer-events:none}.flycard b{font:800 26px var(--display);color:var(--led)}.flycard span{font-weight:800}.flycard i{font-style:normal;font-weight:700}.flycard small{color:#cfd8dc}.flycard em{font-style:normal;font-size:11px;color:#9aa6ab}#stage.photo .hud,#stage.photo .tc,#stage.photo .note,#stage.photo #caddie{visibility:hidden!important}.photobar{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;background:rgba(6,10,14,.8);padding:8px 10px;border-radius:12px;z-index:9;max-width:96%}.photobar span{color:#fff;font-size:13px}.photobar[hidden],.flycard[hidden]{display:none!important}.pips{display:flex;gap:3px}.pips i{width:12px;height:12px;border-radius:3px;background:#2b3438}.pips i.on{background:var(--led)}
 .sk .btn{min-height:34px;font-size:13px}.btn:disabled{opacity:.45;cursor:default}.chip:disabled{opacity:.5;cursor:default}
 .achs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}.achs div{background:#0b0f11;border:1px solid var(--line);border-radius:8px;padding:6px 8px;display:grid}.achs b{font-size:13px;color:var(--muted)}.achs small{font-size:11px;color:var(--muted)}.achs .got{border-color:var(--led)}.achs .got b{color:var(--led)}
 .lb small{color:var(--muted);font-size:11px}.sched div{grid-template-columns:28px 1fr 54px 54px}
@@ -145,7 +145,7 @@ html.touch.playing .pbar{display:flex}
   <div class="info">
     <section><h2>How to play</h2><ul><li>Aim with <kbd>A</kbd> <kbd>D</kbd> (hold <kbd>Shift</kbd> for fine aim), or just click or tap where you want to hit it, on the course or on the map. <kbd>P</kbd> aims at the pin. Pick a club with <kbd>W</kbd> <kbd>S</kbd>.</li><li><b>Swing:</b> press <kbd>Space</kbd> to start, press again to set the power, then once more when the marker comes back to the white line. Early slices, late hooks.</li><li>Watch the wind, the lie and the slope of the green. The arrows on the green show which way it breaks.</li></ul></section>
     <section><h2>Shots</h2><ul><li><kbd>Q</kbd>/<kbd>E</kbd> backspin or topspin: backspin stops it on the green (a full wedge with backspin can spin back toward you), topspin rolls it out.</li><li>Rough costs distance, sand costs more (a sand wedge helps). Water and out of bounds cost a stroke.</li><li><kbd>G</kbd> (or the Shot buttons) picks the shot type: Power (a power drive off the tee) goes farther but the sweet spot is smaller, Finesse is shorter and straighter, Approach lands soft, Backspin makes a wedge spin back, Stinger flies low under the wind, Punch stays under trees, Flop goes straight up and Bump &amp; run rolls along the ground. <kbd>F</kbd> (or the Curve buttons) curves it: draw right to left, fade left to right, big draw and big fade bend it around doglegs. On a phone, tap Shot to open both. The dashed line shows where it will land.</li><li><kbd>V</kbd> overhead view, <kbd>R</kbd> replay your last shot, <kbd>Tab</kbd> scorecard.</li></ul></section>
-    <section><h2>Modes</h2><p>Stroke play for up to four golfers on one device, a tournament against a full field, a Daily 9 that's the same for everyone, a long drive contest and closest to the pin. Seven courses, from friendly parkland to a redwood forest, two ocean courses and two championship monsters: Azalea Pines and Iron Valley.</p></section>
+    <section><h2>Modes</h2><p>Stroke play for up to four golfers on one device, a tournament against a full field, a Daily 9 that's the same for everyone, a long drive contest, closest to the pin, 30 one-shot challenges with stars to earn, and Target Golf (glowing targets on a night range, great with friends). In the Pro Tour career, majors are four rounds from Thursday to Sunday with a cut, new pins every day, firmer weekend greens and sudden-death playoffs; sign sponsor deals, chase your rival and build a real handicap. Create your golfer in the locker, and press <kbd>K</kbd> (or Pause, then Photo mode) to frame and save a picture. Seven courses, from friendly parkland to a redwood forest, two ocean courses and two championship monsters: Azalea Pines and Iron Valley.</p></section>
   </div>
 </div>
 <script src="lib/three.min.js"></script>
@@ -660,10 +660,10 @@ let cfg=Object.assign({course:'hills',holes:'18',diff:'am',names:['Blake Yoakam'
 let S=null;// the round
 const cur=()=>S&&S.players[S.turn];
 function newRound(mode,opts){opts=opts||{};if(mode==='career'){if(!CAR){CAR=newCareer();saveC()}const ev=EVENTS[CAR.ev];opts.course=ev.c;opts.range=ev.h}const range=opts.range||(mode==='daily'?[0,9]:cfg.holes==='f9'?[0,9]:cfg.holes==='b9'?[9,18]:[0,18]);
-  const names=(mode==='tour'||mode==='career'||mode==='daily'||mode==='ld'||mode==='ctp'||mode==='match'||mode==='range'||mode==='pgreen')?[cfg.names[0]||'Blake Yoakam']:cfg.names.slice(0,4);
+  const names=(mode==='chal'||mode==='tour'||mode==='career'||mode==='daily'||mode==='ld'||mode==='ctp'||mode==='match'||mode==='range'||mode==='pgreen')?[cfg.names[0]||'Blake Yoakam']:cfg.names.slice(0,4);
   S={mode,course:opts.course||cfg.course,diff:cfg.diff,h0:range[0],h1:range[1],hole:range[0],players:names.map((n,k)=>({name:n||('Golfer '+(k+1)),k,card:{},total:0,ball:null,strokes:0,holed:false,stats:{birdies:0,bog:0,fw:0,gir:0,holes:0}})),turn:0,phase:'intro',t:0,
     seed:opts.seed,field:null,ld:mode==='ld'?{left:6,best:0}:null,ctp:mode==='ctp'?{left:5,best:null}:null,coins:0,log:[]};
-  {const CC=COURSES[S.course];if(CC&&CC.pars&&!['daily','ld','ctp','range','pgreen','par3','custom','career'].includes(mode))S.pars=CC.pars.slice()}
+  {const CC=COURSES[S.course];if(CC&&CC.pars&&!['daily','ld','ctp','range','pgreen','par3','custom','chal','target'].includes(mode))S.pars=CC.pars.slice()}
   if(mode==='tour')S.field=FIELD.map(f=>({name:f[0],sk:f[1],card:{},total:0}));
   if(mode==='career'){S.field=CAR.cpu.map(c=>({name:c.name,sk:cpuSk(c),card:{},total:0}));const ev=EVENTS[CAR.ev];S.evName=ev.n+(ev.major?' (major)':'')}
   startHole()}
@@ -685,12 +685,13 @@ function careerScreen(msg){if(!CAR){CAR=newCareer();saveC()}S=null;golfer.visibl
   h+=`<p>Career: ${CAR.wins} win${CAR.wins===1?'':'s'} · ${CAR.majors} major${CAR.majors===1?'':'s'} · ${CAR.titles} season title${CAR.titles===1?'':'s'} · ${CAR.poy||0} Player of the Year award${(CAR.poy||0)===1?'':'s'}. Finish top 3 in the standings to move up a tour. Majors (★) are 18 holes and worth double points.</p>`;
   h+=`<div class="row">${done?'<button class="go" type="button" data-a="season">Start the next season</button>':`<button class="go" type="button" data-a="event">Play: ${esc(ev.n)}</button>`}<button class="btn" type="button" data-a="menu">Menu</button><button class="btn" type="button" data-a="carreset">${carArm>Date.now()?'Tap again to start over':'Start a new career'}</button></div>`;
   showCard(h)}
-function careerFinish(me){const ev=EVENTS[CAR.ev],d=me.total-parThru(me),all=[{me:1,d,r:Math.random()}].concat(S.field.map((f,i)=>({i,d:f.total-parThru(f),r:Math.random()}))).sort((a,b)=>a.d-b.d||a.r-b.r);
-  const tieTop=all[0].d===d&&all.filter(x=>x.d===d).length>1;all.forEach((x,k)=>{const pl=k+1,pts=evPts(pl,ev.major);if(x.me)x.pts=pts;else CAR.pts[x.i]+=pts});
-  const mine=all.find(x=>x.me),place=all.indexOf(mine)+1;CAR.you+=mine.pts;CAR.res.push({season:CAR.season,ev:CAR.ev,place,pts:mine.pts,score:me.total});
+function careerFinish(me){const d=me.total-parThru(me),all=[{me:1,d,r:Math.random()}].concat(S.field.map((f,i)=>({i,d:f.total-parThru(f),r:Math.random()}))).sort((a,b)=>a.d-b.d||a.r-b.r);
+  return careerAward(all,all[0].d===d&&all.filter(x=>x.d===d).length>1,me.total)}
+function careerAward(all,tieTop,score){const ev=EVENTS[CAR.ev],me={name:cfg.names[0]||'Blake Yoakam',k:0};all.forEach((x,k)=>{const pl=k+1,pts=evPts(pl,ev.major);if(x.me)x.pts=pts;else CAR.pts[x.i]+=pts});
+  const mine=all.find(x=>x.me),place=all.indexOf(mine)+1;CAR.you+=mine.pts;CAR.res.push({season:CAR.season,ev:CAR.ev,place,pts:mine.pts,score});
   let coins=place===1?(ev.major?200:100):place<=3?40:place<=10?15:5;addCoins(coins);addXP(place===1?(ev.major?500:300):place<=10?120:50,me);
-  if(place===1){CAR.wins++;ach('tourwin');if(ev.major){CAR.majors++;ach('major')}setTimeout(()=>celebrate(ev.major?'Major champion!':'Tournament winner!',`${me.name} wins the ${ev.n}`),200)}
-  let txt=place===1?`${tieTop?'Won it in a playoff! ':''}You win the ${ev.n}!`:`You finished ${ordinal(place)} at the ${ev.n}`;
+  if(place===1){CAR.wins++;ach('tourwin');if(ev.major){CAR.majors++;ach('major')}setTimeout(()=>celebrate(ev.major?'Major champion!':'Tournament winner!',`${me.name} wins ${evn}`),200)}
+  const evn=/^The /.test(ev.n)?ev.n:'the '+ev.n;let txt=place===1?`${tieTop?'Won it in a playoff! ':''}You win ${evn}!`:`You finished ${ordinal(place)} at ${evn}`;
   CAR.ev++;let season='';if(CAR.ev>=EVENTS.length){const st=standings(),rank=st.findIndex(x=>x.me)+1;season=`Season over: ${ordinal(rank)} on the ${TIERS[CAR.tier]}.`;if(rank===1){CAR.titles++;CAR.poy=(CAR.poy||0)+1;ach('season');season+=` Season champion and Player of the Year!`;setTimeout(()=>celebrate('Player of the Year',`${me.name} wins the ${TIERS[CAR.tier]} points race`),3200)}
     if(rank<=3&&CAR.tier<2){CAR.tier++;season+=` You're moving up to the ${TIERS[CAR.tier]}!`;if(CAR.tier===2)ach('protour')}else if(rank<=3)season+=' Another great season on the Pro Tour.';CAR.last=season}
   saveC();return{txt:`${txt} · +${mine.pts} points · +${coins} coins`,season,place}}
@@ -734,7 +735,7 @@ function showOthers(){let k=0;S.players.forEach((q,i)=>{if(i===S.turn||!q.ball||
 /* ---------- the swing ---------- */
 // meter value m: 0 at the white line, 1 = full power, up to 1.1 overswing
 function swingPress(){if(S&&S.phase==='replay'){endReplay();return}if(!S||S.phase==='intro'){if(S&&S.phase==='intro'){S.t=99}return}if(S.phase!=='aim')return;const D=DIFF[S.diff],putt=club===PUTTER;
-  if(!meter){meter={st:1,m:0,dir:1,pw:null,spd:1/(D.meter*(putt?1.2*(1+.07*SK('putt')):1))};sfx.whoosh();return}
+  if(!meter){meter={st:1,m:0,dir:1,pw:null,spd:(putt?1:STYPES[stype][7]*tempoK().m)/(D.meter*(putt?1.2*(1+.07*SK('putt')):1))};sfx.whoosh();return}
   if(meter.st===1){meter.pw=clamp(meter.m,.02,1.1);if(putt){fire(Math.min(1,meter.pw),null);meter=null;return}meter.st=2;meter.dir=-1;return}
   if(meter.st===2){const acc=meter.m;fire(meter.pw,acc);meter=null}}
 function meterTick(dt){if(!meter)return;const D=DIFF[S.diff];if(meter.st===1){meter.m+=dt*meter.spd;if(club===PUTTER&&meter.m>=1){meter.m=1;fire(1,null);meter=null;return}if(meter.m>=1.1){meter.m=1.1;meter.pw=1.1;meter.st=2;meter.dir=-1}}else if(meter.st===2){meter.m-=dt*meter.spd*.85;if(meter.m<=-.16){fire(meter.pw,-.16);meter=null}}
@@ -845,7 +846,7 @@ function afterShot(){const H=HOLE;
   else{let far=-1,bi=0;S.players.forEach((p,k)=>{if(p.holed)return;const d=pinDist(p.ball);if(d>far){far=d;bi=k}});S.turn=bi}
   S.phase='aim';setupShot();if(S.players.length>1)note('',`${cur().name} is up`,1.2)}
 function endHole(){const i=S.hole;for(const p of S.players){p.card[i]=p.strokes;p.total=Object.values(p.card).reduce((a,b)=>a+b,0);p.stats.holes++;if(p.strokes>HOLE.par)p.stats.bog++}
-  if(S.field)for(const f of S.field){const d=Math.round(.15+(1-f.sk)*1.1+gauss()*.7+(HOLE.C.tough||0));f.card[i]=clamp(HOLE.par+d,HOLE.par-2,HOLE.par+3);f.total=Object.values(f.card).reduce((a,b)=>a+b,0)}
+  if(S.field)for(const f of S.field){const d=Math.round(fieldMean(f.sk,HOLE.C)+gauss()*.7);f.card[i]=clamp(HOLE.par+d,HOLE.par-2,HOLE.par+3);f.total=Object.values(f.card).reduce((a,b)=>a+b,0)}
   S.phase='card';setTimeout(()=>{if(S.hole+1>=S.h1)endRound();else showCard(cardHtml(true)+`<div class="row"><button class="go" type="button" data-a="next">Next hole</button><button class="btn" type="button" data-a="quit">Quit round</button></div>`)},1600)}
 function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(6.283*v)}
 const parThru=(p)=>{let s=0;for(const k in p.card)s+=parOf(k);return s};
@@ -929,7 +930,8 @@ const camPos=new T3.Vector3(),camLook=new T3.Vector3();let camInit=false;
 function camTick(dt){if(window.__camHold)return;if(!HOLE)return;if(!S&&lockerView){const t=-1.25+Math.sin(performance.now()/3800)*.55,gp=golfer.position,R=(cam.aspect>1?4.2:5.2),wide=cam.aspect>1;cam.position.set(gp.x+Math.sin(t)*R,gp.y+1.45,gp.z+Math.cos(t)*R);const dx=gp.x-cam.position.x,dz=gp.z-cam.position.z,l=Math.hypot(dx,dz),rx=-dz/l,rz=dx/l;cam.lookAt(gp.x+(wide?rx*1.5:0),gp.y+(wide?.95:.2),gp.z+(wide?rz*1.5:0));ballMesh.visible=true;ballMesh.position.set(0,hAt(0,0)+BALLR,0);aimRing.visible=false;aimLine.visible=false;trail.visible=false;for(const o of others)o.visible=false;shadow.visible=false;return}
   if(!S){const t=performance.now()/9000,H=HOLE,q=ptAt(H.CL,H.acc,H.gEnd*.55),R=Math.max(160,H.gEnd*.55);cam.position.set(q.x+Math.sin(t)*R,hAt(q.x,q.z)+R*.55,q.z+Math.cos(t)*R*.9-R*.2);cam.lookAt(q.x,hAt(q.x,q.z),q.z);ballMesh.visible=false;shadow.visible=false;aimRing.visible=false;aimLine.visible=false;trail.visible=false;for(const o of others)o.visible=false;return}trail.visible=true;const H=HOLE,p=cur();let want,look;
   if(S.phase==='replay'&&S.rp){const R=S.rp,c=R.t<R.end*.55?R.c1:R.c2;if(R.cam!==c){R.cam=c;camPos.copy(c);if(R.x!=null)camLook.set(R.x,R.y,R.z)}if(R.x!=null)camLook.lerp(new T3.Vector3(R.x,R.y,R.z),1-Math.pow(.0005,dt));const gh=hAt(camPos.x,camPos.z)+.6;if(camPos.y<gh)camPos.y=gh;cam.position.copy(camPos);cam.lookAt(camLook);return}
-  if(S.phase==='intro'){const t=clamp(S.t/3,0,1),e=ss(0,1,t),q=ptAt(H.CL,H.acc,H.gEnd*(1-e)*.98),q2=ptAt(H.CL,H.acc,Math.min(H.gEnd,H.gEnd*(1-e)+60));want=new T3.Vector3(q.x,hAt(q.x,q.z)+40-e*28,q.z-30);look=new T3.Vector3(q2.x,hAt(q2.x,q2.z),q2.z);if(t>=1){S.phase='aim'}}
+  if(S.phase==='intro'&&S.fly){const t=clamp(S.t/FLYT,0,1),fc=flyCam(H,t);want=fc[0];look=fc[1];if(t>=1){S.phase='aim';camInit=false}}
+  else if(S.phase==='intro'){const t=clamp(S.t/3,0,1),e=ss(0,1,t),q=ptAt(H.CL,H.acc,H.gEnd*(1-e)*.98),q2=ptAt(H.CL,H.acc,Math.min(H.gEnd,H.gEnd*(1-e)+60));want=new T3.Vector3(q.x,hAt(q.x,q.z)+40-e*28,q.z-30);look=new T3.Vector3(q2.x,hAt(q2.x,q2.z),q2.z);if(t>=1){S.phase='aim'}}
   else if(S.phase==='flight'||S.phase==='roll'||(S.phase==='rest'&&S.ball)){const B=S.ball;const vh=hyp(B.vx,B.vz),dx=vh>.5?B.vx/vh:Math.sin(aim),dz=vh>.5?B.vz/vh:Math.cos(aim);
     // stay on the golfer for a beat so you see the follow-through and the ball leave, then go with it
     if(S.shotClub!==PUTTER&&!B.roll&&S.phase==='flight'&&(S.flightT||0)<.55){const st=S.shotStart,fa={x:Math.sin(aim),z:Math.cos(aim)};want=new T3.Vector3(st.x-fa.x*6*CAMK,st.y+2.5*CAMK,st.z-fa.z*6*CAMK);look=new T3.Vector3(lerp(st.x+fa.x*30,B.x,.5),Math.max(B.y,st.y+1),lerp(st.z+fa.z*30,B.z,.5))}
@@ -1030,7 +1032,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-(las
       if(S.ball){S.flightT+=dt;S.recT+=dt*sc;if(S.rec&&S.rec.length<4000)S.rec.push([S.ball.x,S.ball.y,S.ball.z,S.recT]);trailT+=dt;if(!S.ball.roll&&trailT>.03){trailT=0;trailPush(S.ball.x,S.ball.y+BALLR,S.ball.z)}}}
     if(S.phase==='rest'&&S.t>(S.why==='holed'?2.2:1.5)){if(S.wantReplay&&S.lastRec&&cfg.replays!=='off'){S.wantReplay=false;startReplay(false)}else{S.wantReplay=false;S.ball=null;trailReset();afterShot()}}
     if(S.phase==='replay')replayTick(dt);
-    if(S.phase==='intro'&&S.t>3.2)S.phase='aim'}
+    if(S.phase==='intro'&&S.t>(S.fly?FLYT:3.2)){S.phase='aim';if(S.fly)camInit=false}}
   // ball and helpers
   if(S&&HOLE){const p=cur();let bx,by,bz;if(S.phase==='replay'&&S.rp&&S.rp.x!=null){bx=S.rp.x;by=S.rp.y;bz=S.rp.z}else if(S.ball){bx=S.ball.x;by=S.ball.y;bz=S.ball.z}else if(p&&p.ball){bx=p.ball.x;bz=p.ball.z;by=hAt(bx,bz)}
     if(bx!=null){const hole=S.why==='holed'&&(S.phase==='rest'||(S.phase==='replay'&&S.rp&&S.rp.t>S.rp.end));ballMesh.visible=!hole;shadow.visible=QUAL==='low';ballMesh.position.set(bx,by+BALLR,bz);const g=hAt(bx,bz);shadow.position.set(bx,g+.03,bz);shadow.visible=QUAL==='low'&&!hole&&by-g<40;shadow.scale.setScalar(1+Math.min(3,(by-g)*.05))}
@@ -1053,7 +1055,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-(las
   for(const m of clouds){m.position.x+=dt*4;}
   if(HOLE){let cx=cam.position.x,cy=0,cz=cam.position.z;if(S&&S.ball){cx=S.ball.x;cz=S.ball.z;cy=hAt(cx,cz)}else if(S&&cur()&&cur().ball){const b=cur().ball;cx=b.x+Math.sin(aim)*18;cz=b.z+Math.cos(aim)*18;cy=hAt(b.x,b.z)}else if(golfer.visible){cx=golfer.position.x;cz=golfer.position.z;cy=golfer.position.y}sunFollow(cx,cy,cz)}
   if(flagMesh&&HOLE){const a=flagMesh.geometry.attributes.position,b=flagMesh.userData.base,ws=.5+HOLE.wind.s/14,tt=now/1000;for(let i=0;i<a.count;i++){const x=b[i*3]-0;a.array[i*3+2]=b[i*3+2]+Math.sin(x*5.5-tt*6*ws)*.07*x+Math.sin(x*2-tt*2.3)*.03*x}a.needsUpdate=true;flagMesh.geometry.computeVertexNormals()}
-  if(golfer.visible){const u=golfer.userData;if(S&&S.cele>0){S.cele-=dt;const k=S.cele;u.swing.rotation.z=lerp(u.swing.rotation.z,2.9+Math.sin(now/90)*.12,.2);golfer.position.y=golferBaseY+Math.abs(Math.sin(now/130))*.14*clamp(k,0,1)}
+  if(golfer.visible){const u=golfer.userData;if(S&&S.cele>0){S.cele-=dt;const k=S.cele;celeAnim(u,k,now)}
     else if((!S&&lockerView)||(S&&S.phase==='aim'&&!meter&&follow<=0&&club!==PUTTER)){swingPose(Math.sin(now/430)*.02,false)}}
   renderer.render(scene,cam)}
 let ppKey='';function puttPreview(){const p=cur(),b=p.ball,pw=meter&&meter.st===1?clamp(meter.m,.02,1):clamp((puttEff(b)+.35)/puttScale(b),0,1),key=aim.toFixed(4)+'|'+pw.toFixed(3)+'|'+b.x+b.z;if(key===ppKey)return;ppKey=key;
@@ -1511,6 +1513,283 @@ $('ovc').addEventListener('click',async e=>{const b=e.target.closest('button');i
   if(a==='bshare'){const url=`${location.origin}${location.pathname}?hole=${enc(cleanSpec(BSPEC))}`,txt=`Play my Pin High hole “${BSPEC.n}”!`;try{if(navigator.share){await navigator.share({title:'Pin High hole',text:txt,url});return}}catch(err){if(err&&err.name==='AbortError')return}try{await navigator.clipboard.writeText(txt+' '+url);b.textContent='Link copied!'}catch(err){b.textContent='Copy failed'}return}});
 {const _m=menu;menu=function(){const r=_m.apply(this,arguments);try{const o=$('ovc'),md=o.querySelector('.modes');if(md)md.insertAdjacentHTML('beforeend',`<button class="mode" type="button" data-a="builder"><b>Hole builder</b><small>Design your own hole, play it and send it to friends.</small></button>`);
   if(SHARED)o.querySelector('h2').insertAdjacentHTML('afterend',`<div class="chal"><b>A friend sent you a hole: “${esc(SHARED.n)}”</b> on ${esc(COURSES[SHARED.c].name)}.<div class="row"><button class="go" type="button" data-a="playshared">Play it</button><button class="btn" type="button" data-a="editshared">Open in the builder</button></div></div>`)}catch(e){}return r}}
+/* ================= four-round majors: Thursday to Sunday, a cut, new pins every day, firmer weekend greens, playoffs ================= */
+const TDAYS=['Thursday','Friday','Saturday','Sunday','Playoff'],CUTN=12;
+const tnOn=()=>CAR&&CAR.ev<EVENTS.length&&EVENTS[CAR.ev].major;
+function tnGet(){if(!tnOn())return null;if(!CAR.tn||CAR.tn.ev!==CAR.ev||CAR.tn.season!==CAR.season)CAR.tn={ev:CAR.ev,season:CAR.season,day:0,me:[],cpu:CAR.cpu.map(()=>[]),cut:null,po:null};return CAR.tn}
+const tnSum=a=>a.reduce((s,v)=>s+v,0);
+const tnPlays=(T,i)=>!T.cut||T.cut.ok[i];
+// everyone's total to par so far, plus today's round if one is going on
+function tnBoard(T,live){const rows=[{me:1,name:cfg.names[0]||'Blake Yoakam',tot:tnSum(T.me),today:null,cut:T.cut&&!T.cut.me}].concat(CAR.cpu.map((c,i)=>({i,name:c.name,tot:tnSum(T.cpu[i]),today:null,cut:!tnPlays(T,i)})));
+  if(live==='done'&&S&&S.field){const L=a=>a.length?a[a.length-1]:null;rows[0].today=T.cut&&!T.cut.me&&T.me.length<3&&S.tday>1?null:L(T.me);for(const f of S.field)rows[f.i+1].today=L(T.cpu[f.i])}
+  else if(live&&S&&S.field){const me=S.players[0];if(Object.keys(me.card).length){rows[0].today=me.total-parThru(me);rows[0].thru=Object.keys(me.card).length;rows[0].tot+=rows[0].today}
+    for(const f of S.field){const r=rows[f.i+1];if(Object.keys(f.card).length){r.today=f.total-parThru(f);r.thru=Object.keys(f.card).length;r.tot+=r.today}}}
+  return rows.sort((a,b)=>(a.cut-b.cut)||(a.tot-b.tot)||(a.me?-1:b.me?1:0))}
+function tnRows(rows,showCut){let pos=0,last=null;const lines=[];const top=rows.filter(r=>!r.cut);
+  const cutLine=showCut&&top.length>CUTN?top[CUTN-1].tot:null;let cutShown=false;
+  rows.forEach((r,k)=>{if(r.tot!==last||r.cut!==rows[k-1]?.cut){pos=k+1;last=r.tot}const isR=CAR.rv!=null&&r.i===CAR.rv,show=k<10||r.me||isR;if(!show)return;
+    if(cutLine!=null&&!cutShown&&r.tot>cutLine){cutShown=true;lines.push(`<div class="cutl"><span></span><span>Projected cut: ${tp(cutLine)}</span><span></span><span></span></div>`)}
+    lines.push(`<div class="${r.me?'me':''}"><span>${r.cut?'MC':pos}</span><span>${esc(r.name)}${isR?' ⚔':''}${r.today!=null?`<small> · today ${tp(r.today)}${r.thru&&r.thru<18?' thru '+r.thru:''}</small>`:''}</span><span>${tp(r.tot)}</span><span></span></div>`)});
+  return`<div class="lb">${lines.join('')}</div>`}
+// a CPU round: same per-hole model the tour uses
+// average strokes over par per hole: career fields are real tours (the Pro Tour shoots under par), the one-off Invitational stays as it was
+function fieldMean(sk,C){return S&&S.mode==='career'||!S?(1-sk)*.8-.1+(C.tough||0)*.4:.15+(1-sk)*1.1+(C.tough||0)}
+function cpuRound(sk,ev,day){let d=0;const C=COURSES[ev.c];for(let k=ev.h[0];k<ev.h[1];k++){d+=clamp(Math.round(fieldMean(sk,C)+gauss()*.7+(day>=2?.05*(day-1):0)),-2,3)}return d}
+function cpuSkI(i){return cpuSk(CAR.cpu[i])+[0,.07,.18][CAR.tier||0]+(i===CAR.rv?.04:0)}
+// new pins every day: Sunday's are tucked near the edges
+function dayPin(H,day){const r=rng(hashStr(H.cid+':'+H.i+':'+day+':'+(CAR?CAR.season:1))),G=H.G;for(let k=0;k<20;k++){const a=r()*6.283,e=day===3?.6+r()*.12:.2+r()*.42,u=Math.cos(a)*e,l=Math.sin(a)*e,dx=Math.sin(G.rot),dz=Math.cos(G.rot);
+  const x=G.x+dx*u*G.rz*.85+dz*l*G.rx*.85,z=G.z+dz*u*G.rz*.85-dx*l*G.rx*.85;if(ndG(G,x,z)<.8&&!H.B.some(b=>ndE(b,x,z)<1.15)){H.pin={x,z};return}}}
+{const _hf=holeFor;holeFor=function(){const H=_hf.apply(this,arguments);try{if(S&&S.tday!=null&&S.tday<4)dayPin(H,S.tday)}catch(e){}return H}}
+{const _aw=applyWx;applyWx=function(H){const r=_aw.apply(this,arguments);try{if(S&&S.tday>=2&&S.tday<5){const k=S.tday-1;SURF.G.rest*=1+.1*k;SURF.G.mu*=1-.05*k;SURF.G.slide=Math.min(.6,SURF.G.slide*(1+.06*k))}}catch(e){}return r}}
+function tnSetup(){const T=tnGet();if(!T)return;S.tday=T.po?4:T.day;const ev=EVENTS[CAR.ev];S.field=S.field.map((f,i)=>Object.assign(f,{i,sk:cpuSkI(i)}));
+  if(T.po){S.field=S.field.filter(f=>T.po.includes(f.i));S.h0=17;S.h1=18;S.hole=17;S.evName=`${ev.n} · Playoff`}
+  else{S.field=S.field.filter(f=>tnPlays(T,f.i));S.evName=`${ev.n} · Round ${T.day+1} (${TDAYS[T.day]})`}}
+function tnFinal(T){const made=[],mc=[];const meT=tnSum(T.me);(T.cut&&!T.cut.me?mc:made).push({me:1,d:meT});CAR.cpu.forEach((c,i)=>{(tnPlays(T,i)?made:mc).push({i,d:tnSum(T.cpu[i])})});
+  const srt=a=>a.map(x=>Object.assign(x,{r:Math.random()})).sort((x,y)=>x.d-y.d||x.r-y.r);return srt(made).concat(srt(mc))}
+function tnAward(all,po){const T=CAR.tn,meRow=all.find(x=>x.me),place=all.indexOf(meRow)+1,mc=T.cut&&!T.cut.me,sum=tnSum(T.me);CAR.tn=null;const r=careerAward(all,po,sum);
+  r.txt=(mc?`Missed the cut. `:'')+r.txt;return r}
+function tnRoundDone(me){const T=CAR.tn,ev=EVENTS[CAR.ev];S.tnT=T;spCheck('round',me);
+  if(S.tday===4){const my=me.card[17],fs=S.field.map(f=>({i:f.i,s:f.card[17]})),best=Math.min(my,...fs.map(x=>x.s));
+    if(my===best&&fs.every(x=>x.s>my)){const all=tnFinal(T);const i=all.findIndex(x=>x.me);const row=all.splice(i,1)[0];all.unshift(row);const r=tnAward(all,true);r.txt='Playoff win! '+r.txt;return r}
+    if(my>best){const all=tnFinal(T);const w=fs.filter(x=>x.s===best).map(x=>x.i),wr=all.filter(x=>w.includes(x.i));const rest=all.filter(x=>!w.includes(x.i));const r=tnAward(wr.concat(rest),false);r.txt='Lost in the playoff. '+r.txt;return r}
+    T.po=fs.filter(x=>x.s===my).map(x=>x.i);saveC();return{txt:`Still tied after the playoff hole. Back to the 18th tee!`,season:'',place:1}}
+  T.me.push(me.total-parThru(me));for(const f of S.field)T.cpu[f.i].push(f.total-parThru(f));T.day++;
+  if(T.day===2)tnCut(T);
+  const rows=tnBoard(T,false),pos=rows.findIndex(r=>r.me)+1;
+  if(T.cut&&!T.cut.me){const r=tnAward(tnFinal(T),false);return r}
+  if(T.day>=4){const all=tnFinal(T),lead=all[0].d,tied=all.filter(x=>x.d===lead);if(tied.length>1&&tied.some(x=>x.me)){T.po=tied.filter(x=>!x.me).map(x=>x.i);saveC();return{txt:`Tied for the lead at ${tp(lead)} after 72 holes. It's a playoff!`,season:'',place:1}}
+    return tnAward(all,false)}
+  saveC();return{txt:`Round ${T.day} done: you're ${ordinal(pos)} at ${tp(tnSum(T.me))}${T.day===2?' and you made the cut!':''}`,season:T.day===1?`Cut after tomorrow: top ${CUTN} and ties play the weekend.`:T.day===2?'Weekend greens will be firmer and faster.':'Sunday pins are tucked. Good luck.',place:pos}}
+function tnCut(T){const all=[{me:1,d:tnSum(T.me)}].concat(CAR.cpu.map((c,i)=>({i,d:tnSum(T.cpu[i])}))).sort((a,b)=>a.d-b.d),line=all[CUTN-1].d;T.cut={line,me:tnSum(T.me)<=line,ok:CAR.cpu.map((c,i)=>tnSum(T.cpu[i])<=line)}}
+function tnSim(){const T=tnGet();if(!T||T.po)return'';const ev=EVENTS[CAR.ev],h=myHcp(),base=(h==null?2:h)+(RATING[ev.c]||0);let d=Math.round(base*(ev.h[1]-ev.h[0])/18+gauss()*2.4+1);
+  T.me.push(d);CAR.cpu.forEach((c,i)=>{if(tnPlays(T,i))T.cpu[i].push(cpuRound(cpuSkI(i),ev,T.day))});T.day++;if(T.day===2)tnCut(T);
+  if(T.cut&&!T.cut.me&&T.day===2){const r=tnAward(tnFinal(T),false);return `Simulated round: ${tp(d)}. ${r.txt}${r.season?' '+r.season:''}`}
+  if(T.day>=4){const all=tnFinal(T),lead=all[0].d,tied=all.filter(x=>x.d===lead);if(tied.length>1&&tied.some(x=>x.me)){T.po=tied.filter(x=>!x.me).map(x=>x.i);saveC();return `Simulated round: ${tp(d)}. Tied for the lead! Play the playoff.`}
+    const r=tnAward(all,false);return `Simulated round: ${tp(d)}. ${r.txt}${r.season?' '+r.season:''}`}
+  saveC();const rows=tnBoard(T,false);return `Simulated round ${T.day}: ${tp(d)}. You're ${ordinal(rows.findIndex(r=>r.me)+1)} at ${tp(tnSum(T.me))}.`}
+{const _cf=careerFinish;careerFinish=function(me){if(S&&S.tday!=null)return tnRoundDone(me);spCheck('round',me);const r=_cf.apply(this,arguments);return r}}
+{const _lh=leaderHtml;leaderHtml=function(){const T=S&&(S.tnT||(CAR&&CAR.tn));if(S&&S.tday!=null&&S.tday<4&&T){return`<h3>Leaderboard · ${esc(S.evName.split(' · ')[0])} · ${S.tnT&&T.day>=4||S.tnT&&T.cut&&!T.cut.me?'Final':`Round ${S.tday+1} (${TDAYS[S.tday]})`}</h3>`+tnRows(tnBoard(T,S.tnT?'done':true),S.tday<2&&!S.tnT)}
+  let h=_lh.apply(this,arguments);if(S&&S.mode==='career'&&CAR&&CAR.rv!=null){const nm=CAR.cpu[CAR.rv].name;h=h.split(`<span>${esc(nm)}</span>`).join(`<span>${esc(nm)} ⚔</span>`)}return h}}
+// the rival: one golfer who is always on your leaderboard and always has something to say
+function rivalPick(){if(!CAR)return;if(CAR.rv==null){let b=0,bd=9;CAR.cpu.forEach((c,i)=>{const d=Math.abs(c.base-.78);if(d<bd){bd=d;b=i}});CAR.rv=b;CAR.h2h=CAR.h2h||{w:0,l:0}}}
+const RIV_AHEAD=['“Nice try. Maybe next week.”','“I could get used to the view from up here.”','“You might want to hit the range after this.”','“Keep chasing, it suits you.”'],RIV_BEHIND=['“Enjoy it while it lasts.”','“Lucky bounce. That’s all that was.”','“The back nine is mine, watch.”','“Don’t get comfortable.”'],RIV_TIE=['“Dead even. Just how I like it.”','“Nothing between us. Yet.”'];
+function rivalLine(){if(!S||S.mode!=='career'||!CAR||CAR.rv==null||!S.field)return'';const f=S.field.find(x=>x.i===CAR.rv);if(!f)return'';const me=S.players[0],T=CAR.tn;
+  const myT=(T&&S.tday<4?tnSum(T.me):0)+me.total-parThru(me),rvT=(T&&S.tday<4?tnSum(T.cpu[CAR.rv]):0)+f.total-parThru(f);if(Math.random()<.45&&S.hole+1<S.h1)return'';
+  const L=rvT<myT?RIV_AHEAD:rvT>myT?RIV_BEHIND:RIV_TIE;return`<p class="rival">⚔ <b>${esc(f.name)}</b> (${tp(rvT)}): ${L[Math.floor(Math.random()*L.length)]}</p>`}
+{const _ch=cardHtml;cardHtml=function(mid){let h=_ch.apply(this,arguments);try{if(mid)h+=rivalLine()}catch(e){}return h}}
+
+/* ---------- career award (shared by single rounds and four-round majors) + rival record ---------- */
+{const _ca=careerAward;careerAward=function(all,tieTop,score){try{spCheck('place',all.findIndex(x=>x.me)+1)}catch(e){}try{rivalPick();const me=all.findIndex(x=>x.me),rv=all.findIndex(x=>x.i===CAR.rv);if(rv>=0){if(me<rv)CAR.h2h.w++;else CAR.h2h.l++}}catch(e){}return _ca.apply(this,arguments)}}
+
+/* ---------- sponsors: pick a deal before each event, hit the goal, get paid ---------- */
+const SPONS=[['summit','Summit Springs Water',0x3aa0d8],['ridge','Ridgeline Apparel',0x2f6f4f],['bolt','Bolt Energy',0xf2c230],['north','Northstar Bank',0x1f3f7a],['motor','Fairway Motors',0xb02a2a],['pine','Pinecone Coffee',0x6b4a2f]];
+const SGOALS=[['fw','Hit {n} fairways in a round',[5,7,9]],['bird','Make {n} birdies in a round',[2,3,4]],['gir','Hit {n} greens in regulation in a round',[8,10,12]],['clean','Make {n} or fewer bogeys in a round',[3,2,1]],['top','Finish top {n} in the event',[10,5,3]],['drive','Hit a {n}-yard drive',[280,295,310]]];
+for(const[id,n,col]of SPONS)GEAR.cap.push([id+'cap',n.split(' ')[0]+' cap',col,'spon:'+id]);
+{const _ul=unlocked;unlocked=function(req){if(typeof req==='string'&&req.startsWith('spon:'))return !!(CAR&&CAR.spDone&&CAR.spDone[req.slice(5)]>=3);return _ul.apply(this,arguments)}}
+function spOffers(){if(!CAR||CAR.ev>=EVENTS.length)return[];if(CAR.offers&&CAR.offers.ev===CAR.ev&&CAR.offers.season===CAR.season)return CAR.offers.list;const ev=EVENTS[CAR.ev],sc=(ev.h[1]-ev.h[0])/18,r=rng(hashStr('sp'+CAR.season+':'+CAR.ev+':'+CAR.tier)),used=new Set(),list=[];
+  while(list.length<3){const s=SPONS[Math.floor(r()*SPONS.length)];if(used.has(s[0]))continue;used.add(s[0]);const g=SGOALS[Math.floor(r()*SGOALS.length)],lv=Math.min(2,CAR.tier+(r()<.3?1:0));let n=g[2][lv];
+    if(g[0]==='fw'||g[0]==='bird'||g[0]==='gir')n=Math.max(1,Math.ceil(n*sc));if(g[0]==='clean'&&sc<1)n=Math.max(0,n-1);list.push({sp:s[0],g:g[0],n,pay:40+lv*30+Math.round(r()*3)*10})}
+  CAR.offers={ev:CAR.ev,season:CAR.season,list};saveC();return list}
+const spName=id=>(SPONS.find(s=>s[0]===id)||[0,id])[1],spText=o=>SGOALS.find(g=>g[0]===o.g)[1].replace('{n}',o.n);
+function spCheck(kind,v){try{const c=CAR&&CAR.con;if(!c||c.ev!==CAR.ev||c.season!==CAR.season||c.done)return;let ok=false;
+  if(kind==='round'){const st=v.stats||{};ok=c.g==='fw'?st.fw>=c.n:c.g==='bird'?st.birdies>=c.n:c.g==='gir'?st.gir>=c.n:c.g==='clean'?(st.bog<=c.n&&st.holes>=Math.min(9,S.h1-S.h0)):c.g==='drive'?(S.maxDrive||0)>=c.n:false}
+  else if(kind==='place')ok=c.g==='top'&&v<=c.n;
+  if(ok){c.done=1;addCoins(c.pay);CAR.spDone=CAR.spDone||{};CAR.spDone[c.sp]=(CAR.spDone[c.sp]||0)+1;saveC();const n3=CAR.spDone[c.sp]===3;setTimeout(()=>note(`${spName(c.sp)} pays you ${c.pay} coins`,n3?`Their cap is unlocked in the locker!`:`Sponsor goal done: ${spText(c)}`,3),2400)}}catch(e){}}
+{const _sr=shotReport;shotReport=function(why){const p=cur(),st=S&&S.shotStart,cl=S&&S.shotClub,B=S&&S.ball;const r=_sr.apply(this,arguments);try{if(S&&p&&p.k===0&&cl===0&&why==='rest'&&B&&st){S.maxDrive=Math.max(S.maxDrive||0,Math.round(hyp(B.x-st.x,B.z-st.z)))}}catch(e){}return r}}
+
+/* ---------- handicap: from your last 20 counted rounds ---------- */
+const RATING={hills:-2,lakes:-1.5,links:.5,forest:1,bay:0,pines:2,valley:2.5};
+function myHcp(){const L=store.get('golf-hcp',[]);if(L.length<3)return null;const b=L.slice(-20).map(x=>x.d).sort((a,b)=>a-b),n=Math.max(1,Math.ceil(b.length*.4));return Math.round(b.slice(0,n).reduce((a,v)=>a+v,0)/n*.96*10)/10}
+const hcpTxt=h=>h==null?'—':h<0?'+'+(-h).toFixed(1):h.toFixed(1);
+{const _er=endRound;endRound=function(){const r=_er.apply(this,arguments);try{const p=S.players[0],full=S.h1-S.h0,done=Object.keys(p.card).length===full;
+  if(done&&(full===18||full===9)&&['stroke','tour','career','match'].includes(S.mode)&&RATING[S.course]!=null&&S.tday!==4){const L=store.get('golf-hcp',[]),d=(p.total-parThru(p))*(18/full)-RATING[S.course]+(S.diff==='tour'?-2:S.diff==='pro'?-1:0);L.push({d:Math.round(d*10)/10,c:S.course,t:today()});store.set('golf-hcp',L.slice(-20));
+    const h=myHcp(),row=$('ovc').querySelector('.row:last-child');if(row&&h!=null){const pa=document.createElement('p');pa.innerHTML=`Handicap: <b style="color:var(--led)">${hcpTxt(h)}</b>`;row.before(pa)}}}catch(e){}return r}}
+{const _ss=statsScreen;statsScreen=function(){const r=_ss.apply(this,arguments);try{const h=myHcp(),L=store.get('golf-hcp',[]);$('ovc').querySelector('h2').insertAdjacentHTML('afterend',`<p>Handicap: <b style="color:var(--led)">${hcpTxt(h)}</b> ${h==null?`<small>(finish ${3-L.length} more round${3-L.length===1?'':'s'} of 9 or 18 holes)</small>`:`<small>from your best ${Math.max(1,Math.ceil(Math.min(20,L.length)*.4))} of your last ${Math.min(20,L.length)} rounds</small>`}</p>`)}catch(e){}return r}}
+
+/* ---------- the career screen: tournament board, sponsor deals, the rival ---------- */
+{const _cs=careerScreen;careerScreen=function(msg){const r=_cs.apply(this,arguments);try{rivalPick();saveC();const o=$('ovc'),done=CAR.ev>=EVENTS.length,go=o.querySelector('[data-a="event"]');let ins='';
+  if(!done&&tnOn()){const T=tnGet(),ev=EVENTS[CAR.ev];saveC();
+    ins+=`<div class="tnbox"><h3>${esc(ev.n)} ★ · four rounds</h3>`;
+    if(T.po)ins+=`<p class="bigt">Playoff! Sudden death on the 18th against ${T.po.map(i=>esc(CAR.cpu[i].name)).join(', ')}.</p>`;
+    else if(T.day===0)ins+=`<p>Thursday to Sunday at ${esc(COURSES[ev.c].name)}. The top ${CUTN} and ties after Friday make the cut. New pin positions every day, and the greens get firmer and faster on the weekend. Play each round yourself or simulate it.</p>`;
+    else ins+=`<p><b>${TDAYS[T.day]}</b> · Round ${T.day+1} of 4${T.cut?` · Cut made at ${tp(T.cut.line)}`:''}</p>`;
+    if(T.day>0||T.po)ins+=tnRows(tnBoard(T,false),T.day<2);
+    ins+='</div>';
+    if(go){go.textContent=T.po?'Play the playoff hole':`Play round ${T.day+1} (${TDAYS[T.day]})`;if(!T.po)go.insertAdjacentHTML('afterend',`<button class="btn" type="button" data-a="tsim">Simulate round ${T.day+1}</button>`)}}
+  if(!done&&!(CAR.tn&&CAR.tn.day>0)){const offers=spOffers(),c=CAR.con&&CAR.con.ev===CAR.ev&&CAR.con.season===CAR.season?CAR.con:null;
+    ins+=`<h3>Sponsor deal</h3>`+(c?`<p>${esc(spName(c.sp))}: ${esc(spText(c))} · ${c.done?'<b style="color:var(--led)">Done! Paid '+c.pay+' coins</b>':c.pay+' coins'}</p>`:`<p><small>Pick one deal for this event. Hit the goal, get paid. Three goals for the same sponsor unlocks their cap.</small></p><div class="skills">${offers.map((x,k)=>`<div class="sk"><div><b>${esc(spName(x.sp))}</b><small>${esc(spText(x))}${CAR.spDone&&CAR.spDone[x.sp]?` · ${CAR.spDone[x.sp]} of 3 done`:''}</small></div><span>${x.pay} coins</span><button class="btn" type="button" data-sp="${k}">Sign</button></div>`).join('')}</div>`)}
+  else if(!done&&CAR.con&&CAR.con.ev===CAR.ev){const c=CAR.con;ins+=`<p>Sponsor: ${esc(spName(c.sp))} · ${esc(spText(c))} · ${c.done?'done':c.pay+' coins'}</p>`}
+  const rv=CAR.cpu[CAR.rv];if(rv){const st=standings(),rk=st.findIndex(x=>x.name===rv.name)+1;ins+=`<p class="rival">⚔ Your rival: <b>${esc(rv.name)}</b> · ${ordinal(rk)} in the standings · head to head ${CAR.h2h.w}-${CAR.h2h.l}</p>`}
+  const h=myHcp();ins+=`<p><small>Your handicap: ${hcpTxt(h)}${h==null?' (play a few rounds to get one)':''}</small></p>`;
+  const sched=o.querySelector('h3');if(sched)sched.insertAdjacentHTML('beforebegin',ins);
+  o.querySelectorAll('.sched > div').forEach((d,i)=>{if(EVENTS[i]&&EVENTS[i].major){const s=d.querySelector('small');if(s)s.textContent=` · ${COURSES[EVENTS[i].c].name} · 4 rounds`}});
+  {const top=()=>{o.scrollTop=0};top();setTimeout(top,40)}
+  const pz=[...o.querySelectorAll('p')].find(p=>p.textContent.includes('Majors (★)'));if(pz)pz.innerHTML=pz.innerHTML.replace(/Majors \(★\) are 18 holes and worth double points\./,'Majors (★) are four rounds with a cut and worth double points.')}catch(e){console.warn(e)}return r}}
+$('ovc').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.a==='tsim'){const m=tnSim();careerScreen(m);return}
+  if(b.dataset.sp!=null){const o=spOffers()[+b.dataset.sp];if(o){CAR.con=Object.assign({ev:CAR.ev,season:CAR.season},o);saveC();careerScreen(`Signed with ${spName(o.sp)}!`)}return}});
+{const _sh=startHole;startHole=function(){if(S&&S.mode==='career'&&!S.tnInit){S.tnInit=1;rivalPick();if(S.field)S.field.forEach((f,i)=>{f.i=i;f.sk=cpuSkI(i)});if(tnOn())tnSetup()}return _sh.apply(this,arguments)}}
+
+/* ================= shot challenges ================= */
+// spot: 'tee' | ['y',yardsFromPin,lat] | ['b','g'|'f'] bunker by the green or in the fairway | ['g',feet] on the green
+// goal: ['close',[1★,2★,3★] feet] (0 = holed) | ['fw',[yards]] drive that stays in the fairway; cond: 'low:N' apex under N ft, 'spin' must spin back
+const CHAL=[
+  {id:'island',n:'Island Time',d:'A short iron to the island green. Hold your nerve.',c:'lakes',h:2,at:'tee',g:['close',[45,22,8]]},
+  {id:'pond',n:'Over the Pond',d:'Carry the water and stick it.',c:'hills',h:6,at:'tee',g:['close',[40,20,8]]},
+  {id:'little',n:'The Little One',d:'105 yards downhill into a 22 mph wind with the ocean all around.',c:'bay',h:6,at:'tee',w:[22,'into'],g:['close',[35,18,7]]},
+  {id:'hourglass',n:'The Hourglass',d:'A shallow green on the edge of the Pacific.',c:'bay',h:16,at:'tee',g:['close',[40,20,8]]},
+  {id:'swirl',n:'Swirl',d:'The famous little par 3 with a creek in front and swirling wind.',c:'pines',h:11,at:'tee',w:[14,'cross'],g:['close',[35,18,7]]},
+  {id:'pondshot',n:'Pond Shot',d:'Water down the left. The pin is tucked right on the edge.',c:'pines',h:15,at:'tee',g:['close',[40,20,8]]},
+  {id:'sahara',n:'The Sahara',d:'235 yards over a giant bunker. Just find the green.',c:'valley',h:7,at:'tee',g:['close',[70,40,18]]},
+  {id:'oceancarry',n:'Ocean Carry',d:'All carry over the sea.',c:'links',h:6,at:'tee',g:['close',[45,25,10]]},
+  {id:'fwfind',n:'Fairway Finder',d:'Thread a drive down the cypress corridor. It has to stay in the fairway.',c:'forest',h:4,at:'tee',g:['fw',[230,255,275]]},
+  {id:'bomb',n:'Bomb It',d:'Let it fly. Longest drive that stays in the fairway.',c:'hills',h:0,at:'tee',g:['fw',[260,285,305]]},
+  {id:'stinger',n:'Stinger',d:'25 mph into your face. Keep it under 70 feet high and in the fairway (try the Stinger shot).',c:'links',h:0,at:'tee',w:[25,'into'],cond:'low:70',g:['fw',[200,225,245]]},
+  {id:'waves',n:'Waves All the Way',d:'The ocean runs down the whole left side. Hit the fairway.',c:'bay',h:17,at:'tee',g:['fw',[240,262,282]]},
+  {id:'spinback',n:'Spin It Back',d:'A wedge from 105 yards that lands past the pin and spins back (use the Backspin shot).',c:'pines',h:0,at:['y',105,0],cond:'spin',g:['close',[25,12,5]]},
+  {id:'zip',n:'Zip',d:'95 yards. Make it check and come back.',c:'bay',h:3,at:['y',95,0],cond:'spin',g:['close',[25,12,5]]},
+  {id:'chasm',n:'The Chasm',d:'180 yards over a rocky ocean inlet.',c:'bay',h:7,at:['y',180,0],g:['close',[45,25,10]]},
+  {id:'punch',n:'Knockdown',d:'150 yards into an 18 mph wind. Keep it under 45 feet high (try Punch or Stinger with more club).',c:'forest',h:9,at:['y',150,0],w:[18,'into'],cond:'low:45',g:['close',[60,30,12]]},
+  {id:'intowind',n:'Into the Teeth',d:'150 yards into a 25 mph wind. Take more club.',c:'links',h:3,at:['y',150,0],w:[25,'into'],g:['close',[40,22,10]]},
+  {id:'downwind',n:'Downwind Dart',d:'160 yards with a 20 mph wind behind you. It will fly.',c:'bay',h:9,at:['y',160,0],w:[20,'help'],g:['close',[40,22,10]]},
+  {id:'hilltop',n:'Hilltop',d:'Uphill to a green that runs hard from back to front.',c:'pines',h:8,at:['y',140,0],g:['close',[35,20,8]]},
+  {id:'blast',n:'Bunker Blast',d:'Splash it out of the greenside bunker.',c:'hills',h:2,at:['b','g'],g:['close',[20,10,4]]},
+  {id:'pot',n:'Pot Bunker',d:'A deep links pot bunker. Get it out and close.',c:'links',h:1,at:['b','g'],g:['close',[25,12,5]]},
+  {id:'pews',n:'Church Pews',d:'Stuck in the pews with a long way to go. Find the green.',c:'valley',h:2,at:['b','f'],g:['close',[90,50,25]]},
+  {id:'flop',n:'Flop Shot',d:'A short-sided pitch. Get it up fast and stop it (try the Flop shot).',c:'pines',h:6,at:['y',24,14],g:['close',[12,6,3]]},
+  {id:'bump',n:'Bump and Run',d:'Keep it low and let it roll (try Bump & run).',c:'valley',h:5,at:['y',32,0],g:['close',[12,6,3]]},
+  {id:'chipin',n:'Chip-In',d:'30 yards. Three stars only if it goes in.',c:'hills',h:0,at:['y',30,0],g:['close',[10,4,0]]},
+  {id:'shortside',n:'Short-Sided',d:'Off the edge of the green with no room to work with.',c:'bay',h:11,at:['y',16,13],g:['close',[12,6,3]]},
+  {id:'lag',n:'Lag Putt',d:'60 feet on lightning-fast greens. Just get it close.',c:'valley',h:0,at:['g',60],g:['close',[8,4,2]]},
+  {id:'knee',n:'Knee-Knocker',d:'An 8-footer to win. Make it.',c:'forest',h:17,at:['g',8],g:['close',[3,1.5,0]]},
+  {id:'slider',n:'Downhill Slider',d:'25 feet on a steep green. Barely touch it.',c:'pines',h:2,at:['g',25],g:['close',[6,3,0]]},
+  {id:'monster',n:'Monster Putt',d:'70 feet across the green. Two-putt territory, unless...',c:'bay',h:12,at:['g',70],g:['close',[10,5,0]]}];
+let CHCUR=null;
+const chStars=()=>store.get('golf-chal',{});
+function chalMenu(msg){S=null;golfer.visible=false;const st=chStars(),tot=Object.values(st).reduce((a,b)=>a+b,0);
+  showCard(`<h2>Shot challenges</h2><p>${tot} of ${CHAL.length*3} stars. Each challenge is one shot. Every new star pays 10 coins.</p>${msg?`<p style="color:var(--led)">${esc(msg)}</p>`:''}<div class="chgrid">${CHAL.map((c,k)=>`<button class="mode" type="button" data-chal="${k}"><b>${k+1}. ${esc(c.n)} <span class="stars">${'★'.repeat(st[c.id]||0)}<i>${'★'.repeat(3-(st[c.id]||0))}</i></span></b><small>${esc(c.d)} · ${esc(COURSES[c.c].name)}</small></button>`).join('')}</div><div class="row"><button class="go" type="button" data-a="menu">Back</button></div>`);const top=()=>{$('ovc').scrollTop=0};top();setTimeout(top,40)}
+function chalStart(k){CHCUR=Object.assign({k},CHAL[k]);camInit=false;newRound('chal',{course:CHCUR.c,range:[CHCUR.h,CHCUR.h+1]})}
+function chalSpot(H,def){const at=def.at,G=H.G,pn=near(H,H.pin.x,H.pin.z);
+  if(at==='tee')return{x:0,z:0,lie:'T'};
+  if(at[0]==='y'){let s=Math.max(5,pn.s-at[1]),q=ptAt(H.CL,H.acc,s),x=q.x+q.nx*(at[2]||0),z=q.z+q.nz*(at[2]||0);for(let k=0;k<16&&(surfAt(x,z)==='W'||surfAt(x,z)==='O'||surfAt(x,z)==='B');k++){s-=3;q=ptAt(H.CL,H.acc,s);x=q.x+q.nx*(at[2]||0);z=q.z+q.nz*(at[2]||0)}return{x,z}}
+  if(at[0]==='b'){let best=null,bd=1e9;for(const b of H.B){const d=hyp(b.x-H.pin.x,b.z-H.pin.z);const want=at[1]==='g'?d:Math.abs(near(H,b.x,b.z).s-200)+(d<40?999:0);if(want<bd){bd=want;best=b}}
+    if(best){const dx=H.pin.x-best.x,dz=H.pin.z-best.z,l=hyp(dx,dz)||1;let x=best.x+dx/l*Math.min(best.a,best.b)*.3,z=best.z+dz/l*Math.min(best.a,best.b)*.3;if(surfAt(x,z)!=='B'){x=best.x;z=best.z}return{x,z}}return chalSpot(H,{at:['y',25,0]})}
+  if(at[0]==='g'){const yd=at[1]/3;for(let k=0;k<72;k++){const a=Math.atan2(-H.pin.x,-H.pin.z)+k*.37*(k%2?1:-1),x=H.pin.x+Math.sin(a)*yd,z=H.pin.z+Math.cos(a)*yd;if(surfAt(x,z)==='G')return{x,z}}
+    for(let k=0;k<72;k++){const a=k*.09,r=yd*(1-k/100),x=H.pin.x+Math.sin(a)*r,z=H.pin.z+Math.cos(a)*r;if(surfAt(x,z)==='G')return{x,z}}return{x:H.pin.x+2,z:H.pin.z+2}}
+  return{x:0,z:0,lie:'T'}}
+function chalSetup(){const def=CHCUR,p=S.players[0],H=HOLE,sp=chalSpot(H,def);p.ball={x:sp.x,z:sp.z,y:hAt(sp.x,sp.z),lie:sp.lie||surfAt(sp.x,sp.z)};p.strokes=0;
+  if(def.w){const a0=Math.atan2(H.pin.x-sp.x,H.pin.z-sp.z),a=def.w[1]==='into'?a0+Math.PI:def.w[1]==='help'?a0:a0+Math.PI/2;H.wind={s:def.w[0],a}}else H.wind={s:Math.round(Math.random()*6),a:Math.random()*6.283};
+  S.phase='aim';S.t=0;hideCard();setupShot();hud();note(def.n,def.d,3.2)}
+function chalResult(why){const def=CHCUR,p=S.players[0],B=S.ball,st=S.shotStart;let ft=null,yds=0,ok=why!=='water'&&why!=='ob',msg='';
+  if(def.cond&&def.cond.startsWith('low:')){const ap=Math.max(0,((B&&B.maxY)||0)-st.y)*3,mx=+def.cond.slice(4);if(ap>mx){ok=false;msg=`Too high: ${Math.round(ap)} ft (max ${mx})`}}
+  if(def.cond==='spin'&&ok&&why!=='holed'){const ux=Math.sin(B.aimDir||0),uz=Math.cos(B.aimDir||0),fin=(p.ball.x-st.x)*ux+(p.ball.z-st.z)*uz;if(!(B.carry&&fin<B.carry-.4)){ok=false;msg='It didn’t spin back'}}
+  let stars=0;if(ok){if(def.g[0]==='close'){ft=why==='holed'?0:pinDist(p.ball)*3;stars=def.g[1].filter(t=>t===0?ft===0:ft<=t).length}
+    else{yds=Math.round(hyp(p.ball.x-st.x,p.ball.z-st.z));const fw=p.ball.lie==='F';if(!fw)msg='Missed the fairway';stars=fw?def.g[1].filter(t=>yds>=t).length:0}}
+  return{stars,ft,yds,msg:msg||(why==='water'?'In the water':why==='ob'?'Out of bounds':'')}}
+function chalEnd(){const def=CHCUR,R=S.chRes||{stars:0},st=chStars(),old=st[def.id]||0,gain=Math.max(0,R.stars-old);S.phase='done';if(gain){st[def.id]=R.stars;store.set('golf-chal',st);addCoins(gain*10);addXP(gain*15)}
+  const tot=Object.values(st).reduce((a,b)=>a+b,0);if(tot>=45)ach('chal45');if(R.stars===3)ach('chal3');
+  const res=def.g[0]==='close'?(R.ft==null?'—':R.ft===0?'In the hole!':`${R.ft.toFixed(R.ft<10?1:0)} feet away`):`${R.yds} yards`;
+  showCard(`<h2>${esc(def.n)}</h2><p class="bigt"><span class="stars big">${'★'.repeat(R.stars)}<i>${'★'.repeat(3-R.stars)}</i></span></p><p class="bigt">${esc(res)}</p>${R.msg?`<p>${esc(R.msg)}</p>`:''}<p>${def.g[0]==='close'?`Stars at ${def.g[1].map(t=>t===0?'holed':t+' ft').join(' / ')}`:`Stars at ${def.g[1].join(' / ')} yards in the fairway`}${gain?` · +${gain*10} coins`:''}</p>
+    <div class="row"><button class="go" type="button" data-a="chretry">Try again</button>${def.k+1<CHAL.length?`<button class="btn" type="button" data-a="chnext">Next challenge</button>`:''}<button class="btn" type="button" data-a="chal">All challenges</button><button class="btn" type="button" data-a="menu">Menu</button></div>`)}
+
+/* ================= Target Golf: glowing targets on a night range, points and combos ================= */
+const TGT=[[70,-12,0xff4fa3,1],[110,11,0x3ddc84,1.5],[150,-5,0xffc23d,2],[190,14,0x4fa3ff,2.5],[230,0,0xb36bff,3]];let tgMeshes=[];
+function tgClear(){for(const m of tgMeshes){scene.remove(m);m.geometry.dispose()}tgMeshes=[]}
+function tgHole(){const H=rangeHole(2);H.hname='Target Golf';H.name='Target Golf · night range';H.wind={s:Math.round(Math.random()*7),a:Math.random()*6.283};H.tg=TGT.map(([d,l,col,m])=>{const q=ptAt(H.CL,H.acc,d);return{x:q.x+q.nx*l,z:q.z+q.nz*l,d,col,m}});const t=H.tg[2];H.pin={x:t.x,z:t.z};H.G=Object.assign({},H.G,{x:t.x,z:t.z,rx:6,rz:6});return H}
+function tgDraw(){tgClear();for(const t of HOLE.tg){const y=hAt(t.x,t.z)+.18;[[0,3,1],[3,8,.75],[8,15,.45]].forEach(([a,b,o],k)=>{const m=new T3.Mesh(new T3.RingGeometry(a+(k?.25:0),b,48),new T3.MeshBasicMaterial({color:t.col,transparent:true,opacity:o,depthWrite:false,side:T3.DoubleSide,toneMapped:false}));m.rotation.x=-Math.PI/2;m.position.set(t.x,y+k*.01,t.z);scene.add(m);tgMeshes.push(m)})}}
+function tgScore(x,z){let best=0,hit=null;for(const t of HOLE.tg){const d=hyp(x-t.x,z-t.z),base=d<3?50:d<8?25:d<15?10:0,pts=Math.round(base*t.m);if(pts>best){best=pts;hit=t}}return{pts:best,t:hit}}
+function tgEnd(){S.phase='done';const T=S.tg,rows=S.players.map((p,k)=>({n:p.name,k,s:T.sc[k].pts,best:T.sc[k].best})).sort((a,b)=>b.s-a.s),rec=store.get('golf-tg',0),top=rows[0].s;
+  if(S.players.length===1&&top>rec)store.set('golf-tg',top);const coins=Math.min(60,Math.round(T.sc[0].pts/25));addCoins(coins);addXP(Math.round(T.sc[0].pts/10));
+  showCard(`<h2>Target Golf</h2>${rows.length>1?`<p class="bigt">${esc(rows[0].n)} wins with ${rows[0].s} points!</p>`:`<p class="bigt">${top} points</p><p>Your record: ${Math.max(top,rec)}</p>`}<div class="lb">${rows.map((r,i)=>`<div class="${r.k===0?'me':''}"><span>${i+1}</span><span>${esc(r.n)}<small> · best ball ${r.best}</small></span><span>${r.s}</span><span></span></div>`).join('')}</div><p>+${coins} coins</p><div class="row"><button class="go" type="button" data-a="again">Play again</button><button class="btn" type="button" data-a="menu">Menu</button></div>`)}
+
+/* ================= hole flyovers ================= */
+const FLYT=7;
+function holeTip(H){const t=[],CL=H.CL,e=CL[64],side=e.x>H.fwW*.6?'left':e.x<-H.fwW*.6?'right':'';if(H.par>3&&side)t.push(`Bends to the ${side}.`);
+  const oc=H.W.filter(w=>w.ocean),wt=H.W.filter(w=>!w.ocean);if(oc.length){const l=oc.reduce((a,w)=>a+near(H,w.x,w.z).lat,0);t.push(`The ocean runs down the ${l>0?'left':'right'}.`)}if(wt.length)t.push('Water in play.');
+  const fb=H.B.filter(b=>hyp(b.x-H.G.x,b.z-H.G.z)>30).length,gb=H.B.length-fb;if(fb)t.push(`${fb} fairway bunker${fb>1?'s':''}.`);if(gb)t.push(`${gb} bunker${gb>1?'s':''} by the green.`);
+  if(H.trees.length>180)t.push('Tight, tree-lined fairway.');if(H.E>7)t.push('Plays uphill.');else if(H.E<-7)t.push('Plays downhill.');if(H.G.tier)t.push('Two-tier green.');else if(Math.abs(H.G.sx||0)+Math.abs(H.G.sz||0)>.02)t.push('A sloping green.');
+  return t.slice(0,4).join(' ')||'A fair test. Hit the fairway, hit the green.'}
+function flyCam(H,t){const ease=ss(0,1,t);if(t<.72){const e=ss(0,.72,t),s=H.gEnd*e,q=ptAt(H.CL,H.acc,s),dx=Math.sin(q.a),dz=Math.cos(q.a),q2=ptAt(H.CL,H.acc,Math.min(H.gEnd,s+80));
+    return[new T3.Vector3(q.x-dx*45,hAt(q.x,q.z)+42-e*8,q.z-dz*45),new T3.Vector3(q2.x,hAt(q2.x,q2.z),q2.z)]}
+  const k=(t-.72)/.28,G=H.pin,q=ptAt(H.CL,H.acc,H.gEnd),a=q.a+Math.PI+k*2.1,R=48-k*10;return[new T3.Vector3(G.x+Math.sin(a)*R,hAt(G.x,G.z)+26-k*8,G.z+Math.cos(a)*R),new T3.Vector3(G.x,hAt(G.x,G.z),G.z)]}
+function flyCardShow(on){let el=$('flyCard');if(!el){el=document.createElement('div');el.id='flyCard';el.className='flycard';el.hidden=true;document.querySelector('.hud').append(el)}
+  if(!on){el.hidden=true;return}const H=HOLE;el.innerHTML=`<b>Hole ${S.hole+1}</b><span>Par ${H.par} · ${Math.round(H.gEnd)} yards</span><i>“${esc(H.hname)}”</i><small>${esc(holeTip(H))}</small><em>${TOUCH?'Tap Swing':'Space'} to skip</em>`;el.hidden=false}
+setInterval(()=>{try{const el=$('flyCard');if(el&&!el.hidden&&!(S&&S.phase==='intro'&&S.fly))el.hidden=true}catch(e){}},200);
+
+/* ================= create-a-golfer ================= */
+PRO.look=Object.assign({skin:1,hair:1,ht:1,tempo:'normal',cele:'arms'},PRO.look||{});
+const SKINS=[0xf3cfac,0xe0b088,0xc68e5f,0xa86f45,0x7d4b2c,0x5a3420],HAIRS=[['Black',0x1a1410],['Brown',0x4a3324],['Chestnut',0x7a4a28],['Blond',0xc9a35a],['Red',0x9a3a1e],['Gray',0xbdb8b0]],HTS=[['Short',.94],['Average',1],['Tall',1.06]],
+  TEMPOS=[['smooth','Smooth','Slower meter, 1.5% shorter'],['normal','Normal','Balanced'],['quick','Quick','Faster meter, 1.5% longer']],CELES=[['arms','Arms up'],['fist','Fist pump'],['twirl','Club twirl']];
+const tempoK=()=>{const t=PRO.look.tempo;return t==='smooth'?{m:.9,d:.985}:t==='quick'?{m:1.1,d:1.015}:{m:1,d:1}};
+{const _cb=CBO;CBO=function(k){const v=_cb.apply(this,arguments);return mine()?v*tempoK().d:v}}
+{const _dr=dress;dress=function(p){const r=_dr.apply(this,arguments);try{const u=golfer.userData,m=u.mats,me=!p||p.k===0,L=PRO.look;m.skin.color.set(me?SKINS[L.skin]:0xe0b088).convertSRGBToLinear();m.hair.color.set(me?HAIRS[L.hair][1]:0x4a3324).convertSRGBToLinear();golfer.scale.setScalar(me?HTS[L.ht][1]:1)}catch(e){}return r}}
+{const _lk=locker;locker=function(msg){const r=_lk.apply(this,arguments);try{const L=PRO.look,row=(k,items)=>`<div class="row" style="justify-content:flex-start">${items.map(([v,lab,sw])=>`<button class="chip" type="button" data-look="${k}:${v}" aria-pressed="${String(L[k])===String(v)}">${sw!=null?`<i class="swatch" style="background:#${sw.toString(16).padStart(6,'0')}"></i>`:''}${lab}</button>`).join('')}</div>`;
+  const h=`<h3>Create your golfer</h3><p><small>Skin tone</small></p>${row('skin',SKINS.map((c,i)=>[i,'Tone '+(i+1),c]))}<p><small>Hair</small></p>${row('hair',HAIRS.map(([n,c],i)=>[i,n,c]))}<p><small>Height</small></p>${row('ht',HTS.map(([n],i)=>[i,n]))}
+    <p><small>Swing tempo: ${esc(TEMPOS.find(t=>t[0]===L.tempo)[2])}</small></p>${row('tempo',TEMPOS.map(([k,n])=>[k,n]))}<p><small>Birdie celebration</small></p>${row('cele',CELES)}`;
+  const sk=[...$('ovc').querySelectorAll('h3')].find(x=>x.textContent==='Skills');if(sk)sk.insertAdjacentHTML('beforebegin',h)}catch(e){}return r}}
+$('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-look]');if(!b)return;const[k,v]=b.dataset.look.split(':');PRO.look[k]=k==='tempo'||k==='cele'?v:+v;saveP();dress(null);const sc=$('ovc').scrollTop;locker();$('ovc').scrollTop=sc;});
+function celeAnim(u,k,now){const me=!S||!cur()||cur().k===0,c=me?PRO.look.cele:'arms';
+  if(c==='fist'){u.swing.rotation.z=lerp(u.swing.rotation.z,1.5+Math.max(0,Math.sin(now/120))*.9,.3);golfer.position.y=golferBaseY}
+  else if(c==='twirl'){u.swing.rotation.z=lerp(u.swing.rotation.z,2.2,.2);u.club.rotation.y=k>.08?now/70:0;golfer.position.y=golferBaseY+Math.abs(Math.sin(now/200))*.05*clamp(k,0,1)}
+  else{u.swing.rotation.z=lerp(u.swing.rotation.z,2.9+Math.sin(now/90)*.12,.2);golfer.position.y=golferBaseY+Math.abs(Math.sin(now/130))*.14*clamp(k,0,1)}}
+
+/* ================= photo mode ================= */
+let PH=null;
+function photoOn(){if(!S||!HOLE)return;hideCard();const p=cur(),b=(p&&p.ball)||{x:0,z:0},f=new T3.Vector3(b.x,hAt(b.x,b.z)+1,b.z),d=cam.position.clone().sub(f);
+  PH={ph:S.phase,f,yaw:Math.atan2(d.x,d.z),pitch:Math.asin(clamp(d.y/(d.length()||1),-.2,1.4)),dist:clamp(d.length(),3,160),drag:null};window.__camHold=true;S.phase='photo';stage.classList.add('photo');
+  let bar=$('photoBar');if(!bar){bar=document.createElement('div');bar.id='photoBar';bar.className='photobar';stage.append(bar)}
+  bar.innerHTML=`<span>📷 Photo mode · drag to look around · scroll or pinch to zoom${TOUCH?'':' · arrow keys move'}</span><button class="btn" type="button" data-ph="save">Save photo</button><button class="btn" type="button" data-ph="golfer">Focus golfer</button><button class="btn" type="button" data-ph="pin">Focus pin</button><button class="go" type="button" data-ph="exit">Done</button>`;bar.hidden=false;phApply()}
+function phApply(){if(!PH)return;const c=Math.cos(PH.pitch);cam.position.set(PH.f.x+Math.sin(PH.yaw)*c*PH.dist,PH.f.y+Math.sin(PH.pitch)*PH.dist,PH.f.z+Math.cos(PH.yaw)*c*PH.dist);const gh=hAt(cam.position.x,cam.position.z)+.4;if(cam.position.y<gh)cam.position.y=gh;cam.lookAt(PH.f)}
+function photoOff(){if(PH&&S&&S.phase==='photo')S.phase=PH.ph;PH=null;window.__camHold=false;stage.classList.remove('photo');const bar=$('photoBar');if(bar)bar.hidden=true;camInit=false}
+function photoSave(){try{renderer.render(scene,cam);const url=renderer.domElement.toDataURL('image/jpeg',.92),a=document.createElement('a');a.href=url;a.download=`pin-high-${(HOLE&&HOLE.hname||'photo').replace(/[^a-z0-9]+/gi,'-').toLowerCase()}.jpg`;document.body.append(a);a.click();a.remove();note('','Photo saved',1.4)}catch(e){note('','Could not save the photo',1.6)}}
+stage.addEventListener('click',e=>{const b=e.target.closest('[data-ph]');if(!b||!PH)return;e.stopPropagation();const k=b.dataset.ph;
+  if(k==='exit')photoOff();else if(k==='save')photoSave();else if(k==='golfer'){PH.f.set(golfer.position.x,golfer.position.y+1,golfer.position.z);PH.dist=6;phApply()}else if(k==='pin'){PH.f.set(HOLE.pin.x,hAt(HOLE.pin.x,HOLE.pin.z)+1,HOLE.pin.z);PH.dist=30;phApply()}},true);
+const phPts=new Map();
+stage.addEventListener('pointerdown',e=>{if(!PH||e.target.closest('#photoBar'))return;e.stopPropagation();e.preventDefault();phPts.set(e.pointerId,{x:e.clientX,y:e.clientY});try{stage.setPointerCapture(e.pointerId)}catch(_){}},true);
+stage.addEventListener('pointermove',e=>{if(!PH||!phPts.has(e.pointerId))return;e.stopPropagation();const o=phPts.get(e.pointerId);
+  if(phPts.size===2){const [a,b]=[...phPts.values()],d0=hyp(a.x-b.x,a.y-b.y);phPts.set(e.pointerId,{x:e.clientX,y:e.clientY});const [c,d]=[...phPts.values()],d1=hyp(c.x-d.x,c.y-d.y);if(d0>0)PH.dist=clamp(PH.dist*d0/d1,2,220)}
+  else{PH.yaw-=(e.clientX-o.x)*.006;PH.pitch=clamp(PH.pitch+(e.clientY-o.y)*.005,-.15,1.45);phPts.set(e.pointerId,{x:e.clientX,y:e.clientY})}phApply()},true);
+addEventListener('pointerup',e=>{phPts.delete(e.pointerId)},true);
+stage.addEventListener('wheel',e=>{if(!PH)return;e.preventDefault();PH.dist=clamp(PH.dist*(1+Math.sign(e.deltaY)*.12),2,220);phApply()},{passive:false});
+addEventListener('keydown',e=>{if(PH){if(e.code==='Escape'||e.code==='KeyK'){photoOff();e.preventDefault();e.stopImmediatePropagation();return}
+    if(/^Arrow/.test(e.code)){const s=PH.dist*.08,fx=-Math.sin(PH.yaw),fz=-Math.cos(PH.yaw);if(e.code==='ArrowUp'){PH.f.x+=fx*s;PH.f.z+=fz*s}else if(e.code==='ArrowDown'){PH.f.x-=fx*s;PH.f.z-=fz*s}else if(e.code==='ArrowLeft'){PH.f.x+=fz*s;PH.f.z-=fx*s}else{PH.f.x-=fz*s;PH.f.z+=fx*s}PH.f.y=hAt(PH.f.x,PH.f.z)+1;phApply()}
+    e.preventDefault();e.stopImmediatePropagation();return}
+  if(e.code==='KeyK'&&S&&(S.phase==='aim'||S.phase==='rest')&&!(e.target&&e.target.tagName==='INPUT')){photoOn();e.preventDefault()}},true);
+{const _pm=pauseMenu;pauseMenu=function(){const r=_pm.apply(this,arguments);try{const row=$('ovc').querySelector('.row');if(row&&S&&S.phase!=='done')row.insertAdjacentHTML('beforeend','<button class="btn" type="button" data-a="photo">📷 Photo mode</button>')}catch(e){}return r}}
+
+/* ================= wiring for the new modes ================= */
+ACH.push(['chal3','Three Stars','Get three stars on a shot challenge'],['chal45','Challenge Master','Earn 45 challenge stars']);
+{const _sh=startHole;startHole=function(){if(S&&S.mode==='chal')S.players=S.players.slice(0,1);if(S&&S.mode==='target'&&!S.tg){S.wx='night';S.tg={per:9,sc:S.players.map(()=>({pts:0,streak:0,best:0,n:0}))}}
+  if(S&&!S.flyInit){S.flyInit=1;S.fly=(cfg.fly||'on')==='on'&&['stroke','tour','career','match','skins','scramble','daily','par3','custom'].includes(S.mode)}
+  if(S&&S.mode==='career'&&S.tday===4)S.fly=false;
+  const r=_sh.apply(this,arguments);
+  if(S.mode==='chal')chalSetup();
+  else if(S.mode==='target'){tgDraw();S.turn=0;const p=cur();note('Target Golf',`${S.players.length>1?p.name+' is up. ':''}9 balls each. Land it in the rings: farther targets are worth more, and back-to-back hits build a combo.`,3.6);S.phase='aim';setupShot()}
+  else if(S.fly){flyCardShow(true)}
+  return r}}
+{const _hf=holeFor;holeFor=function(){if(S.mode==='target')return tgHole();return _hf.apply(this,arguments)}}
+{const _sr=shotReport;shotReport=function(why){if(S&&S.mode==='target'){const p=cur(),T=S.tg,sc=T.sc[S.turn],B=S.ball;let r=why==='holed'?{pts:Math.round(50*TGT[2][3]),t:HOLE.tg[2]}:(why==='rest'?tgScore(p.ball.x,p.ball.z):{pts:0});
+      if(r.pts){sc.streak++;const mult=1+Math.min(.5,(sc.streak-1)*.1),pts=Math.round(r.pts*mult);sc.pts+=pts;sc.best=Math.max(sc.best,pts);note(`+${pts}`,`${r.t.d}-yard target${sc.streak>1?` · combo x${mult.toFixed(1)}`:''}`,1.8);crowd(pts>=75?'roar':'ooh')}else{sc.streak=0;note('Miss','Combo reset',1.4)}sc.n++;return}
+    if(S&&S.mode==='chal'){if(!S.chRes)S.chRes=chalResult(why);const R=S.chRes;note(R.stars?'★'.repeat(R.stars):'No stars',R.msg||(CHCUR.g[0]==='close'?(R.ft===0?'In the hole!':`${R.ft.toFixed(R.ft<10?1:0)} feet away`):`${R.yds} yards`),2.2);if(R.stars===3){crowd('roar');sfx.clap(30)}else if(R.stars)crowd('ooh');else crowd('aww');return}
+    return _sr.apply(this,arguments)}}
+{const _af=afterShot;afterShot=function(){if(S&&S.mode==='chal')return chalEnd();
+  if(S&&S.mode==='target'){const T=S.tg;if(T.sc.every(s=>s.n>=T.per))return tgEnd();let k=S.turn;for(let i=0;i<S.players.length;i++){k=(k+1)%S.players.length;if(T.sc[k].n<T.per)break}S.turn=k;const p=cur();p.ball={x:0,z:0,y:hAt(0,0),lie:'T'};p.holed=false;p.strokes=0;S.phase='aim';setupShot();
+    note(S.players.length>1?`${p.name} is up`:`Ball ${T.sc[k].n+1} of ${T.per}`,`${T.sc[k].pts} points${T.sc[k].streak>1?` · combo x${(1+Math.min(.5,(T.sc[k].streak)*.1)).toFixed(1)} on the line`:''}`,1.6);return}
+  return _af.apply(this,arguments)}}
+{const _er=endRound;endRound=function(){if(S&&S.mode==='chal')return chalEnd();if(S&&S.mode==='target')return tgEnd();
+  if(S&&S.mode==='career'&&S.tday===4){S.phase='done';const r=tnRoundDone(S.players[0]);showCard(cardHtml(false)+`<p class="bigt">${esc(r.txt)}</p>${r.season?`<p class="bigt" style="color:var(--led)">${esc(r.season)}</p>`:''}<div class="row"><button class="go" type="button" data-a="career">Back to the tour</button><button class="btn" type="button" data-a="menu">Menu</button></div>`);return}return _er.apply(this,arguments)}}
+{const _m=menu;menu=function(){photoOff();tgClear();CHCUR=null;const r=_m.apply(this,arguments);try{const o=$('ovc'),md=o.querySelector('.modes');const st=chStars(),tot=Object.values(st).reduce((a,b)=>a+b,0);
+  if(md){md.querySelector('[data-a="career"]').insertAdjacentHTML('afterend',`<button class="mode" type="button" data-a="chal"><b>Shot challenges</b><small>${CHAL.length} one-shot challenges: island greens, bunker blasts, stingers and spin-backs. ${tot} of ${CHAL.length*3} stars.</small></button>`);
+    md.insertAdjacentHTML('beforeend',`<button class="mode" type="button" data-m="target"><b>Target Golf</b><small>Glowing targets on a night range. Points, combos, and up to 4 players taking turns. Record: ${store.get('golf-tg',0)||'—'}</small></button>`)}
+  const lk=o.querySelector('.lockbtn');const h=myHcp();if(lk&&h!=null)lk.insertAdjacentHTML('beforeend',`<span class="hcp">Handicap ${hcpTxt(h)}</span>`);
+  const gx=o.querySelector('[data-cams]');if(gx)gx.closest('.row').insertAdjacentHTML('beforeend',`<span style="color:var(--muted);font-size:14px;margin-left:10px">Flyovers:</span>${[['on','On'],['off','Off']].map(([k,t])=>`<button class="chip" type="button" data-fly="${k}" aria-pressed="${(cfg.fly||'on')===k}">${t}</button>`).join('')}`);
+  const keys=o.querySelector('.keys');if(keys)keys.insertAdjacentHTML('beforeend','<span><kbd>K</kbd> photo mode</span>')}catch(e){console.warn(e)}return r}}
+$('ovc').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a;
+  if(b.dataset.fly){cfg.fly=b.dataset.fly;saveCfg();menu();return}
+  if(b.dataset.chal!=null){chalStart(+b.dataset.chal);return}
+  if(a==='chal'){chalMenu();return}if(a==='chretry'){chalStart(CHCUR.k);return}if(a==='chnext'){chalStart(CHCUR.k+1);return}
+  if(a==='photo'){photoOn();return}});
+
 window.__golf={swingPose,customHole,playReel,cardPicture,get BSPEC(){return BSPEC},set BSPEC(v){BSPEC=v},P3POOL,get aceMode(){return aceMode},lieCond,EVENTS,endHoleT:()=>endHole(),get ST(){return ST},get CU(){return CU},set CU(v){CU=v},RIVALS,caddieTalk,rangeHole,applyWx,WX,say,crowd,get rainOn(){return rain.m.visible},readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 lin(scene);menu();requestAnimationFrame(frame);
