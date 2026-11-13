@@ -109,7 +109,7 @@ html.touch.playing .pbar{display:flex}
 .xpbar{height:12px;border-radius:6px;background:#0b0f11;border:1px solid var(--line);overflow:hidden}.xpbar i{display:block;height:100%;background:linear-gradient(90deg,#3ddc84,#ffc23d)}
 .skills{display:grid;gap:6px}.sk{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;background:#0b0f11;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .sk b{display:block;font:800 17px var(--display);letter-spacing:.04em;color:var(--fg)}.sk small{color:var(--muted);font-size:12px}
-.pips{display:flex;gap:3px}.pips i{width:12px;height:12px;border-radius:3px;background:#2b3438}.pips i.on{background:var(--led)}
+.sk small.shnow{display:block;color:var(--led);margin-top:2px}.swatch{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;border:1px solid rgba(255,255,255,.4)}.pips{display:flex;gap:3px}.pips i{width:12px;height:12px;border-radius:3px;background:#2b3438}.pips i.on{background:var(--led)}
 .sk .btn{min-height:34px;font-size:13px}.btn:disabled{opacity:.45;cursor:default}.chip:disabled{opacity:.5;cursor:default}
 .achs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}.achs div{background:#0b0f11;border:1px solid var(--line);border-radius:8px;padding:6px 8px;display:grid}.achs b{font-size:13px;color:var(--muted)}.achs small{font-size:11px;color:var(--muted)}.achs .got{border-color:var(--led)}.achs .got b{color:var(--led)}
 .lb small{color:var(--muted);font-size:11px}.sched div{grid-template-columns:28px 1fr 54px 54px}
@@ -144,7 +144,7 @@ html.touch.playing .pbar{display:flex}
   </div>
   <div class="info">
     <section><h2>How to play</h2><ul><li>Aim with <kbd>A</kbd> <kbd>D</kbd> (hold <kbd>Shift</kbd> for fine aim), or just click or tap where you want to hit it, on the course or on the map. <kbd>P</kbd> aims at the pin. Pick a club with <kbd>W</kbd> <kbd>S</kbd>.</li><li><b>Swing:</b> press <kbd>Space</kbd> to start, press again to set the power, then once more when the marker comes back to the white line. Early slices, late hooks.</li><li>Watch the wind, the lie and the slope of the green. The arrows on the green show which way it breaks.</li></ul></section>
-    <section><h2>Shots</h2><ul><li><kbd>Q</kbd>/<kbd>E</kbd> backspin or topspin: backspin stops it on the green, topspin rolls it out.</li><li>Rough costs distance, sand costs more (a sand wedge helps). Water and out of bounds cost a stroke.</li><li><kbd>F</kbd> (or the shot buttons) to shape it: draw curves right to left, fade left to right, big draw and big fade bend it around doglegs, punch flies low under trees, flop goes high and soft (wedges only). The dashed line shows the curve.</li><li><kbd>V</kbd> overhead view, <kbd>R</kbd> replay your last shot, <kbd>Tab</kbd> scorecard.</li></ul></section>
+    <section><h2>Shots</h2><ul><li><kbd>Q</kbd>/<kbd>E</kbd> backspin or topspin: backspin stops it on the green (a full wedge with backspin can spin back toward you), topspin rolls it out.</li><li>Rough costs distance, sand costs more (a sand wedge helps). Water and out of bounds cost a stroke.</li><li><kbd>F</kbd> (or the shot buttons) to shape it: draw curves right to left, fade left to right, big draw and big fade bend it around doglegs, punch flies low under trees, flop goes high and soft (wedges only). The dashed line shows the curve.</li><li><kbd>V</kbd> overhead view, <kbd>R</kbd> replay your last shot, <kbd>Tab</kbd> scorecard.</li></ul></section>
     <section><h2>Modes</h2><p>Stroke play for up to four golfers on one device, a tournament against a full field, a Daily 9 that's the same for everyone, a long drive contest and closest to the pin. Six courses, from friendly parkland to two championship monsters: Azalea Pines and Iron Valley.</p></section>
   </div>
 </div>
@@ -445,7 +445,7 @@ let golfer=makeGolfer();scene.add(golfer);lin(golfer);
 function gearVal(kind,id){const g=GEAR[kind].find(x=>x[0]===id)||GEAR[kind][0];return g[2]}
 function dress(p){const u=golfer.userData,m=u.mats,me=!p||p.k===0,G=PRO.gear,cap=me?G.cap:'white';
   m.shirt.color.set(me?gearVal('shirt',G.shirt):PCOL[p.k]).convertSRGBToLinear();m.pants.color.set(me?gearVal('pants',G.pants):0x2b2f3a).convertSRGBToLinear();m.cap.color.set(gearVal('cap',cap)).convertSRGBToLinear();m.shaft.color.set(me?gearVal('club',G.club):0xb8c0c8).convertSRGBToLinear();
-  u.capG.visible=cap==='white'||cap==='red'||cap==='goldcap';u.visG.visible=cap==='visor';u.bucG.visible=cap==='bucket'}
+  u.capG.visible=cap!=='visor'&&cap!=='bucket';u.visG.visible=cap==='visor';u.bucG.visible=cap==='bucket'}
 let golferBaseY=0;
 /* the swing: k runs from -1 (top of the backswing) through 0 (address and impact) to +1 (the finish).
    Arms swing on the plane, the wrists hinge on the way back and re-hinge after impact, the hips and shoulders turn, and the head stays down until the ball is gone. */
@@ -678,9 +678,9 @@ function meterTick(dt){if(!meter)return;const D=DIFF[S.diff];if(meter.st===1){me
   const putt=club===PUTTER;if(meter){const pw=meter.pw||1,k=meter.st===1?meter.m:pw*(.93+.07*clamp(Math.max(0,meter.m)/pw,0,1));swingPose(-clamp(k,0,1.08),putt)}}
 let follow=0;
 function launchBall(pw,e){const p=cur(),b=p.ball,SH=SHAPES[shape],shid=SH[0];
-  const LC=lieCond(b,aim),[n,carry,ang,sf]=CLUBS[club],lf=lieF(b.lie,club),v0=SH[2]*V0[club]*Math.pow(CM(),.77)*Math.sqrt(lf)*(pw<=1?Math.pow(pw,.62):1+(pw-1)*.45)*LC.v*BALLV(),bs=sf*(1-spin*.35*(1+.15*SK('spin')))*(b.lie==='R'?.7:b.lie==='B'?.8:1)*SH[4]*CSPIN()*LC.s*BALLS();
+  const LC=lieCond(b,aim),[n,carry,ang,sf]=CLUBS[club],lf=lieF(b.lie,club),v0=SH[2]*V0[club]*Math.pow(CM(),.77)*Math.sqrt(lf)*(pw<=1?Math.pow(pw,.62):1+(pw-1)*.45)*LC.v*BALLV(),bs=sf*(1-spin*.35*(1+.15*SK('spin')))*(b.lie==='R'?.7:b.lie==='B'?.8+.2*SOLE():1)*SH[4]*CSPIN()*LC.s*BALLS();
   const bend={draw:.45,fade:-.45,bigdraw:.85,bigfade:-.85}[shid]||0,la=(ang*SH[3]+(b.lie==='B'?4:0)-spin*1.2+LC.la)*Math.PI/180,sp=bs*(bend>0?.9:bend<0?1.1:1);
-  const mk=dir=>({x:b.x,y:b.y+.02,z:b.z,vx:Math.sin(dir)*Math.cos(la)*v0,vy:Math.sin(la)*v0,vz:Math.cos(dir)*Math.cos(la)*v0,v0,la,roll:false,sp,side:e*4.5+bend+LC.side,spinAdj:spin,shape:shid,aimDir:aim,carry:0,maxY:b.y,trees:0,lastDry:{x:b.x,z:b.z}});
+  const mk=dir=>({x:b.x,y:b.y+.02,z:b.z,vx:Math.sin(dir)*Math.cos(la)*v0,vy:Math.sin(la)*v0,vz:Math.cos(dir)*Math.cos(la)*v0,v0,la,roll:false,sp,spk:bs*(.75+.25*Math.min(1,pw)),side:e*4.5+bend+LC.side,spinAdj:spin,shape:shid,aimDir:aim,carry:0,maxY:b.y,trees:0,lastDry:{x:b.x,z:b.z}});
   // a draw starts out to the right and curves back; a fade the other way. Start it off-line so it comes down where you aimed (the dashed line shows the bend)
   let off=0;if(bend){const L=predictLand({...mk(aim),side:bend},true),dz=L.z-b.z,dx=L.x-b.x;if(hyp(dx,dz)>5)off=Math.atan2(dx,dz)-aim}
   return mk(aim-off+e*.25)}
@@ -721,15 +721,15 @@ function stepBall(dt){const B=S.ball,H=HOLE;if(!B)return;
       else if(rel<=base&&d<.45&&B.trees<4){B.vx*=-.35;B.vz*=-.35;B.trees++;sfx.tree()}}
     if(B.treeCD>0)B.treeCD-=dt;
     const g=hAt(B.x,B.z);
-    if(B.y<=g){B.y=g;const s=surfAt(B.x,B.z);if(!B.carry){B.carry=hyp(B.x-S.shotStart.x,B.z-S.shotStart.z);B.land={x:B.x,z:B.z,vy:B.vy};if(B.aimDir!=null&&B.trees===0){const ux=Math.sin(B.aimDir),uz=Math.cos(B.aimDir),along=B.vx*ux+B.vz*uz,lat=B.vx*uz-B.vz*ux,k=.35;B.vx=ux*along+uz*lat*k;B.vz=uz*along-ux*lat*k}const vh=hyp(B.vx,B.vz)||1;if(s==='B')burst(B.x,g,B.z,'sand',16,B.vx/vh,B.vz/vh,.7);else if(s==='W')burst(B.x,g,B.z,'water',36,0,0,1);else if(s!=='G')burst(B.x,g,B.z,'dust',5,B.vx/vh,B.vz/vh,.4)}
+    if(B.y<=g){B.y=g;const s=surfAt(B.x,B.z);if(!B.carry){B.carry=hyp(B.x-S.shotStart.x,B.z-S.shotStart.z);B.land={x:B.x,z:B.z,vy:B.vy};if((s==='G'||s==='X')&&B.spk>1.38&&!B.trees){const h=hyp(B.vx,B.vz)||1;B.zip=Math.min(2.3,(B.spk-1.38)*.26*hyp(B.vx,B.vy,B.vz));B.zdx=B.vx/h;B.zdz=B.vz/h}if(B.aimDir!=null&&B.trees===0){const ux=Math.sin(B.aimDir),uz=Math.cos(B.aimDir),along=B.vx*ux+B.vz*uz,lat=B.vx*uz-B.vz*ux,k=.35;B.vx=ux*along+uz*lat*k;B.vz=uz*along-ux*lat*k}const vh=hyp(B.vx,B.vz)||1;if(s==='B')burst(B.x,g,B.z,'sand',16,B.vx/vh,B.vz/vh,.7);else if(s==='W')burst(B.x,g,B.z,'water',36,0,0,1);else if(s!=='G')burst(B.x,g,B.z,'dust',5,B.vx/vh,B.vz/vh,.4)}
       if(s==='W'){return endBall('water')}if(s==='O'){return endBall('ob')}
       const P=SURF[s],gr=fairGrad(B.x,B.z,s),nl=hyp(gr.x,1,gr.z),nx=-gr.x/nl,ny=1/nl,nz=-gr.z/nl,vn=B.vx*nx+B.vy*ny+B.vz*nz;
-      let tx=B.vx-vn*nx,ty=B.vy-vn*ny,tz=B.vz-vn*nz;let slide=P.slide;if(s==='G'||s==='X')slide*=clamp(1-1.1*(B.sp-.5),.1,1.2);if(B.spinAdj>0)slide=Math.min(1,slide+.12);
+      let tx=B.vx-vn*nx,ty=B.vy-vn*ny,tz=B.vz-vn*nz;let slide=P.slide;if(s==='G'||s==='X')slide*=B.spk!=null?clamp(1.05-(B.spk-.9)*1.5,.08,1.15):clamp(1-1.1*(B.sp-.5),.1,1.2);if(B.spinAdj>0)slide=Math.min(1,slide+.12);
       // hole it on the fly
       if(hyp(B.x-H.pin.x,B.z-H.pin.z)<.13&&-vn<16){return endBall('holed')}
       if(s==='B'){sfx.sand()}
       tx*=slide;ty*=slide;tz*=slide;const bounce=-vn*P.rest;
-      if(bounce<1.4){B.roll=true;B.vx=tx;B.vz=tz;B.vy=0}else{B.vx=tx+nx*bounce;B.vy=ty+ny*bounce;B.vz=tz+nz*bounce;B.y=g+.01;B.sp*=.5;B.side*=.3}}
+      if(bounce<1.4){B.roll=true;B.vx=tx;B.vz=tz;B.vy=0;if(B.zip>0&&(s==='G'||s==='X')){B.vx=-B.zdx*B.zip;B.vz=-B.zdz*B.zip;if(B.zip>.9)note('','It spins back!',1.3);B.zip=0}}else{B.vx=tx+nx*bounce;B.vy=ty+ny*bounce;B.vz=tz+nz*bounce;B.y=g+.01;B.sp*=.5;B.side*=.3}}
     return}
   // rolling along the ground
   const s=surfAt(B.x,B.z);if(s==='W')return endBall('water');if(s==='O')return endBall('ob');
@@ -829,12 +829,12 @@ const ptsLeft=()=>ptsEarned()-ptsSpent();
 function SK(k){const p=S&&S.players?cur():null;return(!p||p.k===0)?(PRO.sk[k]||0):0}
 function addXP(n,p){if(!n||(p&&p.k!==0))return;const a=lvlOf(PRO.xp).L;PRO.xp+=n;saveP();const b=lvlOf(PRO.xp).L;if(b>a){setTimeout(()=>{note('Level up!',`${cfg.names[0]||'Blake Yoakam'} is level ${b} · +${b-a} upgrade point${b-a>1?'s':''} in the locker`,3);sfx.clap(30)},1300);if(b>=5)ach('lvl5');if(b>=10)ach('lvl10')}}
 const gearReq=g=>g[3];
-function unlocked(req){return typeof req==='number'?lvlOf(PRO.xp).L>=req:!!GOT[req]}
+function unlocked(req){if(typeof req==='string'&&req.startsWith('buy:')){const[,k,id]=req.split(':');return owns(k,id)}return typeof req==='number'?lvlOf(PRO.xp).L>=req:!!GOT[req]}
 let lockerView=false;
 function locker(msg){const lv=lvlOf(PRO.xp),left=ptsLeft(),nm=esc(cfg.names[0]||'Blake Yoakam');
   let h=`<h2>${nm}’s locker</h2><p>Level ${lv.L} · <b style="color:var(--led)">${left} upgrade point${left===1?'':'s'}</b> to spend</p><div class="xpbar"><i style="width:${Math.round(lv.into/lv.need*100)}%"></i></div><p style="font-size:13px">${lv.into} / ${lv.need} XP to level ${lv.L+1}. You earn XP every round (birdies count big), and an upgrade point for every level and every achievement.</p>${msg?`<p style="color:var(--led)">${esc(msg)}</p>`:''}`;
   h+='<h3>Skills</h3><div class="skills">'+SKILLS.map(([k,n,d])=>{const v=PRO.sk[k],c=COST[v];return`<div class="sk"><div><b>${n}</b><small>${d}</small></div><span class="pips">${[0,1,2,3,4].map(i=>`<i class="${i<v?'on':''}"></i>`).join('')}</span><button class="btn" type="button" data-up="${k}"${v>=5||c>left?' disabled':''}>${v>=5?'Maxed':`Upgrade · ${c} pt${c>1?'s':''}`}</button></div>`}).join('')+'</div>';
-  for(const[kind,label]of[['shirt','Shirt'],['pants','Pants'],['cap','Hat'],['club','Club finish']]){h+=`<h3>${label}</h3><div class="row" style="justify-content:flex-start">`+GEAR[kind].map(g=>{const req=gearReq(g),ok=unlocked(req),on=PRO.gear[kind]===g[0];return`<button class="chip" type="button" data-gear="${kind}:${g[0]}" aria-pressed="${on}"${ok?'':' disabled'}>${ok?'':'🔒 '}${g[1]}${ok?'':`<small>${typeof req==='number'?'Level '+req:'Achievement: '+(ACH.find(a=>a[0]===req)||[0,req])[1]}</small>`}</button>`}).join('')+'</div>'}
+  for(const[kind,label]of[['shirt','Shirt'],['pants','Pants'],['cap','Hat'],['club','Club finish']]){h+=`<h3>${label}</h3><div class="row" style="justify-content:flex-start">`+GEAR[kind].map(g=>{const req=gearReq(g),ok=unlocked(req),on=PRO.gear[kind]===g[0];return`<button class="chip" type="button" data-gear="${kind}:${g[0]}" aria-pressed="${on}"${ok?'':' disabled'}>${ok?'':'🔒 '}${g[1]}${ok?'':`<small>${typeof req==='number'?'Level '+req:String(req).startsWith('buy:')?'Pro shop':'Achievement: '+(ACH.find(a=>a[0]===req)||[0,req])[1]}</small>`}</button>`}).join('')+'</div>'}
   h+=`<h3>Achievements · ${ACH.filter(a=>GOT[a[0]]).length} of ${ACH.length}</h3><div class="achs">${ACH.map(([id,n,d])=>`<div class="${GOT[id]?'got':''}"><b>${GOT[id]?'★ ':''}${n}</b><small>${d}</small></div>`).join('')}</div>`;
   h+=`<div class="row"><button class="go" type="button" data-a="menu">Done</button></div>`;
   lockerView=true;showCard(h,'side');setTimeout(()=>plantGrass(0,0),50);$('ovc').scrollTop=0;try{document.activeElement&&document.activeElement.blur()}catch(e){}if(!HOLE){const H=makeHole(cfg.course,0);H.name=COURSES[cfg.course].name;buildHole(H)}poseGolfer({x:0,z:0,y:hAt(0,0)},0,0,null);golfer.visible=true}
@@ -1084,20 +1084,91 @@ function annLie(p,tot,lie,why){const n=(p.name||'').split(' ').pop()||'Blake';
     else if(d===1)say(pick(['Bogey.','That is a bogey.']));else say(d===2?'Double bogey.':'Tough hole.')}
   else if(why==='rest'&&wasPutt){const ft=pinDist(p.ball)*3;if(ft<4&&S.shotStart&&hyp(S.shotStart.x-HOLE.pin.x,S.shotStart.z-HOLE.pin.z)*3>6){crowd('aww');say(pick(['Oh, so close!','Just misses!','Lipped out!']))}}
   else{const lie=p.ball.lie,txt=annLie(p,hyp(S.ball.x-S.shotStart.x,S.ball.z-S.shotStart.z),lie,why);if(why==='water'||why==='ob')crowd('aww');else if(lie==='G'&&pinDist(p.ball)*3<10)crowd('ooh');if(txt)say(txt)}}catch(e){}return r}}
-/* ---------- the pro shop: club upgrades bought with arcade coins ---------- */
-const CLUBUP=[['driver','Carbon driver','+2.5% driver distance per level'],['woods','Fairway woods','+2% wood distance per level'],['irons','Forged irons','+1.5% iron distance and a bigger sweet spot per level'],['wedges','Spin wedges','More backspin and a bigger sweet spot with wedges'],['putter','Milled putter','Steadier putts per level']],CUCOST=[80,180,320];
+/* ---------- the pro shop ----------
+   Everything for sale lives in SHOPCAT. To add something new, add one line:
+   - an upgrade has `costs` (the price of each level) and `fx` (its effect at level 0, 1, 2...), and `show` turns an effect into words
+   - a ball, trail or outfit has one `cost` and a `slot`; you buy it once and then pick it from the shop
+   - apparel lines also add the item to the locker (shirt, pants, hat, club finish) */
+const SHOPTABS=[['clubs','Clubs'],['balls','Balls'],['trails','Ball trails'],['apparel','Apparel']];
+const shPct=v=>`+${+(v*100).toFixed(1)}%`;
+const SHOPCAT=[
+  {tab:'clubs',id:'driver',n:'Carbon driver',d:'More distance off the tee',costs:[80,180,320,500,750],fx:[0,.025,.05,.075,.09,.105],show:v=>`${shPct(v)} driver distance`},
+  {tab:'clubs',id:'woods',n:'Fairway woods',d:'More distance with the 3 and 5 wood',costs:[80,180,320,500,750],fx:[0,.02,.04,.06,.072,.084],show:v=>`${shPct(v)} wood distance`},
+  {tab:'clubs',id:'irons',n:'Forged irons',d:'More distance and a bigger sweet spot with the irons',costs:[80,180,320,500,750],fx:[0,.015,.03,.045,.054,.063],show:v=>`${shPct(v)} iron distance`},
+  {tab:'clubs',id:'wedges',n:'Spin wedges',d:'Sharper grooves: wedge shots bite, stop faster and spin back sooner',costs:[80,180,320,500,750],fx:[0,.06,.12,.18,.23,.28],show:v=>`${shPct(v)} wedge spin`},
+  {tab:'clubs',id:'putter',n:'Milled putter',d:'Steadier putts that hold their line',costs:[80,180,320,500,750],fx:[0,.18,.36,.54,.6,.65],show:v=>`${Math.round(v*100)}% less putting error`},
+  {tab:'clubs',id:'sole',n:'Bunker wedge sole',d:'Splash it out: shots from the sand lose less distance and spin',costs:[120,260,420],fx:[0,.3,.55,.75],show:v=>`${Math.round(v*100)}% less sand penalty`},
+  {tab:'clubs',id:'hybrid',n:'Rough-cutter soles',d:'Clubs glide through thick grass: less distance lost from the rough',costs:[120,260,420],fx:[0,.25,.45,.6],show:v=>`${Math.round(v*100)}% less rough penalty`},
+  {tab:'clubs',id:'glove',n:'Tour glove',d:'A firmer grip: a bigger sweet spot on every full swing',costs:[150,300,500],fx:[0,.002,.004,.006],show:v=>`+${Math.round(v/.032*100)}% sweet spot`},
+  {tab:'balls',slot:'ball',id:'tour',n:'Tour ball',d:'Balanced distance and spin',cost:0},
+  {tab:'balls',slot:'ball',id:'distance',n:'Distance ball',d:'About 2.5% longer with every club, but wedges spin less',cost:150,v:1.025,s:.85},
+  {tab:'balls',slot:'ball',id:'spin',n:'Spin ball',d:'Wedges bite hard and spin back. Slightly shorter',cost:150,v:.992,s:1.3},
+  {tab:'balls',slot:'ball',id:'soft',n:'Soft feel ball',d:'A soft cover: steadier putts and a little extra wedge spin. Slightly shorter',cost:220,v:.99,s:1.1,pe:.88},
+  {tab:'balls',slot:'ball',id:'hivis',n:'High-vis yellow ball',d:'Same as the tour ball, but easy to follow in the air',cost:90,col:0xf2f04a},
+  {tab:'balls',slot:'ball',id:'pro',n:'Tour Elite ball',d:'The best of both: 1.5% longer and extra wedge spin',cost:450,v:1.015,s:1.15},
+  {tab:'trails',slot:'trail',id:'white',n:'White trail',d:'The classic TV tracer',cost:0,col:0xffffff},
+  {tab:'trails',slot:'trail',id:'red',n:'Red tracer',d:'A bright red line behind every shot',cost:80,col:0xff4a4a},
+  {tab:'trails',slot:'trail',id:'gold',n:'Gold tracer',d:'A gold line behind every shot',cost:80,col:0xffc23d},
+  {tab:'trails',slot:'trail',id:'blue',n:'Ice blue tracer',d:'A cool blue line behind every shot',cost:80,col:0x5fc8ff},
+  {tab:'trails',slot:'trail',id:'green',n:'Green tracer',d:'A green line behind every shot',cost:80,col:0x3ddc84},
+  {tab:'trails',slot:'trail',id:'pink',n:'Azalea pink tracer',d:'A pink line behind every shot',cost:120,col:0xff7ab8},
+  {tab:'apparel',gear:'shirt',id:'pink',n:'Azalea pink shirt',cost:120,col:0xe86aa6},
+  {tab:'apparel',gear:'shirt',id:'orange',n:'Sunday orange shirt',cost:120,col:0xe8762a},
+  {tab:'apparel',gear:'shirt',id:'lav',n:'Lavender shirt',cost:120,col:0x9a86d6},
+  {tab:'apparel',gear:'shirt',id:'teal',n:'Teal shirt',cost:120,col:0x1f9a9a},
+  {tab:'apparel',gear:'pants',id:'black',n:'Black pants',cost:100,col:0x1b1c20},
+  {tab:'apparel',gear:'pants',id:'gray',n:'Light gray pants',cost:100,col:0xa8adb4},
+  {tab:'apparel',gear:'cap',id:'navycap',n:'Navy cap',cost:90,col:0x1f2f5a},
+  {tab:'apparel',gear:'cap',id:'blackcap',n:'Black cap',cost:90,col:0x1d1d22},
+  {tab:'apparel',gear:'cap',id:'greencap',n:'Green cap',cost:90,col:0x2e9c55},
+  {tab:'apparel',gear:'club',id:'copper',n:'Copper club finish',cost:160,col:0xc07a45},
+  {tab:'apparel',gear:'club',id:'blue',n:'Blue club finish',cost:160,col:0x3b6fd0}];
+for(const it of SHOPCAT)if(it.gear&&!GEAR[it.gear].some(g=>g[0]===it.id))GEAR[it.gear].push([it.id,it.n.replace(/ (shirt|pants|club finish)$/,''),it.col,'buy:'+it.gear+':'+it.id]);
 let CU=Object.assign({driver:0,woods:0,irons:0,wedges:0,putter:0},store.get('golf-clubs',{}));
+CU.own=CU.own||[];for(const b of CU.balls||[])if(!CU.own.includes('ball:'+b))CU.own.push('ball:'+b);delete CU.balls;
+const saveCU=()=>store.set('golf-clubs',CU);
+const shopItem=id=>SHOPCAT.find(x=>x.id===id&&x.costs);
+const owns=(slot,id)=>{const it=SHOPCAT.find(x=>(x.slot||x.gear)===slot&&x.id===id);return !!it&&(!it.cost||CU.own.includes(slot+':'+id))};
+const lvlFx=id=>{const it=shopItem(id),l=CU[id]||0;return it?it.fx[Math.min(l,it.fx.length-1)]:0};
+const ballIt=()=>SHOPCAT.find(x=>x.slot==='ball'&&x.id===(CU.ball||'tour'))||SHOPCAT.find(x=>x.slot==='ball');
 const mine=()=>{const p=S&&S.players?cur():null;return !p||p.k===0};
 function cgrp(k){return k===0?'driver':k<=2?'woods':k<=8?'irons':k<=12?'wedges':'putter'}
-function CBO(k){if(!mine())return 1;const g=cgrp(k),l=CU[g]||0;return 1+l*(g==='driver'?.025:g==='woods'?.02:g==='irons'?.015:0)}
-function CSNAP(){if(!mine())return 0;const g=cgrp(club),l=CU[g]||0;return g==='irons'?l*.004:g==='wedges'?l*.003:0}
-function CSPIN(){if(!mine())return 1;return cgrp(club)==='wedges'?1+.1*(CU.wedges||0):1}
-function CPUTT(){if(!mine())return 1;return 1-.18*(CU.putter||0)}
+function CBO(k){if(!mine())return 1;const g=cgrp(k);return g==='wedges'||g==='putter'?1:1+lvlFx(g)}
+function CSNAP(){if(!mine())return 0;const g=cgrp(club),l=CU[g]||0;return (g==='irons'?l*.004:g==='wedges'?l*.003:0)+(club!==PUTTER?lvlFx('glove'):0)}
+function CSPIN(){if(!mine())return 1;return cgrp(club)==='wedges'?1+lvlFx('wedges'):1}
+function CPUTT(){if(!mine())return 1;return (1-lvlFx('putter'))*(ballIt().pe||1)}
+function BALLV(){if(!mine())return 1;return ballIt().v||1}
+function BALLS(){if(!mine())return 1;return cgrp(club)==='wedges'?(ballIt().s||1):1}
+function SOLE(){return mine()?lvlFx('sole'):0}
+{const _lf=lieF;lieF=function(lie,cl){let p=_lf(lie,cl);if(p<1&&mine()){if(lie==='B')p=1-(1-p)*(1-lvlFx('sole'));else if(lie==='R')p=1-(1-p)*(1-lvlFx('hybrid'))}return p}}
+// the look of my ball and its tracer
+function ballLook(){try{const me=mine(),b=me?ballIt():null,t=me?SHOPCAT.find(x=>x.slot==='trail'&&x.id===(CU.trail||'white')):null;
+  ballMesh.material.color.set(b&&b.col||0xffffff);trail.material.color.set(t&&t.col||0xffffff)}catch(e){}}
+{const _tr=trailReset;trailReset=function(){const r=_tr.apply(this,arguments);ballLook();return r}}
+{const _ss=setupShot;setupShot=function(){const r=_ss.apply(this,arguments);ballLook();return r}}
 function coinsHave(){try{return(JSON.parse(localStorage.getItem('overtime-coins')||'null')||{c:0}).c||0}catch(e){return 0}}
-function spendCoins(n){try{const d=JSON.parse(localStorage.getItem('overtime-coins')||'null')||{c:0,own:{},earned:0};if((d.c||0)<n)return false;d.c-=n;localStorage.setItem('overtime-coins',JSON.stringify(d));return true}catch(e){return false}}
-function shop(msg){const c=coinsHave();showCard(`<h2>Pro shop</h2><p>Spend Overtime Arcade coins on better clubs for ${esc(cfg.names[0]||'Blake Yoakam')}. You have <b style="color:var(--led)">${c} coins</b>.</p>${msg?`<p style="color:var(--led)">${esc(msg)}</p>`:''}
-  <div class="skills">${CLUBUP.map(([k,n,d])=>{const l=CU[k]||0,cost=CUCOST[l];return`<div class="sk"><div><b>${n} · level ${l}</b><small>${d}</small></div><span class="pips">${[0,1,2].map(i=>`<i class="${i<l?'on':''}"></i>`).join('')}</span><button class="btn" type="button" data-buy="${k}"${l>=3||c<cost?' disabled':''}>${l>=3?'Maxed':`Buy · ${cost} coins`}</button></div>`}).join('')}</div>
-  <p><small>Win coins in every Overtime Arcade game. Golf pays for finished rounds, wins, birdies, eagles and aces.</small></p><div class="row"><button class="go" type="button" data-a="menu">Back</button></div>`)}
+function spendCoins(n){if(!n)return true;try{const d=JSON.parse(localStorage.getItem('overtime-coins')||'null')||{c:0,own:{},earned:0};if((d.c||0)<n)return false;d.c-=n;localStorage.setItem('overtime-coins',JSON.stringify(d));return true}catch(e){return false}}
+let shopTab='clubs';
+function shopRow(it,c){
+  if(it.costs){const l=CU[it.id]||0,max=it.costs.length,cost=it.costs[l],now=it.fx[l],nx=l<max?it.fx[l+1]:null;
+    return`<div class="sk"><div><b>${esc(it.n)} · level ${l} of ${max}</b><small>${esc(it.d)}</small><small class="shnow">${l?`Now ${esc(it.show(now))}`:'Not upgraded yet'}${nx!=null?` → next ${esc(it.show(nx))}`:''}</small></div><span class="pips">${it.costs.map((_,i)=>`<i class="${i<l?'on':''}"></i>`).join('')}</span><button class="btn" type="button" data-buy="${it.id}"${l>=max||c<cost?' disabled':''}>${l>=max?'Maxed':`Buy · ${cost} coins`}</button></div>`}
+  const slot=it.slot||it.gear,has=owns(slot,it.id),on=it.gear?PRO.gear[it.gear]===it.id:(CU[slot]||SHOPCAT.find(x=>x.slot===slot).id)===it.id;
+  const sw=it.col!=null?`<i class="swatch" style="background:#${it.col.toString(16).padStart(6,'0')}"></i>`:'';
+  const lab=on?(it.gear?'Wearing':'Using'):has?(it.gear?'Wear':'Use'):`Buy · ${it.cost} coins`;
+  return`<div class="sk"><div><b>${sw}${esc(it.n)}${on?' · in the bag':''}</b><small>${esc(it.d||(it.gear==='club'?'A new finish on every club in the bag':`Shows up on ${cfg.names[0]||'Blake Yoakam'} and in the locker`))}</small></div><span></span><button class="btn" type="button" data-own="${slot}:${it.id}"${on||(!has&&c<it.cost)?' disabled':''}>${lab}</button></div>`}
+function shop(msg){const c=coinsHave(),items=SHOPCAT.filter(x=>x.tab===shopTab),up=SHOPCAT.filter(x=>x.costs),done=up.reduce((a,x)=>a+(CU[x.id]||0),0),all=up.reduce((a,x)=>a+x.costs.length,0);
+  showCard(`<h2>Pro shop</h2><p>Spend Overtime Arcade coins on gear for ${esc(cfg.names[0]||'Blake Yoakam')}. You have <b style="color:var(--led)">${c} coins</b>.</p>
+  <div class="row shtabs" style="justify-content:flex-start">${SHOPTABS.map(([k,t])=>`<button class="chip" type="button" data-shtab="${k}" aria-pressed="${shopTab===k}">${t}</button>`).join('')}</div>
+  ${msg?`<p style="color:var(--led)">${esc(msg)}</p>`:''}
+  ${shopTab==='clubs'?`<p><small>Bag upgrades: ${done} of ${all} levels. Upgrades help only your own golfer, never the CPU players.</small></p>`:''}
+  <div class="skills">${items.map(it=>shopRow(it,c)).join('')}</div>
+  <p><small>Win coins in every Overtime Arcade game. Golf pays for finished rounds, wins, birdies, eagles and aces.</small></p><div class="row"><button class="go" type="button" data-a="menu">Back</button></div>`);const top=()=>{$('ovc').scrollTop=0};top();setTimeout(top,40)}
+function shopClick(e){const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.shtab){shopTab=b.dataset.shtab;shop();return}
+  if(b.dataset.buy){const it=shopItem(b.dataset.buy),l=CU[it.id]||0;if(it&&l<it.costs.length&&spendCoins(it.costs[l])){CU[it.id]=l+1;saveCU();sfx.clap(12);shop(`${it.n} upgraded to level ${l+1}`)}return}
+  if(b.dataset.own){const[slot,id]=b.dataset.own.split(':'),it=SHOPCAT.find(x=>(x.slot||x.gear)===slot&&x.id===id);if(!it)return;
+    if(!owns(slot,id)){if(!spendCoins(it.cost))return;CU.own.push(slot+':'+id);sfx.clap(8)}
+    if(it.gear){PRO.gear[it.gear]=id;saveP();dress(null)}else CU[slot]=id;saveCU();ballLook();shop(`${it.n} ${it.gear?'is on':'is in the bag'}`)}}
 
 /* ---------- stats ---------- */
 let ST=Object.assign({rounds:0,holes:0,drives:0,driveYds:0,longDrive:0,fwHit:0,fwOpp:0,gir:0,girOpp:0,putts:0,puttHoles:0,birdies:0,eagles:0,aces:0,matchW:0,matchL:0,matchH:0,best:[]},store.get('golf-stats',{}));
@@ -1206,7 +1277,6 @@ function padShow(){const el=$('dragPad');if(el)el.hidden=!((cfg.swing||'meter')=
   const gx=o.querySelector('[data-gfx]');if(gx){const row=document.createElement('div');row.className='row';row.innerHTML=`<span style="color:var(--muted);font-size:14px">Swing:</span>${[['meter','Tap meter'],['drag','Drag to swing']].map(([k,t])=>`<button class="chip" type="button" data-swing="${k}" aria-pressed="${(cfg.swing||'meter')===k}">${t}</button>`).join('')}<span style="color:var(--muted);font-size:14px;margin-left:10px">Caddie:</span>${[['on','On'],['off','Off']].map(([k,t])=>`<button class="chip" type="button" data-caddie="${k}" aria-pressed="${(cfg.caddie||'on')===k}">${t}</button>`).join('')}`;gx.closest('.row').before(row)}}catch(e){console.warn(e)}return r}}
 $('ovc').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const a=b.dataset.a;
   if(b.dataset.swing){cfg.swing=b.dataset.swing;saveCfg();menu();return}if(b.dataset.caddie){cfg.caddie=b.dataset.caddie;saveCfg();menu();return}
-  if(b.dataset.buy){const k=b.dataset.buy,l=CU[k]||0;if(l<3&&spendCoins(CUCOST[l])){CU[k]=l+1;store.set('golf-clubs',CU);sfx.clap(12);shop(`${CLUBUP.find(c=>c[0]===k)[1]} upgraded to level ${l+1}`)}return}
   if(b.dataset.rival!=null){cfg.rival=+b.dataset.rival;saveCfg();camInit=false;newRound('match');return}
   if(a==='shop')shop();else if(a==='stats')statsScreen();else if(a==='match')matchPick();else if(a==='d9go'){chGo=true;camInit=false;newRound('daily')}});
 /* ---------- tricky lies: slopes, plugged balls in the sand, thick rough ---------- */
@@ -1223,14 +1293,7 @@ function lieAdvice(b){const o=lieCond(b,aim),t=[];for(const g of o.tags){if(g===
     else if(p.ball.lie==='R'&&Math.random()<.35){p.ball.thick=1;setTimeout(()=>note('Thick rough','It will come out slow',1.6),1700)}}}catch(e){}return r}}
 {const _ct=caddieTalk;caddieTalk=function(){_ct.apply(this,arguments);try{const el=$('caddie');if(el&&!el.hidden&&S&&club!==PUTTER){const t=lieAdvice(cur().ball);if(t.length)el.textContent+=' '+t.join(' ')}}catch(e){}}}
 
-/* ---------- golf balls ---------- */
-const BALLS_=[['tour','Tour ball','Balanced distance and spin',0],['distance','Distance ball','About 3% longer off every club, less spin on wedges',150],['spin','Spin ball','Stops fast on the green, slightly shorter',150]];
-function BALLV(){if(!mine())return 1;return CU.ball==='distance'?1.025:CU.ball==='spin'?.992:1}
-function BALLS(){if(!mine())return 1;return CU.ball==='distance'?(club>=7?.9:1):CU.ball==='spin'?(club>=7?1.3:1):1}
-{const _sp=shop;shop=function(msg){_sp.apply(this,arguments);try{const own=CU.balls||['tour'],c=coinsHave(),row=$('ovc').querySelector('.row:last-of-type');const d=document.createElement('div');
-  d.innerHTML=`<h3>Golf balls</h3><div class="skills">${BALLS_.map(([k,n,ds,cost])=>{const has=own.includes(k),on=(CU.ball||'tour')===k;return`<div class="sk"><div><b>${n}${on?' · in the bag':''}</b><small>${ds}</small></div><span></span><button class="btn" type="button" data-ball="${k}"${on||(!has&&c<cost)?' disabled':''}>${on?'Using':has?'Use':`Buy · ${cost} coins`}</button></div>`}).join('')}</div>`;row.before(d)}catch(e){}}}
-$('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-ball]');if(!b)return;const k=b.dataset.ball,it=BALLS_.find(x=>x[0]===k);if(!it)return;CU.balls=CU.balls||['tour'];
-  if(!CU.balls.includes(k)){if(!spendCoins(it[3]))return;CU.balls.push(k)}CU.ball=k;store.set('golf-clubs',CU);sfx.clap(8);shop(`${it[1]} is in the bag`)});
+$('ovc').addEventListener('click',shopClick);
 
 /* ---------- shot readout: like a launch monitor ---------- */
 let roT=null;
