@@ -723,7 +723,7 @@ function shapeStep(){if(!S||S.phase!=='aim'||meter||club===PUTTER)return;let k=s
 function pinDist(b){return hyp(HOLE.pin.x-b.x,HOLE.pin.z-b.z)}
 function setupShot(){const p=cur(),b=p.ball;b.y=hAt(b.x,b.z);b.lie=b.lie||surfAt(b.x,b.z);const d=pinDist(b),onG=b.lie==='G'||(b.lie==='X'&&d<22);
   spin=0;viewTop=false;meter=null;shape=0;stype=0;
-  if(onG)club=PUTTER;else{const lf=lieF(b.lie,0),pl=playsLike(b);club=b.lie==='T'&&(HOLE.par>3||S.mode==='ld')?0:12;for(let k=b.lie==='T'?0:1;k<13;k++){if(CLUBS[k][1]*lf*CM(k)<=pl+4){club=k;break}club=k}if(b.lie!=='T'&&club===0)club=1;if(b.lie==='B'&&d<70)club=11;if(S.mode==='ld')club=0}
+  if(onG)club=PUTTER;else{const lf=lieF(b.lie,0),pl=playsLike(b);club=b.lie==='T'&&(HOLE.par>3||S.mode==='ld')?0:12;for(let k=b.lie==='T'?0:1;k<13;k++){if(CLUBS[k][1]*lf*CMD(k)<=pl+4){club=k;break}club=k}if(b.lie!=='T'&&club===0)club=1;if(b.lie==='B'&&d<70)club=11;if(S.mode==='ld')club=0}
   // aim: at the pin when it's reachable, otherwise down the middle
   const reach=club===PUTTER?1e9:CLUBS[club][1]*lieF(b.lie,club)*CM();let tx=HOLE.pin.x,tz=HOLE.pin.z;
   if(club!==PUTTER&&d>reach+12){const n=near(HOLE,b.x,b.z),q=ptAt(HOLE.CL,HOLE.acc,Math.min(HOLE.gEnd,n.s+reach));tx=q.x;tz=q.z}
@@ -733,7 +733,7 @@ const CM=k=>(1+.025*SK('pow'))*CBO(k==null?club:k);
 function playsLike(b){return pinDist(b)+(hAt(HOLE.pin.x,HOLE.pin.z)-b.y)*1}
 let lpKey='',lpVal=null;
 function aimTarget(){const p=cur(),b=p.ball;if(club!==PUTTER&&S&&S.phase==='aim'){const pw=meter&&meter.st>0?Math.min(1.1,Math.max(.05,meter.pw!=null?meter.pw:meter.m)):1,key=[aim.toFixed(4),club,shape,stype,spin,pw.toFixed(2),b.x.toFixed(2),b.z.toFixed(2),b.lie,S.diff].join('|');if(key!==lpKey){lpKey=key;lpVal=predictLand(launchBall(pw,0),S.diff==='tour')}return{x:lpVal.x,z:lpVal.z}}
-  const carry=club===PUTTER?Math.min(pinDist(b),30):CLUBS[club][1]*SHC[club][shape]*STC[club][stype]*lieF(b.lie,club)*CM()*(meter&&meter.st>0?Math.min(1.1,meter.pw!=null?meter.pw:meter.m):1);return{x:b.x+Math.sin(aim)*carry,z:b.z+Math.cos(aim)*carry}}
+  const carry=club===PUTTER?Math.min(pinDist(b),30):CLUBS[club][1]*SHC[club][shape]*STC[club][stype]*lieF(b.lie,club)*CMD()*(meter&&meter.st>0?Math.min(1.1,meter.pw!=null?meter.pw:meter.m):1);return{x:b.x+Math.sin(aim)*carry,z:b.z+Math.cos(aim)*carry}}
 function showOthers(){let k=0;S.players.forEach((q,i)=>{if(i===S.turn||!q.ball||q.holed||k>2)return;const m=others[k++];m.visible=true;m.material.color.set(PCOL[i]).lerp(new T3.Color(0xffffff),.5).convertSRGBToLinear();m.position.set(q.ball.x,hAt(q.ball.x,q.ball.z)+BALLR,q.ball.z)});for(;k<3;k++)others[k].visible=false}
 /* ---------- the swing ---------- */
 // meter value m: 0 at the white line, 1 = full power, up to 1.1 overswing
@@ -744,13 +744,30 @@ function swingPress(){if(S&&S.phase==='replay'){endReplay();return}if(!S||S.phas
 function meterTick(dt){if(!meter)return;const D=DIFF[S.diff];if(meter.st===1){meter.m+=dt*meter.spd;if(club===PUTTER&&meter.m>=1){meter.m=1;fire(1,null);meter=null;return}if(meter.m>=1.1){meter.m=1.1;meter.pw=1.1;meter.st=2;meter.dir=-1}}else if(meter.st===2){meter.m-=dt*meter.spd*.85;if(meter.m<=-.16){fire(meter.pw,-.16);meter=null}}
   const putt=club===PUTTER;if(meter){const pw=meter.pw||1,k=meter.st===1?meter.m:pw*(.93+.07*clamp(Math.max(0,meter.m)/pw,0,1));swingPose(-clamp(k,0,1.08),putt)}}
 let follow=0;
-function launchBall(pw,e){const p=cur(),b=p.ball,SH=SHAPES[shape],shid=SH[0],ST=STYPES[stype];
-  const LC=lieCond(b,aim),[n,carry,ang,sf]=CLUBS[club],lf=lieF(b.lie,club),v0=SH[2]*ST[2]*V0[club]*Math.pow(CM(),.77)*Math.sqrt(lf)*(pw<=1?Math.pow(pw,.62):1+(pw-1)*.45)*LC.v*BALLV(),bs=sf*(1-spin*.35*(1+.15*SK('spin')))*(b.lie==='R'?.7:b.lie==='B'?.8+.2*SOLE():1)*SH[4]*ST[4]*CSPIN()*LC.s*BALLS();
+/* Blake's driver: a big hitter carries it 300-400 yards. A softer swing costs less distance than with other clubs, and the top end is capped so it never runs past about 400 */
+let DRVK=1.32;const isDrv=()=>club===0&&mine(),CMD=k=>CM(k)*((k==null?club:k)===0&&mine()?DRVK:1);
+/* chipping: inside 50 yards with a wedge (or a bump & run or flop) a full meter sends the ball to the pin: it lands short and releases like a tour chip.
+   The meter is stretched to the shot, so a small miss on power is a small miss on the green, and the line is tighter too. Chips also drop a little more easily */
+let chipC={key:'',k:1},chipRaw=false;
+function chipOn(){if(!S||!S.players||club===PUTTER||S.mode==='ld'||S.mode==='ctp'||!mine())return false;const p=cur(),b=p&&p.ball;if(!b||b.lie==='T'||b.lie==='G')return false;const ty=STYPES[stype][0];return pinDist(b)<=50&&(club>=9&&club<=12||ty==='bump'||ty==='flop')}
+/* play the chip out quietly (carry, bounces, spin and roll on the real slopes) to see where it stops */
+function chipRest(B){const sv=[S.ball,S.phase,S.rec,S.recT,endBall,note,sfx.sand,sfx.tree,S.shotStart],q=()=>{};let out=null;
+  S.ball=B;S.phase='flight';S.rec=null;S.shotStart={x:B.x,z:B.z,y:B.y};endBall=w=>{out={x:w==='holed'?HOLE.pin.x:S.ball.x,z:w==='holed'?HOLE.pin.z:S.ball.z};S.phase='chipsim'};note=q;sfx.sand=q;sfx.tree=q;
+  try{let n=0;while(!out&&n++<2400)stepBall(1/120)}finally{[S.ball,S.phase,S.rec,S.recT,endBall,note,sfx.sand,sfx.tree,S.shotStart]=sv}return out||{x:B.x,z:B.z}}
+function chipK(){const b=cur().ball,key=[b.x.toFixed(2),b.z.toFixed(2),b.lie,club,stype,shape,spin,HOLE.pin.x,HOLE.pin.z].join('|');if(chipC.key===key)return chipC.k;
+  const a0=aim,d=pinDist(b)+.4;aim=Math.atan2(HOLE.pin.x-b.x,HOLE.pin.z-b.z);const ux=Math.sin(aim),uz=Math.cos(aim);chipRaw=true;let lo=.02,hi=1.1;
+  try{for(let i=0;i<14;i++){const m=(lo+hi)/2,R=chipRest(launchBall(m,0)),go=(R.x-b.x)*ux+(R.z-b.z)*uz;if(go<d)lo=m;else hi=m}}finally{chipRaw=false;aim=a0}
+  chipC={key,k:(lo+hi)/2};return chipC.k}
+const chipLive=()=>chipOn()&&chipK()<1.08;
+function pwCurve(pw){const d=isDrv();return(pw<=1?Math.pow(pw,d?.4:.62):1+(pw-1)*.45)*(d?DRVK:1)}
+function drvCap(v){return isDrv()?Math.min(v,V0[0]*1.55):v}
+function launchBall(pw,e){const chipF=!chipRaw&&chipLive();if(chipF){pw*=chipK();e*=.7}const p=cur(),b=p.ball,SH=SHAPES[shape],shid=SH[0],ST=STYPES[stype];
+  const LC=lieCond(b,aim),[n,carry,ang,sf]=CLUBS[club],lf=lieF(b.lie,club),v0=drvCap(SH[2]*ST[2]*V0[club]*Math.pow(CM(),.77)*Math.sqrt(lf)*pwCurve(pw)*LC.v*BALLV()),bs=sf*(1-spin*.35*(1+.15*SK('spin')))*(b.lie==='R'?.7:b.lie==='B'?.8+.2*SOLE():1)*SH[4]*ST[4]*CSPIN()*LC.s*BALLS();
   const bend={draw:.45,fade:-.45,bigdraw:.85,bigfade:-.85}[shid]||0,la=(ang*SH[3]*ST[3]+(b.lie==='B'?4:0)-spin*1.2+LC.la)*Math.PI/180,sp=bs*(bend>0?.9:bend<0?1.1:1);
   const mk=dir=>({x:b.x,y:b.y+.02,z:b.z,vx:Math.sin(dir)*Math.cos(la)*v0,vy:Math.sin(la)*v0,vz:Math.cos(dir)*Math.cos(la)*v0,v0,la,roll:false,sp,spk:bs*(.75+.25*Math.min(1,pw)),side:e*4.5+bend+LC.side,spinAdj:spin,shape:shid,stype:ST[0],aimDir:aim,carry:0,maxY:b.y,trees:0,lastDry:{x:b.x,z:b.z}});
   // a draw starts out to the right and curves back; a fade the other way. Start it off-line so it comes down where you aimed (the dashed line shows the bend)
   let off=0;if(bend){const L=predictLand({...mk(aim),side:bend},true),dz=L.z-b.z,dx=L.x-b.x;if(hyp(dx,dz)>5)off=Math.atan2(dx,dz)-aim}
-  return mk(aim-off+e*.25)}
+  const R=mk(aim-off+e*.25);if(chipF)R.chip=1;return R}
 function fire(pw,acc){const p=cur(),b=p.ball,D=DIFF[S.diff],putt=club===PUTTER,snap=(D.snap+.006*SK('acc')+CSNAP())*(putt?1:STYPES[stype][5]);let e;
   if(putt&&acc==null){const PE={am:.026,pro:.028,tour:.036}[S.diff]*(1-.15*SK('putt'))*CPUTT()*(HOLE.C.pe||1);e=(Math.random()-.5)*2*PE}
   else{e=-acc;if(Math.abs(e)<snap)e=0;else e=e-Math.sign(e)*snap;e*=1-.07*SK('acc');if(club>=9&&club<=12)e*=1-.1*SK('short');if(putt)e*=1-.1*SK('putt');if(pw>1)e*=1+(pw-1)*6}
@@ -808,7 +825,7 @@ function stepBall(dt){const B=S.ball,H=HOLE;if(!B)return;
   B.x+=B.vx*dt;B.z+=B.vz*dt;B.y=hAt(B.x,B.z);
   // the cup
   const px=H.pin.x,pz=H.pin.z,dx=B.x-ox,dz=B.z-oz,L2=dx*dx+dz*dz,t=L2>0?clamp(((px-ox)*dx+(pz-oz)*dz)/L2,0,1):0,cd=hyp(ox+dx*t-px,oz+dz*t-pz),sp=hyp(B.vx,B.vz);
-  if(cd<.064*(1-.55*Math.min(1,sp/1.6)**2)){if(sp<1.6){B.x=px;B.z=pz;return endBall('holed')}else if(cd<.06&&sp<3.4&&!B.lipped){B.lipped=1;const a=(Math.random()<.5?-1:1)*(.5+Math.random()*.5),c=Math.cos(a),sn=Math.sin(a);const vx=B.vx*c-B.vz*sn,vz=B.vx*sn+B.vz*c;B.vx=vx*.6;B.vz=vz*.6;note('','Lipped out!',1.2)}}
+  const cv=B.chip?1.75:1.6;if(cd<.064*(1-.55*Math.min(1,sp/cv)**2)){if(sp<cv){B.x=px;B.z=pz;return endBall('holed')}else if(cd<.06&&sp<3.4&&!B.lipped){B.lipped=1;const a=(Math.random()<.5?-1:1)*(.5+Math.random()*.5),c=Math.cos(a),sn=Math.sin(a);const vx=B.vx*c-B.vz*sn,vz=B.vx*sn+B.vz*c;B.vx=vx*.6;B.vz=vz*.6;note('','Lipped out!',1.2)}}
   if(hyp(B.vx,B.vz)<.035&&hyp(gr.x,gr.z)*5/7<P.mu*1.3){endBall('rest')}}
 function endBall(why){const B=S.ball,p=cur();if(why==='rest'&&S.mode!=='ld'&&S.mode!=='ctp'&&B&&surfAt(B.x,B.z)==='G'&&hyp(B.x-HOLE.pin.x,B.z-HOLE.pin.z)<({am:.3,pro:.26,tour:.2}[S.diff]||.26)){p.strokes++;why='holed';B.x=HOLE.pin.x;B.z=HOLE.pin.z;S.tapIn=true;setTimeout(()=>note('','Tap-in (counts a stroke)',1.6),2700)}S.phase='rest';S.t=0;S.why=why;S.result=null;if(S.rec&&S.rec.length>4){S.rec.push([B.x,B.y,B.z,S.recT+.05]);S.lastRec={rec:S.rec,why,club:S.shotClub,start:S.shotStart}}
   if(why==='holed'){p.holed=true;p.ball={x:HOLE.pin.x,z:HOLE.pin.z,y:hAt(HOLE.pin.x,HOLE.pin.z),lie:'G'};sfx.cup();setTimeout(()=>sfx.clap(28),250)}
@@ -922,13 +939,13 @@ function hud(){if(!S||!HOLE)return;const p=cur(),H=HOLE,b=p.ball;
   const d=pinDist(b),el=hAt(H.pin.x,H.pin.z)-b.y;const rd=S.read,brk=rd?Math.round(Math.abs(rd.off)*rd.d*3*10)/10:0,rdT=club===PUTTER&&rd&&S.diff!=='tour'&&brk>=.3?(S.diff==='am'?` · lined up for ${brk} ft of ${rd.off>0?'right-to-left':'left-to-right'} break`:` · aim ${brk} ft ${rd.off>0?'left':'right'} of the hole`):'';
   $('hPin').textContent=club===PUTTER?`To the hole: ${Math.round(d*3)} ft${Math.abs(puttEff(b)-d)>.25?` · plays like ${Math.round(puttEff(b)*3)} ft (${el>0?'uphill':'downhill'})`:''}${rdT}`:d<30?`To the pin: ${Math.round(d*3)} ft${Math.abs(el)>.15?` · ${el>0?'uphill':'downhill'}`:''}`:`To the pin: ${Math.round(d)} yds${Math.abs(el)>2?` (plays ${Math.round(d+el)})`:''}`;
   $('hLie').textContent=`Lie: ${SURF[b.lie]?SURF[b.lie].n:'—'}${b.lie==='R'||b.lie==='B'||b.lie==='D'?` (−${Math.round((1-lieF(b.lie,club))*100)}% power)`:''}`;
-  $('hClub').textContent=CLUBS[club][0]+(TOUCH&&club!==PUTTER&&stype?' · '+stName(stype):'');$('hCarry').textContent=club===PUTTER?`Full meter rolls ${Math.round(puttScale(b)*3)} ft`:`Carry ${Math.round(CLUBS[club][1]*SHC[club][shape]*STC[club][stype]*lieF(b.lie,club)*CM())} yds at full power`;
+  $('hClub').textContent=CLUBS[club][0]+(TOUCH&&club!==PUTTER&&stype?' · '+stName(stype):'');$('hCarry').textContent=club===PUTTER?`Full meter rolls ${Math.round(puttScale(b)*3)} ft`:chipLive()?`Chip · a full meter reaches the pin (${Math.round(pinDist(b))} yds)`:`Carry ${Math.round(CLUBS[club][1]*SHC[club][shape]*STC[club][stype]*lieF(b.lie,club)*CMD())} yds at full power`;
   $('hSpin').textContent=club===PUTTER?'':`${stName(stype)}${shape?' · '+SHAPES[shape][1]:''} · ${spin<0?'backspin':spin>0?'topspin':'normal spin'}`;
   const sw=DIFF[S.diff].snap+.006*SK('acc');$('mSnap').style.left=`calc(12% - ${sw*80}%)`;$('mSnap').style.width=`${sw*160}%`;$('mSnap').style.display=club===PUTTER?'none':''}
 function meterDraw(){const m=meter,el=$('meter');if(!S||S.phase!=='aim'){el.style.opacity=.35}else el.style.opacity=1;const v=m?m.m:0;$('mMk').style.left=`calc(12% + ${v*80}%)`;$('mFill').style.width=m&&m.st===1?`${Math.max(0,v)*80}%`:'0';
   const pw=$('mPw');if(m&&m.pw!=null){pw.style.display='block';pw.style.left=`calc(12% + ${m.pw*80}%)`}else pw.style.display='none';
-  const tg=$('mTgt');if(S&&S.phase==='aim'&&club===PUTTER&&cur()&&cur().ball){const b=cur().ball,ideal=clamp((puttEff(b)+.35)/puttScale(b),0,1);tg.style.display='block';tg.style.left=`calc(12% + ${ideal*80}%)`}else tg.style.display='none';
-  if(m&&club===PUTTER&&m.st===1&&cur()&&cur().ball){$('mLab').textContent=`${Math.round(puttScale(cur().ball)*clamp(m.m,0,1)*3)} FT · STOP ON GREEN`}else $('mLab').textContent=!m?(club===PUTTER?(TOUCH?'TAP · STOP ON GREEN':'SPACE · STOP ON THE GREEN MARK'):(TOUCH?'TAP SWING':'SPACE TO SWING')):m.st===1?(club===PUTTER?'STOP ON THE GREEN MARK':'SET POWER'):'HIT THE LINE';if(m&&m.pw!=null)$('mLab').textContent=`${Math.round(m.pw*100)}% · HIT THE LINE`}
+  const tg=$('mTgt');if(S&&S.phase==='aim'&&club===PUTTER&&cur()&&cur().ball){const b=cur().ball,ideal=clamp((puttEff(b)+.35)/puttScale(b),0,1);tg.style.display='block';tg.style.left=`calc(12% + ${ideal*80}%)`}else if(S&&S.phase==='aim'&&chipLive()){tg.style.display='block';tg.style.left='92%'}else tg.style.display='none';
+  if(m&&club===PUTTER&&m.st===1&&cur()&&cur().ball){$('mLab').textContent=`${Math.round(puttScale(cur().ball)*clamp(m.m,0,1)*3)} FT · STOP ON GREEN`}else $('mLab').textContent=!m?(club===PUTTER?(TOUCH?'TAP · STOP ON GREEN':'SPACE · STOP ON THE GREEN MARK'):(TOUCH?'TAP SWING':'SPACE TO SWING')):m.st===1?(club===PUTTER?'STOP ON THE GREEN MARK':chipLive()?'CHIP · FULL = TO THE PIN':'SET POWER'):'HIT THE LINE';if(m&&m.pw!=null)$('mLab').textContent=`${Math.round(m.pw*100)}% · HIT THE LINE`}
 /* ---------- camera ---------- */
 const camPos=new T3.Vector3(),camLook=new T3.Vector3();let camInit=false;
 function camTick(dt){if(window.__camHold)return;if(!HOLE)return;if(!S&&lockerView){const t=-1.25+Math.sin(performance.now()/3800)*.55,gp=golfer.position,R=(cam.aspect>1?4.2:5.2),wide=cam.aspect>1;cam.position.set(gp.x+Math.sin(t)*R,gp.y+1.45,gp.z+Math.cos(t)*R);const dx=gp.x-cam.position.x,dz=gp.z-cam.position.z,l=Math.hypot(dx,dz),rx=-dz/l,rz=dx/l;cam.lookAt(gp.x+(wide?rx*1.5:0),gp.y+(wide?.95:.2),gp.z+(wide?rz*1.5:0));ballMesh.visible=true;ballMesh.position.set(0,hAt(0,0)+BALLR,0);aimRing.visible=false;aimLine.visible=false;trail.visible=false;for(const o of others)o.visible=false;shadow.visible=false;return}
@@ -1863,7 +1880,7 @@ $('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-a="simback
 
 
 /* ---------- updates: a small version tag, and a notice when the live site has a newer version ---------- */
-const BUILD='64-1794853340';
+const BUILD='65-1794857468';
 {const tag=document.createElement('span');tag.className='buildtag';tag.textContent='Version '+BUILD.split('-')[0];document.querySelector('.top a').after(tag);
   let shown=false;const check=()=>{if(shown||!navigator.onLine)return;fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=t.match(/const BUILD='([^']+)'/);if(m&&m[1]!==BUILD&&m[1]!=='__BUILD__'){shown=true;const b=document.createElement('div');b.className='updbar';b.innerHTML=`<span>A new version of Pin High is ready.</span><button class="go" type="button">Update now</button>`;b.querySelector('button').onclick=()=>{location.reload()};document.body.append(b)}}).catch(()=>{})};
   setTimeout(check,4000);setInterval(check,180000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()})}
