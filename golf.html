@@ -473,17 +473,20 @@ const GEAR={shirt:[['red','Cardinal red',0xc8202f,1],['navy','Navy',0x1f2f5a,2],
 function makeGolfer(){const g=new T3.Group(),L=c=>new T3.MeshLambertMaterial({color:c}),Ph=(c,s)=>new T3.MeshPhongMaterial({color:c,shininess:s||30,specular:0x444444});
   const mats={skin:L(0xe0b088),shirt:L(0xc8202f),pants:L(0x2b2f3a),shoe:Ph(0xf6f6f6,40),sole:L(0x333333),cap:L(0xffffff),hair:L(0x4a3324),belt:L(0x1e1e1e),glove:L(0xffffff),grip:L(0x151515),shaft:Ph(0xb8c0c8,90),head:Ph(0x2f343b,80),iron:Ph(0xd2d8de,120)};
   const add=(par,geo,mat,x,y,z,rx,ry,rz)=>{const m=new T3.Mesh(geo,mat);m.position.set(x,y,z);if(rx||ry||rz)m.rotation.set(rx||0,ry||0,rz||0);par.add(m);return m};
-  for(const s of[-1,1]){add(g,new T3.CylinderGeometry(.078,.09,.5,12),mats.pants,s*.15,.68,-.02);add(g,new T3.CylinderGeometry(.064,.076,.46,12),mats.pants,s*.15,.26,.02);
+  const body={legs:[],arms:[]};
+  for(const s of[-1,1]){body.legs.push(add(g,new T3.CylinderGeometry(.078,.09,.5,12),mats.pants,s*.15,.68,-.02),add(g,new T3.CylinderGeometry(.064,.076,.46,12),mats.pants,s*.15,.26,.02));
     add(g,new T3.BoxGeometry(.13,.075,.29),mats.shoe,s*.15,.05,.06);add(g,new T3.BoxGeometry(.136,.022,.3),mats.sole,s*.15,.012,.06)}
   const hips=new T3.Group();hips.position.set(0,.92,0);g.add(hips);
-  add(hips,new T3.CylinderGeometry(.19,.19,.07,16),mats.belt,0,.02,0);
+  body.belt=add(hips,new T3.CylinderGeometry(.19,.19,.07,16),mats.belt,0,.02,0);
   const torso=new T3.Group();torso.rotation.x=.42;hips.add(torso);
-  add(torso,new T3.CylinderGeometry(.215,.18,.56,16),mats.shirt,0,.3,0).scale.z=.72;
-  const sh=add(torso,new T3.SphereGeometry(.22,16,10),mats.shirt,0,.56,0);sh.scale.set(1.18,.42,.72);
-  add(torso,new T3.CylinderGeometry(.058,.068,.09,10),mats.skin,0,.66,.02);
+  body.chest=add(torso,new T3.CylinderGeometry(.215,.18,.56,16),mats.shirt,0,.3,0);body.chest.scale.z=.72;
+  const sh=add(torso,new T3.SphereGeometry(.22,16,10),mats.shirt,0,.56,0);sh.scale.set(1.18,.42,.72);body.sh=sh;
+  body.belly=add(torso,new T3.SphereGeometry(.22,18,14),mats.shirt,0,.25,.04);body.belly.visible=false;
+  body.seat=add(hips,new T3.SphereGeometry(.2,16,12),mats.pants,0,-.06,-.04);body.seat.visible=false;
+  body.neck=add(torso,new T3.CylinderGeometry(.058,.068,.09,10),mats.skin,0,.66,.02);
   add(torso,new T3.TorusGeometry(.072,.022,6,16),mats.shirt,0,.625,.01,Math.PI/2);
   const head=new T3.Group();head.position.set(0,.78,.05);torso.add(head);
-  add(head,new T3.SphereGeometry(.115,18,14),mats.skin,0,0,0);
+  body.face=add(head,new T3.SphereGeometry(.115,18,14),mats.skin,0,0,0);body.chin=add(head,new T3.SphereGeometry(.09,14,10),mats.skin,0,-.075,.035);body.chin.visible=false;
   add(head,new T3.SphereGeometry(.119,18,12,0,Math.PI*2,0,Math.PI*.55),mats.hair,0,.006,-.014);
   for(const s of[-1,1])add(head,new T3.SphereGeometry(.028,8,6),mats.skin,s*.112,-.012,0);
   add(head,new T3.SphereGeometry(.022,8,6),mats.skin,0,-.022,.112);
@@ -491,14 +494,14 @@ function makeGolfer(){const g=new T3.Group(),L=c=>new T3.MeshLambertMaterial({co
   const visG=new T3.Group();head.add(visG);add(visG,new T3.TorusGeometry(.118,.018,6,20),mats.cap,0,.05,0,Math.PI/2);add(visG,new T3.CylinderGeometry(.1,.1,.012,16),mats.cap,0,.045,.1);
   const bucG=new T3.Group();head.add(bucG);add(bucG,new T3.CylinderGeometry(.11,.126,.11,18),mats.cap,0,.08,0);add(bucG,new T3.CylinderGeometry(.2,.2,.012,20),mats.cap,0,.03,0);
   const pivot=new T3.Group();pivot.position.set(0,1.45,.2);g.add(pivot);const plane=new T3.Group();pivot.add(plane);const swing=new T3.Group();plane.add(swing);
-  for(const s of[-1,1]){const arm=new T3.Group();arm.position.set(s*.16,0,0);arm.rotation.z=-s*.25;swing.add(arm);add(arm,new T3.CylinderGeometry(.06,.052,.3,12),mats.shirt,0,-.14,0);add(arm,new T3.CylinderGeometry(.045,.038,.34,12),mats.skin,0,-.45,0)}
+  for(const s of[-1,1]){const arm=new T3.Group();arm.position.set(s*.16,0,0);arm.rotation.z=-s*.25;swing.add(arm);body.arms.push(arm);add(arm,new T3.CylinderGeometry(.06,.052,.3,12),mats.shirt,0,-.14,0);add(arm,new T3.CylinderGeometry(.045,.038,.34,12),mats.skin,0,-.45,0)}
   add(swing,new T3.SphereGeometry(.052,12,8),mats.glove,0,-.62,0);
   const club=new T3.Group();club.position.y=-.62;swing.add(club);
   const grip=add(club,new T3.CylinderGeometry(.017,.014,.26,10),mats.grip,0,-.13,0),shaft=add(club,new T3.CylinderGeometry(.008,.006,1,8),mats.shaft,0,-.76,0);
   const wood=add(club,new T3.SphereGeometry(.06,16,12),mats.head,.03,-1.1,0);wood.scale.set(1.6,.66,1.05);
   const iron=add(club,new T3.BoxGeometry(.085,.055,.02),mats.iron,.03,-1.1,0),putter=add(club,new T3.BoxGeometry(.11,.03,.03),mats.iron,.045,-1.1,0);
   g.traverse(o=>{if(o.isMesh)o.castShadow=QUAL!=='low'});
-  g.userData={swing,plane,hips,torso,pivot,club,grip,shaft,wood,iron,putter,mats,capG,visG,bucG,head};return g}
+  g.userData={swing,plane,hips,torso,pivot,club,grip,shaft,wood,iron,putter,mats,capG,visG,bucG,head,body};return g}
 const PCOL=[0xc8202f,0x2f6fd6,0x2e9c55,0xe0a21a],PCSS=['#c8202f','#2f6fd6','#2e9c55','#e0a21a'];
 let golfer=makeGolfer();scene.add(golfer);lin(golfer);
 function gearVal(kind,id){const g=GEAR[kind].find(x=>x[0]===id)||GEAR[kind][0];return g[2]}
@@ -1744,14 +1747,22 @@ function flyCardShow(on){let el=$('flyCard');if(!el){el=document.createElement('
 setInterval(()=>{try{const el=$('flyCard');if(el&&!el.hidden&&!(S&&S.phase==='intro'&&S.fly))el.hidden=true}catch(e){}},200);
 
 /* ================= create-a-golfer ================= */
-PRO.look=Object.assign({skin:1,hair:1,ht:1,tempo:'normal',cele:'arms'},PRO.look||{});
-const SKINS=[0xf3cfac,0xe0b088,0xc68e5f,0xa86f45,0x7d4b2c,0x5a3420],HAIRS=[['Black',0x1a1410],['Brown',0x4a3324],['Chestnut',0x7a4a28],['Blond',0xc9a35a],['Red',0x9a3a1e],['Gray',0xbdb8b0]],HTS=[['Short',.94],['Average',1],['Tall',1.06]],
+{const old=PRO.look&&PRO.look.bld==null;PRO.look=Object.assign({skin:1,hair:1,ht:0,bld:3,tempo:'normal',cele:'arms'},PRO.look||{});if(old){PRO.look.ht=0;PRO.look.bld=3;saveP()}}
+const SKINS=[0xf3cfac,0xe0b088,0xc68e5f,0xa86f45,0x7d4b2c,0x5a3420],HAIRS=[['Black',0x1a1410],['Brown',0x4a3324],['Chestnut',0x7a4a28],['Blond',0xc9a35a],['Red',0x9a3a1e],['Gray',0xbdb8b0]],HTS=[['5′6″',.958],['5′9″',1],['6′1″',1.06],['6′4″',1.1]],
+  BLDS=[['Slim',.9],['Average',1],['Stocky',1.2],['300 lb',1.5]],
   TEMPOS=[['smooth','Smooth','Slower meter, 1.5% shorter'],['normal','Normal','Balanced'],['quick','Quick','Faster meter, 1.5% longer']],CELES=[['arms','Arms up'],['fist','Fist pump'],['twirl','Club twirl']];
 const tempoK=()=>{const t=PRO.look.tempo;return t==='smooth'?{m:.9,d:.985}:t==='quick'?{m:1.1,d:1.015}:{m:1,d:1}};
 {const _cb=CBO;CBO=function(k){const v=_cb.apply(this,arguments);return mine()?v*tempoK().d:v}}
-{const _dr=dress;dress=function(p){const r=_dr.apply(this,arguments);try{const u=golfer.userData,m=u.mats,me=!p||p.k===0,L=PRO.look;m.skin.color.set(me?SKINS[L.skin]:0xe0b088).convertSRGBToLinear();m.hair.color.set(me?HAIRS[L.hair][1]:0x4a3324).convertSRGBToLinear();golfer.scale.setScalar(me?HTS[L.ht][1]:1)}catch(e){}return r}}
+{const _dr=dress;dress=function(p){const r=_dr.apply(this,arguments);try{const u=golfer.userData,m=u.mats,me=!p||p.k===0,L=PRO.look;m.skin.color.set(me?SKINS[L.skin]:0xe0b088).convertSRGBToLinear();m.hair.color.set(me?HAIRS[L.hair][1]:0x4a3324).convertSRGBToLinear();golfer.scale.setScalar(me?HTS[L.ht][1]:1);setBuild(me?BLDS[L.bld][1]:1)}catch(e){}return r}}
+/* body build: w is 1 for the stock golfer, 1.5 is a 300-pounder with a belly, a seat and thicker everything */
+function setBuild(w){const b=golfer.userData.body,f=Math.max(0,w-1),big=w>1.25;if(!b)return;
+  b.chest.scale.set(w,1,.72*(1+f*1.1));b.sh.scale.set(1.18*(1+f*.7),.42*(1+f*.4),.72*(1+f*1.1));b.belt.scale.set(w*1.02,1,w*1.12);
+  b.legs.forEach(l=>{l.scale.set(1+f*1.2,1,1+f*1.2);l.position.x=Math.sign(l.position.x)*.15*(1+f*.55)});
+  b.arms.forEach(a=>{a.scale.set(1+f*1.1,1,1+f*1.1);const sx=Math.sign(a.position.x)||1;a.position.x=sx*.16*(1+f*.5);a.rotation.z=-sx*Math.asin(Math.min(.9,.16*(1+f*.5)/.62))});
+  b.neck.scale.set(1+f*1.4,1,1+f*1.4);b.face.scale.set(1+f*.25,1,1+f*.2);
+  b.belly.visible=b.seat.visible=b.chin.visible=big;if(big){const k=(w-1.25)/.25;b.belly.scale.set(1.05+.35*k,1+.2*k,.9+.45*k);b.belly.position.z=.06+.07*k;b.seat.scale.set(1.15+.2*k,.9,1+.2*k);b.chin.scale.set(1+.2*k,.7,1)}}
 {const _lk=locker;locker=function(msg){const r=_lk.apply(this,arguments);try{const L=PRO.look,row=(k,items)=>`<div class="row" style="justify-content:flex-start">${items.map(([v,lab,sw])=>`<button class="chip" type="button" data-look="${k}:${v}" aria-pressed="${String(L[k])===String(v)}">${sw!=null?`<i class="swatch" style="background:#${sw.toString(16).padStart(6,'0')}"></i>`:''}${lab}</button>`).join('')}</div>`;
-  const h=`<h3>Create your golfer</h3><p><small>Skin tone</small></p>${row('skin',SKINS.map((c,i)=>[i,'Tone '+(i+1),c]))}<p><small>Hair</small></p>${row('hair',HAIRS.map(([n,c],i)=>[i,n,c]))}<p><small>Height</small></p>${row('ht',HTS.map(([n],i)=>[i,n]))}
+  const h=`<h3>Create your golfer</h3><p><small>Skin tone</small></p>${row('skin',SKINS.map((c,i)=>[i,'Tone '+(i+1),c]))}<p><small>Hair</small></p>${row('hair',HAIRS.map(([n,c],i)=>[i,n,c]))}<p><small>Height</small></p>${row('ht',HTS.map(([n],i)=>[i,n]))}<p><small>Build</small></p>${row('bld',BLDS.map(([n],i)=>[i,n]))}
     <p><small>Swing tempo: ${esc(TEMPOS.find(t=>t[0]===L.tempo)[2])}</small></p>${row('tempo',TEMPOS.map(([k,n])=>[k,n]))}<p><small>Birdie celebration</small></p>${row('cele',CELES)}`;
   const sk=[...$('ovc').querySelectorAll('h3')].find(x=>x.textContent==='Skills');if(sk)sk.insertAdjacentHTML('beforebegin',h)}catch(e){}return r}}
 $('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-look]');if(!b)return;const[k,v]=b.dataset.look.split(':');PRO.look[k]=k==='tempo'||k==='cele'?v:+v;saveP();dress(null);const sc=$('ovc').scrollTop;locker();$('ovc').scrollTop=sc;});
@@ -1852,7 +1863,7 @@ $('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-a="simback
 
 
 /* ---------- updates: a small version tag, and a notice when the live site has a newer version ---------- */
-const BUILD='63-1794604967';
+const BUILD='64-1794853340';
 {const tag=document.createElement('span');tag.className='buildtag';tag.textContent='Version '+BUILD.split('-')[0];document.querySelector('.top a').after(tag);
   let shown=false;const check=()=>{if(shown||!navigator.onLine)return;fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=t.match(/const BUILD='([^']+)'/);if(m&&m[1]!==BUILD&&m[1]!=='__BUILD__'){shown=true;const b=document.createElement('div');b.className='updbar';b.innerHTML=`<span>A new version of Pin High is ready.</span><button class="go" type="button">Update now</button>`;b.querySelector('button').onclick=()=>{location.reload()};document.body.append(b)}}).catch(()=>{})};
   setTimeout(check,4000);setInterval(check,180000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()})}
