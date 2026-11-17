@@ -1053,6 +1053,7 @@ function frame(now){requestAnimationFrame(frame);const dt=Math.min(.05,(now-(las
       if(S.ball){S.flightT+=dt;S.recT+=dt*sc;if(S.rec&&S.rec.length<4000)S.rec.push([S.ball.x,S.ball.y,S.ball.z,S.recT]);trailT+=dt;if(!S.ball.roll&&trailT>.03){trailT=0;trailPush(S.ball.x,S.ball.y+BALLR,S.ball.z)}}}
     if(S.phase==='rest'&&S.t>(S.why==='holed'?2.2:1.5)){if(S.wantReplay&&S.lastRec&&cfg.replays!=='off'){S.wantReplay=false;startReplay(false)}else{S.wantReplay=false;S.ball=null;trailReset();afterShot()}}
     if(S.phase==='replay')replayTick(dt);
+    if(S.phase==='cart')cartTick(dt);
     if(S.phase==='intro'&&S.t>(S.fly?FLYT:3.2)){S.phase='aim';if(S.fly)camInit=false}}
   // ball and helpers
   if(S&&HOLE){const p=cur();let bx,by,bz;if(S.phase==='replay'&&S.rp&&S.rp.x!=null){bx=S.rp.x;by=S.rp.y;bz=S.rp.z}else if(S.ball){bx=S.ball.x;by=S.ball.y;bz=S.ball.z}else if(p&&p.ball){bx=p.ball.x;bz=p.ball.z;by=hAt(bx,bz)}
@@ -1881,7 +1882,7 @@ $('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-a="simback
 
 
 /* ---------- updates: a small version tag, and a notice when the live site has a newer version ---------- */
-const BUILD='66-1794927722';
+const BUILD='67-1794944013';
 {const tag=document.createElement('span');tag.className='buildtag';tag.textContent='Version '+BUILD.split('-')[0];document.querySelector('.top a').after(tag);
   let shown=false;const check=()=>{if(shown||!navigator.onLine)return;fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=t.match(/const BUILD='([^']+)'/);if(m&&m[1]!==BUILD&&m[1]!=='__BUILD__'){shown=true;const b=document.createElement('div');b.className='updbar';b.innerHTML=`<span>A new version of Pin High is ready.</span><button class="go" type="button">Update now</button>`;b.querySelector('button').onclick=()=>{location.reload()};document.body.append(b)}}).catch(()=>{})};
   setTimeout(check,4000);setInterval(check,180000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()})}
@@ -1943,6 +1944,71 @@ function trashTalk(){if(!S||Math.random()<.35)return'';const me=S.players[0],k=S
   const L=myd<0&&them>=0?TT.birdieMe:myd>0&&them<=0?TT.bogeyMe:them<0&&myd>=0?TT.birdieThem:lead>0?TT.ahead:lead<0?TT.behind:TT.tie;
   return`<p class="rival">⚔ <b>${esc(name)}</b> (${esc(tag)}): ${pickL(L)}</p>`}
 {const _ch=cardHtml;cardHtml=function(mid){let h=_ch.apply(this,arguments);try{if(mid&&!S.simLoop)h+=trashTalk()+caddieBanter()}catch(e){console.warn(e)}return h}}
+/* ================= golf cart: drive yourself to the next shot (Shift for turbo) ================= */
+const CARTMODES=['stroke','career','tour','match','skins','scramble','par3','daily','custom'];
+const cartOn=()=>(cfg.cart||'on')==='on'&&S&&CARTMODES.includes(S.mode)&&!S.simLoop;
+const cart=(()=>{const g=new T3.Group(),L=c=>new T3.MeshLambertMaterial({color:c}),add=(geo,m,x,y,z)=>{const o=new T3.Mesh(geo,m);o.position.set(x,y,z);o.castShadow=QUAL!=='low';g.add(o);return o};
+  const white=L(0xf2f2ee),dark=L(0x26292e),seat=L(0x7a2a2a),roof=L(0xe9e6dc);
+  add(new T3.BoxGeometry(1.3,.38,2.5),white,0,.55,0);add(new T3.BoxGeometry(1.26,.5,.7),white,0,.95,.9);add(new T3.BoxGeometry(1.1,.14,.7),seat,0,.86,-.15);add(new T3.BoxGeometry(1.1,.6,.14),seat,0,1.16,-.5);
+  add(new T3.BoxGeometry(1.36,.07,1.9),roof,0,2.02,-.05);for(const sx of[-.6,.6])for(const sz of[.75,-.85])add(new T3.CylinderGeometry(.035,.035,1.2,6),dark,sx,1.42,sz);
+  add(new T3.BoxGeometry(1.2,.5,.06),new T3.MeshPhongMaterial({color:0x9fc6e0,transparent:true,opacity:.35}),0,1.55,.8);
+  const wheels=[];for(const sx of[-.62,.62])for(const sz of[.85,-.85]){const w=add(new T3.CylinderGeometry(.25,.25,.18,14),dark,sx,.25,sz);w.rotation.z=Math.PI/2;wheels.push(w)}
+  const bag=add(new T3.CylinderGeometry(.17,.17,.9,10),L(0xc8202f),0,1.05,-1.15);bag.rotation.x=-.35;
+  // the driver: shirt from the locker, cap, arms on the wheel
+  const shirt=L(0xc8202f),skin=L(0xe0b088),cap=L(0xffffff);const body=add(new T3.BoxGeometry(.5,.62,.34),shirt,-.28,1.22,-.2);add(new T3.SphereGeometry(.15,14,10),skin,-.28,1.68,-.18);add(new T3.SphereGeometry(.155,14,8,0,6.283,0,1.6),cap,-.28,1.72,-.18);
+  const wheel=add(new T3.TorusGeometry(.17,.025,6,16),dark,-.28,1.28,.42);wheel.rotation.x=-1.0;for(const sx of[-.42,-.14]){const a=add(new T3.CylinderGeometry(.05,.05,.5,6),shirt,sx,1.32,.12);a.rotation.x=1.1}
+  const glowM=new T3.SpriteMaterial({map:sunSprite.material.map,color:0xfff3c8,transparent:true,opacity:.9,depthWrite:false,blending:T3.AdditiveBlending,fog:false}),lights=[];for(const sx of[-.45,.45]){const sp=new T3.Sprite(glowM);sp.scale.set(1.3,1.3,1);sp.position.set(sx,.62,1.27);g.add(sp);lights.push(sp)}
+  const beacon=new T3.Mesh(new T3.CylinderGeometry(.35,.35,26,12,1,true),new T3.MeshBasicMaterial({color:0xffd54a,transparent:true,opacity:.28,depthWrite:false,side:T3.DoubleSide,toneMapped:false}));beacon.visible=false;scene.add(beacon);
+  g.visible=false;scene.add(g);return{g,wheels,body:shirt,cap,lights,beacon,wheel}})();
+let CT=null;const ckeys={up:0,down:0,left:0,right:0,turbo:0};let cartHum=null;
+function cartSound(on,spd,turbo){try{if(!AC||!soundOn){if(cartHum){cartHum.o.stop();cartHum=null}return}if(!on){if(cartHum){cartHum.g.gain.setTargetAtTime(0,AC.currentTime,.05);const h=cartHum;setTimeout(()=>{try{h.o.stop()}catch(e){}},300);cartHum=null}return}
+  if(!cartHum){const o=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain();o.type='sawtooth';f.type='lowpass';f.frequency.value=420;g.gain.value=0;o.connect(f);f.connect(g);g.connect(AC.destination);o.start();cartHum={o,g}}
+  cartHum.o.frequency.setTargetAtTime(55+Math.abs(spd)*3.5+(turbo?40:0),AC.currentTime,.08);cartHum.g.gain.setTargetAtTime(.012+Math.min(.03,Math.abs(spd)*.0012),AC.currentTime,.1)}catch(e){}}
+function cartHud(show){let el=$('cartHud');if(!el){el=document.createElement('div');el.id='cartHud';el.className='carthud';el.innerHTML=`<div class="ct1"><b>🛺 Drive to your ball</b> <span id="ctDist"></span></div><div class="ctbar"><i id="ctBoost"></i><span>TURBO</span></div><div class="ct2">${TOUCH?'Hold the buttons to drive':'W / ↑ gas · S / ↓ brake · A D / ← → steer · <b>Shift</b> turbo · <b>Enter</b> skip'}</div>
+  <div class="ctpad"><button type="button" data-ck="left" aria-label="Steer left">◀</button><button type="button" data-ck="up" aria-label="Gas">GO</button><button type="button" data-ck="down" aria-label="Brake">⏹</button><button type="button" data-ck="right" aria-label="Steer right">▶</button><button type="button" data-ck="turbo" class="tb" aria-label="Turbo">⚡</button></div><button type="button" class="ctskip" data-ck="skip">Skip ⏭</button>`;($('stage')||document.body).appendChild(el);
+  el.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-ck]');if(!b)return;e.preventDefault();if(b.dataset.ck==='skip'){cartPark(true);return}ckeys[b.dataset.ck]=1;b.setPointerCapture&&b.setPointerCapture(e.pointerId)});
+  const up=e=>{const b=e.target.closest('[data-ck]');if(b&&b.dataset.ck!=='skip')ckeys[b.dataset.ck]=0};el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up)}
+  el.hidden=!show}
+function cartStart(from){const b=cur().ball;let x=from.x,z=from.z;if(cart.g.visible&&hyp(cart.g.position.x-x,cart.g.position.z-z)<25){x=cart.g.position.x;z=cart.g.position.z}
+  // start beside where you were standing, facing the ball
+  const yaw=Math.atan2(b.x-x,b.z-z);if(surfAt(x+Math.cos(yaw)*2.2,z-Math.sin(yaw)*2.2)!=='W'){x+=Math.cos(yaw)*2.2;z-=Math.sin(yaw)*2.2}
+  CT={x,z,yaw,v:0,boost:1,t:0,warn:0,tgt:{x:b.x,z:b.z},cam:null};S.phase='cart';golfer.visible=false;cart.g.visible=true;
+  const sh=gearVal('shirt',PRO.gear.shirt);cart.body.color.set(cur().k===0?sh:PCOL[cur().k]).convertSRGBToLinear();cart.cap.color.set(gearVal('cap',PRO.gear.cap)).convertSRGBToLinear();cart.lights.forEach(l=>l.visible=!!(S.night||S.wx==='night'||S.wx==='fog'));
+  cart.beacon.visible=true;cart.beacon.position.set(b.x,hAt(b.x,b.z)+13,b.z);window.__camHold=true;root.classList.add('carting');for(const k in ckeys)ckeys[k]=0;cartHud(true);cartPlace(0);aimRing.visible=false;aimLine.visible=false}
+function cartPlace(dt){const c=CT,y=hAt(c.x,c.z),fx=Math.sin(c.yaw),fz=Math.cos(c.yaw),pitch=Math.atan2(hAt(c.x+fx,c.z+fz)-hAt(c.x-fx,c.z-fz),2),roll=Math.atan2(hAt(c.x+fz*.6,c.z-fx*.6)-hAt(c.x-fz*.6,c.z+fx*.6),1.2);
+  cart.g.position.set(c.x,y,c.z);cart.g.rotation.set(0,0,0);cart.g.rotateY(c.yaw);cart.g.rotateX(-pitch);cart.g.rotateZ(roll);for(const w of cart.wheels)w.rotation.x+=c.v*dt/.25;
+  // chase camera, a little higher in turbo
+  const back=c.v<-.5?-7:9+Math.min(3,Math.abs(c.v)*.08),hgt=3.4+(c.turbo?.8:0),want=new T3.Vector3(c.x-fx*back,y+hgt,c.z-fz*back);want.y=Math.max(want.y,hAt(want.x,want.z)+1.5);
+  if(!c.cam||dt===0)c.cam=want.clone();else c.cam.lerp(want,1-Math.exp(-dt*4));cam.position.copy(c.cam);cam.lookAt(c.x+fx*6,y+1.2,c.z+fz*6);const fov=55+(c.turbo?9:0)*Math.min(1,Math.abs(c.v)/35);if(Math.abs(cam.fov-fov)>.2){cam.fov+=(fov-cam.fov)*Math.min(1,dt*5);cam.updateProjectionMatrix()}}
+function cartTick(dt){const c=CT,H=HOLE;if(!c)return;c.t+=dt;let gp=null;try{gp=[...(navigator.getGamepads?navigator.getGamepads():[])].find(Boolean)}catch(e){}
+  const ax=gp?Math.abs(gp.axes[0])>.2?gp.axes[0]:0:0,gas=Math.max(ckeys.up,gp&&(gp.buttons[7]&&gp.buttons[7].value>.2||gp.buttons[0]&&gp.buttons[0].pressed)?1:0),brk=Math.max(ckeys.down,gp&&(gp.buttons[6]&&gp.buttons[6].value>.2)?1:0),steer=clamp((ckeys.right-ckeys.left)+ax,-1,1),wantT=ckeys.turbo||(gp&&(gp.buttons[5]&&gp.buttons[5].pressed||gp.buttons[1]&&gp.buttons[1].pressed));
+  const sf=surfAt(c.x,c.z),lim=sf==='B'?.45:sf==='R'?.8:sf==='G'||sf==='X'?.5:1;c.turbo=!!(wantT&&c.boost>.02&&gas);if(c.turbo)c.boost=Math.max(0,c.boost-dt*.24);else c.boost=Math.min(1,c.boost+dt*.2);
+  const top=(c.turbo?42:24)*lim,acc=c.turbo?30:13;
+  if(gas){if(c.v<top)c.v=Math.min(top,c.v+acc*dt);else c.v=Math.max(top,c.v-6*dt)}else if(brk){c.v=c.v>0?Math.max(0,c.v-26*dt):Math.max(-6,c.v-8*dt)}else c.v-=Math.sign(c.v)*Math.min(Math.abs(c.v),5*dt);
+  c.yaw-=steer*(1.9-.6*clamp(Math.abs(c.v)/40,0,1))*dt*clamp(Math.abs(c.v)/4,0,1)*Math.sign(c.v||1);
+  const nx=c.x+Math.sin(c.yaw)*c.v*dt,nz=c.z+Math.cos(c.yaw)*c.v*dt,ns=surfAt(nx,nz);let blocked=ns==='W'&&sf!=='W';if(!blocked)for(const t of H.trees){if(hyp(nx-t.x,nz-t.z)<Math.max(.8,(t.r||3)*.22)){blocked=true;break}}
+  if(Math.abs(nx)>400||nz<-120||nz>H.gEnd+260)blocked=true;
+  if(blocked){if(Math.abs(c.v)>3&&c.t-c.warn>1.5){c.warn=c.t;note('',ns==='W'?'Carts don’t float!':'Bonk!',1)}c.v*=-.25}else{c.x=nx;c.z=nz}
+  if((sf==='G')&&Math.abs(c.v)>2&&c.t-c.warn>3){c.warn=c.t;note('','Keep the cart off the green!',1.2)}
+  cartPlace(dt);cartSound(true,c.v,c.turbo);const d=hyp(c.tgt.x-c.x,c.tgt.z-c.z);$('ctDist').textContent=`${Math.round(d)} yds to go`;$('ctBoost').style.width=Math.round(c.boost*100)+'%';$('cartHud').classList.toggle('on',c.turbo);
+  cart.beacon.material.opacity=.18+.1*Math.sin(c.t*2.2);if(d<8)cartPark(false)}
+function cartPark(skip){if(!CT||!S)return;const b=cur().ball;if(skip){const yaw=Math.atan2(b.x-CT.x,b.z-CT.z);CT.x=b.x-Math.sin(yaw)*4+Math.cos(yaw)*2.5;CT.z=b.z-Math.cos(yaw)*4-Math.sin(yaw)*2.5;CT.yaw=yaw;CT.v=0;cartPlace(0)}
+  CT=null;cartSound(false);cartHud(false);root.classList.remove('carting');cart.beacon.visible=false;window.__camHold=false;camInit=false;cam.fov=55;cam.updateProjectionMatrix();golfer.visible=true;S.phase='aim';setupShot();if(!skip)note('','Parked. Your shot.',1)}
+function cartOff(){root.classList.remove('carting');if(CT){CT=null;cartSound(false);cartHud(false);window.__camHold=false;camInit=false;cam.fov=55;cam.updateProjectionMatrix();golfer.visible=true}cart.g.visible=false;cart.beacon.visible=false}
+{const _as=afterShot;afterShot=function(){const from={x:golfer.position.x,z:golfer.position.z},h0=S&&S.hole;const r=_as.apply(this,arguments);
+  try{if(S&&S.phase==='aim'&&S.hole===h0&&cartOn()&&!PH){const b=cur().ball;if(b&&b.lie!=='T'&&hyp(b.x-from.x,b.z-from.z)>30&&surfAt(from.x,from.z)!=='W')cartStart(from)}}catch(e){console.warn(e)}return r}}
+{const _sh=startHole;startHole=function(){cartOff();return _sh.apply(this,arguments)}}
+{const _m=menu;menu=function(){cartOff();const r=_m.apply(this,arguments);try{const gx=$('ovc').querySelector('[data-fly]');if(gx)gx.closest('.row').insertAdjacentHTML('beforeend',`<span style="color:var(--muted);font-size:14px;margin-left:10px">Golf cart:</span>${[['on','On'],['off','Off']].map(([k,t])=>`<button class="chip" type="button" data-cart="${k}" aria-pressed="${(cfg.cart||'on')===k}">${t}</button>`).join('')}`)}catch(e){}return r}}
+{const _sf=simFrom;simFrom=function(){if(CT)cartPark(true);return _sf.apply(this,arguments)}}
+$('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-cart]');if(!b)return;cfg.cart=b.dataset.cart;saveCfg();menu()});
+{const CK={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',ShiftLeft:'turbo',ShiftRight:'turbo'};
+  addEventListener('keydown',e=>{if(!CT||!S||S.phase!=='cart'||!$('ov').hidden)return;if(e.target&&e.target.tagName==='INPUT')return;const k=CK[e.code];
+    if(k){ckeys[k]=1;e.preventDefault();e.stopImmediatePropagation();return}if(e.code==='Enter'||e.code==='Space'){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)cartPark(true);return}},true);
+  addEventListener('keyup',e=>{const k=CK[e.code];if(k)ckeys[k]=0},true);addEventListener('blur',()=>{for(const k in ckeys)ckeys[k]=0})}
+{const st=document.createElement('style');st.textContent=`.carthud{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:6;background:rgba(10,14,18,.82);border:1px solid #39424c;border-radius:12px;padding:8px 14px;color:#eef2f6;font:600 14px var(--body,system-ui);text-align:center;display:grid;gap:6px;min-width:min(92vw,420px);pointer-events:auto}
+.carthud .ct1 b{color:#ffd54a}.carthud .ct2{color:#a9b4bf;font-size:12px;font-weight:500}.carthud .ctbar{position:relative;height:12px;border-radius:6px;background:#222a31;overflow:hidden}.carthud .ctbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#3fd0ff,#7cff6a);border-radius:6px}.carthud .ctbar span{position:relative;font-size:9px;letter-spacing:.12em;color:#0b0f11}
+.carthud.on .ctbar i{background:linear-gradient(90deg,#ffb347,#ff5e3a)}.carthud .ctpad{display:none;gap:6px;justify-content:center}.carthud .ctpad button,.carthud .ctskip{min-height:44px;min-width:52px;border-radius:10px;border:1px solid #4a5560;background:#1b232b;color:#eef2f6;font:700 16px var(--body,system-ui);touch-action:none}
+.carthud .ctpad .tb{background:#3a2a10;border-color:#ffb347}.carthud .ctskip{min-height:34px;font-size:13px;justify-self:center;padding:0 14px}html.touch .carthud .ctpad{display:flex}.carting #meter,.carting #clubbox,.carting #shotbar,.carting .simw,.carting .tc,.carting #caddie{visibility:hidden}html.touch .carthud{bottom:calc(10px + env(safe-area-inset-bottom,0px))}`;document.head.appendChild(st)}
 window.__golf={swingPose,customHole,playReel,cardPicture,get BSPEC(){return BSPEC},set BSPEC(v){BSPEC=v},P3POOL,get aceMode(){return aceMode},lieCond,EVENTS,endHoleT:()=>endHole(),get ST(){return ST},get CU(){return CU},set CU(v){CU=v},RIVALS,caddieTalk,rangeHole,applyWx,WX,say,crowd,get rainOn(){return rain.m.visible},readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 lin(scene);menu();requestAnimationFrame(frame);
