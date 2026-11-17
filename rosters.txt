@@ -27,7 +27,7 @@ Left wing 1: 88 Pacifico (94)
 Right wing 1: 44 Clay (94)
 Left D 1: 11 Luffler (97)
 Right D 1: 61 Cesarz (94
-Center 2: 47 Frencho (86
+Center 2: 74 Shimer (86)
 Left wing 2: 13 Hadden (89)
 Right wing 2: 21 Paul (95)
 Left D 2: 20 Saad (92)
