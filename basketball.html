@@ -2181,17 +2181,20 @@ const UNI=(()=>{const KEY='stc-uniform',si=CCL.findIndex(c=>c.abbr==='STC');if(s
   function render(){box.innerHTML=`<h2>St. Charles <span>uniforms</span></h2><div class="xchips">${Object.keys(SETS).map(k=>`<button class="chip" type="button" aria-pressed="${k===id}" data-uni="${k}"><span class="dot" style="--j:${SETS[k].c};--t:${SETS[k].t}"></span>${ok(k)?'':'🔒 '}${SETS[k].name}</button>`).join('')}</div><p class="frnote">St. Charles wear this in every game until you change it. Locked sets are in the Shop.</p>`}
   apply();render();return{get id(){return id},refresh:render}})();
 /* ---------- rivalry: St. Charles and DeSales play for the Founders Cup, with the all-time series kept ---------- */
-const RIVAL=(()=>{const KEY='rivalry-'+CELESPORT,CUP='The Founders Cup';let rec=null;try{rec=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}rec=rec||{stc:0,sfd:0,tie:0};
+const RIVAL=(()=>{const KEY='rivalry-'+CELESPORT,CUP='The Founders Cup';let rec=null;try{rec=JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){}rec=rec||{stc:0,sfd:0,tie:0};rec.hist=rec.hist||[];
+  const logM=(w,a,b)=>{rec.hist.push({w,s:a+'-'+b,t:Date.now()});rec.hist=rec.hist.slice(-12);if(w!=='tie')rec.holder=w;try{localStorage.setItem(KEY,JSON.stringify(rec))}catch(e){}};
+  const info=()=>{const h=rec.hist;let n=0,w=null;for(let i=h.length-1;i>=0;i--){if(w==null)w=h[i].w;if(h[i].w===w)n++;else break}return{holder:rec.holder||null,streak:w&&w!=='tie'?{w,n}:null,last:h.slice(-5).reverse(),rec}};
+  const addSim=(my,opp,sa,sb)=>{const A=ab(my),B=ab(opp);if(!((A==='STC'&&B==='SFD')||(A==='SFD'&&B==='STC')))return;const st=A==='STC'?sa:sb,sf=A==='STC'?sb:sa,w=st>sf?'stc':sf>st?'sfd':'tie';rec[w]++;logM(w,st,sf)};
   const ab=i=>CLUBS[i]&&CLUBS[i].abbr,on=()=>!G.demo&&!G.skills&&G.clubs[0]!==G.clubs[1]&&G.clubs.every(i=>ab(i)==='STC'||ab(i)==='SFD');
   const series=()=>`Series: St. Charles ${rec.stc}, DeSales ${rec.sfd}${rec.tie?`, ${rec.tie} tied`:''}`;
   const _roar=roar;roar=function(l,secs){return _roar.call(this,on()?Math.min(1,l*1.15):l,secs)};
   let was='';setInterval(()=>{const ph=G.demo?'demo':G.phase;if(on()&&ph==='warm'&&was!=='warm'){const st=$('stage')||$('pitch')||$('fieldbox');let el=$('rvban');
       if(!el&&st){el=document.createElement('div');el.id='rvban';el.className='thban';st.appendChild(el)}
       if(el){el.style.setProperty('--tc','linear-gradient(90deg,#b31b1b 50%,#4b2a7b 50%)');el.style.background='linear-gradient(90deg,#b31b1b 50%,#4b2a7b 50%)';el.innerHTML=`<b>Rivalry game</b>${CUP} · ${series()}`;el.hidden=false;setTimeout(()=>{el.hidden=true},6500)}
-      setTimeout(()=>{if(typeof say==='function')say(`It's rivalry week! St. Charles and DeSales, with ${CUP} on the line. ${series()}.`,2)},2400);try{studentChant(true)}catch(e){}}was=ph},300);
-  AFTER.push(()=>{if(!on())return;const si=G.clubs.findIndex(i=>ab(i)==='STC'),a=G.score[si],b=G.score[1-si];const w=a>b?'stc':b>a?'sfd':G.pkWin!=null?(G.pkWin===si?'stc':'sfd'):'tie';rec[w]++;try{localStorage.setItem(KEY,JSON.stringify(rec))}catch(e){}
+      setTimeout(()=>{if(typeof say==='function')say(`It's rivalry week! St. Charles and DeSales, with ${CUP} on the line. ${series()}.`,2)},2400);setTimeout(()=>{if(typeof say!=='function')return;const I=info();const hl=I.holder?`${I.holder==='stc'?'St. Charles':'DeSales'} has the Cup right now${I.streak&&I.streak.n>1?`, and they've won ${I.streak.n} straight`:''}.`:'Nobody has claimed the Founders Cup yet. Tonight somebody takes it home.';say(`${hl} The biggest crowd of the year is here for this one.`,2)},9000);try{studentChant(true)}catch(e){}}was=ph},300);
+  AFTER.push(()=>{if(!on())return;const si=G.clubs.findIndex(i=>ab(i)==='STC'),a=G.score[si],b=G.score[1-si];const w=a>b?'stc':b>a?'sfd':G.pkWin!=null?(G.pkWin===si?'stc':'sfd'):'tie';rec[w]++;logM(w,a,b);
     if(userWon())setTimeout(()=>{if(!$('bigcele')||$('bigcele').hidden)BIGCELE(CUP,`${club(0).name} win the rivalry · ${series()}`)},900)});
-  return{on,series}})();
+  return{on,series,info,addSim}})();
 /* ---------- weather (outdoor sports): rain makes the ball slick, snow slows everyone down, wind carries passes and shots ---------- */
 const WX=(()=>{if(!['lacrosse','soccer','football'].includes(CELESPORT))return{id:'clear',on:()=>false};
   const KEY='weather',NAMES={clear:'Clear',rain:'Rain',snow:'Snow',wind:'Wind'},NOTE={clear:'A clear night.',rain:'Rain: a slick ball, so more drops and loose touches.',snow:'Snow: everyone is a step slower.',wind:'Wind: long passes and shots drift with it.'};
@@ -3070,7 +3073,7 @@ const FR=(()=>{
     if(y>1||cases.length||(tr.awards||[]).length){h+=`<h4>Dynasty · Year ${y}</h4><ul class="frres">${cases.map(([n,ys])=>`<li><b>${n}</b> · ${ys.length} (${ys.map(v=>'Year '+v).join(', ')})</li>`).join('')}${(tr.awards||[]).slice(-6).map(a=>`<li>Year ${a.year} ${esc(a.t)}: ${esc(a.name)}</li>`).join('')}${(S.history||[]).map(x=>`<li>Year ${x.year}: ${x.w}-${x.l}${x.t?'-'+x.t:''}${x.champ===S.my?' · CCL champions':''}</li>`).join('')}</ul>`;
       if(S.grads&&S.grads.length&&S.week===0)h+=`<p class="frnote">Graduated: ${S.grads.map(esc).join(', ')}. New freshmen joined the roster.</p>`}
     const sl=Object.values((S.dyn||{}).slots||{}).filter(s=>s.name);if(sl.length)h+=`<details><summary class="frnote">${esc(nm(S.my))} roster: class years${(S.year||1)>1?' and ratings':''}</summary><ul class="frres">${sl.map(s=>`<li>#${s.num!=null?s.num:'?'} ${esc(s.name)} · ${cls[s.cls]||''}${(S.year||1)>1&&s.r?' · '+s.r:''}${s.fresh?' · new'+(s.stars?' '+'★'.repeat(s.stars):''):''}</li>`).join('')}</ul></details>`;
-    if(S.phase==='done')h+=rcHtml()+`<div class="frbtns"><button class="go" type="button" data-fr="next">Start Year ${y+1}</button></div><p class="frnote">Seniors graduate, freshmen join, and everyone who stays gets better.</p>`;
+    if(S.phase==='done')h+=rcHtml()+`<div class="frbtns"><button class="go" type="button" data-fr="next">Start Year ${y+1}</button><button class="btn" type="button" data-fr="awn">🏆 Awards Night</button></div><p class="frnote">Seniors graduate, freshmen join, and everyone who stays gets better.</p>`;
     return h}
   function newSeason(my){
     if(FRCFG.stateFr){const st=TOURNS.find(t=>t.key==='state');if(st)st.reset()}
@@ -3138,7 +3141,7 @@ const FR=(()=>{
     G.clubs=[S.my,opp];G.fr=true;G.frHome=n.a;startGame();
     toast(`CCL · ${n.label} vs ${nm(opp)}`);
   }
-  function simNext(){const n=nextGame();if(!n)return;const opp=n.a===S.my?n.b:n.a;const g=sim(S.my,opp,S.phase!=='season');report(g.sa,g.sb);render()}
+  function simNext(){const n=nextGame();if(!n)return;const opp=n.a===S.my?n.b:n.a;const g=sim(S.my,opp,S.phase!=='season');try{RIVAL.addSim(S.my,opp,g.sa,g.sb)}catch(e){}report(g.sa,g.sb);render()}
   function simRest(){let guard=0;while(S.phase==='playoffs'&&guard++<20){if(nextGame())simNext();else advance()}save();render()}
   function table(){
     const order=seeds();
@@ -3154,6 +3157,30 @@ const FR=(()=>{
     return[['MVP',best(p=>p.g*3+p.a*2+p.sv*.25+p.gb*.5+p.hit*.5+p.sh*.2)],['Offensive Player of the Year',best(p=>p.g*3+p.a*2+p.sh*.2,sk)],['Defensive Player of the Year',best(p=>p.hit+p.gb*.6,p=>sk(p)&&dr(p))||best(p=>p.hit+p.gb*.6,sk)],['Goalie of the Year',best(p=>p.sv,p=>p.role==='G')]].filter(x=>x[1]).map(([t,p])=>({t,p,line:line(p)}))}
   function leadersHtml(){if(typeof PCOLS==='undefined')return'';const ps=Object.values(S.ps||{});if(!ps.length)return'';
     const li=PCOLS.map(([k,l])=>{const t=ps.filter(r=>r[k]>0).sort((a,b)=>b[k]-a[k]).slice(0,3);return t.length?`<li><b>${l}</b> · ${t.map(r=>`${esc(r.name)} (${esc(r.club)}) ${r[k]}`).join(', ')}</li>`:''}).join('');return li?`<h4>Season leaders</h4><ul class="frres">${li}</ul>`:''}
+  // ---------- Awards Night: the season's awards one at a time, plus Rookie of the Year, Coach of the Year and an All-CCL First Team. Saved for the Hall of Fame ----------
+  function awnScore(p){let t=0;for(const f in p)if(typeof p[f]==='number'&&f!=='gp'&&f!=='num')t+=f==='sv'?p[f]*.25:/yd|yds/.test(f)?p[f]*.05:p[f];return t}
+  function awnList(){const out=awards().map(x=>({t:x.t,p:x.p,line:x.line})),me=ab(S.my),ps=Object.values(S.ps||{});
+    const fr=Object.values((S.dyn||{}).slots||{}).filter(s=>s.name&&s.cls===1).map(s=>ps.find(p=>p.club===me&&p.name===s.name)).filter(Boolean).sort((x,y)=>awnScore(y)-awnScore(x))[0];
+    if(fr&&awnScore(fr)>0)out.push({t:'Rookie of the Year',p:fr,line:`a freshman, ${fr.gp} game${fr.gp>1?'s':''}`});
+    let bi=0,bv=-1;(S.rec||[]).forEach((r,i)=>{const v=r.w+r.t*.5-r.l*.01;if(v>bv){bv=v;bi=i}});const r=(S.rec||[])[bi];if(r)out.push({t:'Coach of the Year',coach:bi,line:`${nm(bi)} went ${r.w}-${r.l}${r.t?'-'+r.t:''} in the regular season`});
+    const by={};for(const p of ps){if(!p.gp)continue;const k=p.role||'?';if(!by[k]||awnScore(p)>awnScore(by[k]))by[k]=p}
+    return{list:out,team:Object.values(by).filter(p=>awnScore(p)>0).slice(0,11)}}
+  function awnSave(list,team){if(S.awnSaved)return;S.awnSaved=1;save();try{const H=JSON.parse(localStorage.getItem('ot-awards')||'[]');
+    H.push({sp:CELESPORT,y:S.year||1,champ:nm(S.champ),my:nm(S.my),won:S.champ===S.my,rec:S.rec&&S.rec[S.my]?`${S.rec[S.my].w}-${S.rec[S.my].l}${S.rec[S.my].t?'-'+S.rec[S.my].t:''}`:'',
+      aw:list.map(x=>[x.t,x.p?x.p.name:nm(x.coach)+' head coach',x.p?x.p.club:ab(x.coach),(x.p?x.p.club:ab(x.coach))===ab(S.my)?1:0]),team:team.map(p=>[p.role,p.name,p.club]),at:Date.now()});
+    localStorage.setItem('ot-awards',JSON.stringify(H.slice(-80)))}catch(e){}}
+  function awardsNight(){if(!S||S.phase!=='done')return;const{list,team}=awnList(),me=ab(S.my);
+    if(!document.getElementById('awnCss')){const st=document.createElement('style');st.id='awnCss';st.textContent='#awn{position:fixed;inset:0;z-index:9999;background:rgba(4,8,14,.9);display:grid;place-items:center;padding:16px}#awn .awnp{background:#11161c;border:1px solid #3a4652;border-radius:14px;max-width:660px;width:100%;max-height:92vh;overflow:auto;padding:18px;color:#eef2f6;font:15px/1.4 system-ui,sans-serif}#awn h2{margin:0 0 4px;font-size:26px}#awn .awns{color:#9aa6b2;margin:0 0 10px}#awn ol{list-style:none;padding:0;margin:0 0 12px;display:grid;gap:8px}#awn li{opacity:0;transform:translateY(6px);transition:opacity .6s,transform .6s;display:grid;gap:2px;padding:10px 12px;border-radius:10px;background:#18202a}#awn li.on{opacity:1;transform:none}#awn li.me{box-shadow:inset 0 0 0 2px #f5c542}#awn li span{color:#f5c542;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.05em}#awn li small{color:#9aa6b2}#awn .awnb{display:flex;gap:8px;flex-wrap:wrap}#awn button{min-height:42px;padding:6px 16px;border-radius:10px;border:1px solid #3a4652;background:#1d2630;color:#eef2f6;font-weight:700;cursor:pointer}#awn button.pri{background:#f5c542;color:#151515;border-color:#f5c542}@media (prefers-reduced-motion:reduce){#awn li{transition:none}}';document.head.appendChild(st)}
+    let el=document.getElementById('awn');if(el)el.remove();el=document.createElement('div');el.id='awn';
+    el.innerHTML=`<div class="awnp" role="dialog" aria-modal="true" aria-label="Awards Night"><h2>🏆 CCL Awards Night</h2><p class="awns">Year ${S.year||1} · ${esc(nm(S.champ))} won the CCL${S.champ===S.my?' (that’s you!)':''}</p><ol>${list.map(x=>`<li class="${(x.p?x.p.club:ab(x.coach))===me?'me':''}"><span>${esc(x.t)}</span><b>${x.p?`#${x.p.num} ${esc(x.p.name)}${x.p.star?' ★':''} (${esc(x.p.club)})`:esc(nm(x.coach))+' head coach'}</b><small>${esc(x.line)}</small></li>`).join('')}${team.length?`<li><span>All-CCL First Team</span><b>${team.map(p=>`${esc(p.role)} #${p.num} ${esc(p.name)} (${esc(p.club)})`).join(' · ')}</b><small>The best at each spot from the games you played</small></li>`:''}</ol><div class="awnb"><button class="pri" type="button" data-awn="next">Next award</button><button type="button" data-awn="close">Close</button></div></div>`;
+    document.body.appendChild(el);const items=[...el.querySelectorAll('li')];let k=0;
+    const show=()=>{if(k>=items.length)return;const li=items[k++];li.classList.add('on');try{li.scrollIntoView({block:'nearest'})}catch(e){}if(k<=list.length)try{const x=list[k-1];say(`${x.t}: ${x.p?x.p.name:nm(x.coach)+' head coach'}`,3)}catch(e){}if(k>=items.length)el.querySelector('[data-awn="next"]').textContent='Done'};
+    show();el.addEventListener('click',e=>{const b=e.target.closest('[data-awn]');if(!b)return;if(b.dataset.awn==='close'||k>=items.length){el.remove();return}show()});
+    el.querySelector('[data-awn="next"]').focus();awnSave(list,team)}
+  function rivHtml(my,opp){try{const A=ab(my),B=ab(opp);if(!((A==='STC'&&B==='SFD')||(A==='SFD'&&B==='STC'))||typeof RIVAL==='undefined')return'';const I=RIVAL.info(),R=I.rec,me=A.toLowerCase();
+      if(!document.getElementById('rivCss')){const st=document.createElement('style');st.id='rivCss';st.textContent='.frriv{margin:10px 0;padding:12px 14px;border-radius:12px;background:linear-gradient(90deg,rgba(179,27,27,.35),rgba(75,42,123,.35));border:1px solid #6b4a7a}.frriv b.t{display:block;font-size:18px;letter-spacing:.04em}.frriv small{color:#c9c2d6}';document.head.appendChild(st)}
+      const last=I.last.map(x=>{const r=x.w==='tie'?'T':x.w===me?'W':'L';const[a,b]=x.s.split('-');return`${r} ${me==='stc'?a+'-'+b:b+'-'+a}`}).join(', ');
+      return`<div class="frriv"><b class="t">⚔ RIVALRY WEEK</b>The Founders Cup vs ${esc(nm(opp))}. All-time: St. Charles ${R.stc}, DeSales ${R.sfd}${R.tie?`, ${R.tie} tied`:''}.${I.holder?` The Cup is with ${I.holder==='stc'?'St. Charles':'DeSales'}${I.streak&&I.streak.n>1?` (${I.streak.n} straight)`:''}.`:' Nobody holds the Cup yet.'}<br><small>${last?`Last meetings: ${last}. `:''}Biggest crowd of the year, and the winner takes the Cup home.</small></div>`}catch(e){return''}}
   function awardsHtml(){const a=awards();if(!a.length)return'';const me=CLUBS[S.my].abbr;
     return`<h4>${S.phase==='done'?'Season awards':'Award race'}</h4><ul class="frres">${a.map(x=>`<li class="${x.p.club===me?'me':''}"><b>${x.t}</b> · #${x.p.num} ${esc(x.p.name)}${x.p.star?' ★':''} (${esc(x.p.club)}) · ${esc(x.line)}</li>`).join('')}</ul><p class="frnote">Counted from the games you played.</p>`}
   function chipRow(label,key,items,cur,locked){return`<div class="frset"><span class="frlbl">${label}</span><div class="frchips">${items.map((it,i)=>`<button class="chip plain" type="button" aria-pressed="${it.v===cur}" ${locked?'disabled':''} data-fs="${key}:${it.v}">${it.t}</button>`).join('')}</div></div>`}
@@ -3180,7 +3207,7 @@ const FR=(()=>{
       else status=(S.champ===S.my?`<b>${esc(nm(S.my))} are CCL champions!</b> Final record ${rec}`:`<b>${esc(nm(S.champ))}</b> won the CCL championship. You finished ${rec}`)+(S.stateChamp?(S.stateWon?' · <b>State champions too!</b>':` · State champion: ${esc(S.stateChamp)}`):'');
       if(!S.cfg)S.cfg={games:WEEKS,diff:G.diff,len:G[LK]||0};
       h=`<p class="frstatus">${(S.year||1)>1?`Year ${S.year} · `:''}${status}</p><p class="frnote">Season settings: ${esc(cfgText(S.cfg))} <button class="btn" type="button" data-fr="cfg">${editCfg?'Done':'Change'}</button></p>`+(editCfg?settings(S.cfg,true)+'<p class="frnote">The number of games is set when the season starts. Difficulty and length apply to your next game.</p>':'');
-      if(n){const or=S.rec[opp];h+=`<div class="frnext"><span>Next: ${esc(n.label)} vs <b>${esc(nm(opp))}</b> (${or.w}-${or.l}${or.t?'-'+or.t:''})</span><div class="frbtns"><button class="go" type="button" data-fr="play">Play game</button><button class="btn" type="button" data-fr="sim">Simulate it</button></div></div>`}
+      if(n){const or=S.rec[opp];h+=rivHtml(S.my,opp)+`<div class="frnext"><span>Next: ${esc(n.label)} vs <b>${esc(nm(opp))}</b> (${or.w}-${or.l}${or.t?'-'+or.t:''})</span><div class="frbtns"><button class="go" type="button" data-fr="play">Play game</button><button class="btn" type="button" data-fr="sim">Simulate it</button></div></div>`}
       else if(S.phase==='playoffs')h+=`<div class="frbtns"><button class="go" type="button" data-fr="rest">Simulate the rest of the playoffs</button></div>`;
       else if(S.phase==='state')h+=`<div class="frbtns"><button class="go" type="button" data-fr="state">Go to the state tournament</button></div>`;
       h+=`<div class="frcols"><div><h4>CCL standings</h4>${table()}<p class="frnote">${FRCFG.stateFr?'First place at the end of the regular season wins the CCL. Then comes the state tournament.':`All ${NT} make the playoffs. First place is the conference champion and the No. 1 seed: 1 plays 4, 2 plays 3.`}</p></div><div>`;
@@ -3198,7 +3225,7 @@ const FR=(()=>{
     else if(k==='play')play();
     else if(k==='sim')simNext();
     else if(k==='rest')simRest();
-    else if(k==='next')nextSeason();
+    else if(k==='next')nextSeason();else if(k==='awn')awardsNight();
     else if(k==='rc'&&S&&S.phase==='done'){const rk=b.dataset.rk,ri=+b.dataset.ri;S.recruit=S.recruit||{};if(S.recruit[rk]===ri)delete S.recruit[rk];else{const prev=S.recruit[rk];delete S.recruit[rk];const c=recruits(S,rk)[ri];if(c&&rcSpent(S)+c.cost<=rcBudget(S))S.recruit[rk]=ri;else if(prev!=null)S.recruit[rk]=prev}save();render()}
     else if(k==='state'){const b=document.getElementById('tb-state');if(b)b.scrollIntoView({block:'start',behavior:'smooth'})}
     else if(k==='cfg'){editCfg=!editCfg;render()}
@@ -3209,7 +3236,7 @@ const FR=(()=>{
     if(!G.fr||!S)return false;G.fr=false;
     if(G.pst){S.ps=S.ps||{};for(const r of Object.values(G.pst)){const k=CLUBS[G.clubs[r.team]].abbr,id=k+'|'+r.num+'|'+r.name,e=S.ps[id]||(S.ps[id]={club:k,num:r.num,name:r.name,role:r.role,star:r.star,gp:0,g:0,a:0,sh:0,gb:0,hit:0,sv:0});e.gp++;for(const f in r)if(typeof r[f]==='number'&&f!=='num'&&f!=='team')e[f]=(e[f]||0)+r[f]}}
     const msg=report(G.score[0],G.score[1]),w=G.score[0]===G.score[1]?-1:G.score[0]>G.score[1]?0:1;
-    card(w<0?'Final: tie':`${club(w).name} win`,`${scoreLine()}. ${msg}${typeof potg==='function'?' '+potg():''}`,[{label:'Back to franchise',fn:()=>{toDemo();renderMenu();render();setTimeout(()=>$('fr').scrollIntoView({block:'start',behavior:'smooth'}),50)}}]);
+    card(w<0?'Final: tie':`${club(w).name} win`,`${scoreLine()}. ${msg}${typeof potg==='function'?' '+potg():''}`,[...(S.phase==='done'?[{label:'🏆 Awards Night',fn:()=>{toDemo();renderMenu();render();awardsNight()}}]:[]),{label:'Back to franchise',fn:()=>{toDemo();renderMenu();render();setTimeout(()=>$('fr').scrollIntoView({block:'start',behavior:'smooth'}),50)}}]);
     if((S.phase==='done'||S.phase==='state')&&S.champ===S.my&&!S.cclCele&&(S.cclCele=1))setTimeout(()=>BIGCELE('CCL Champions',`${nm(S.my)} win the CCL`),600);
     if(S.phase==='done'){const aw=awards();if(aw[0])setTimeout(()=>say(`And the CCL MVP is ${aw[0].p.name}!`,2),7000)}
     return true;
