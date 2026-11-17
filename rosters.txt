@@ -75,11 +75,11 @@ Strong safety:
 # Fill one in to make it stick for everyone, for example:  Point guard: 4 Your Name (90)
 # Now in the game: Point guard #4 Caleb Adeyemi, Shooting guard #0 Kofi Harlan, Small forward #20 Nikola Holloway, Power forward #44 Elijah Corbin, Center #32 Mateo Prescott
 [Basketball]
-Point guard:
-Shooting guard:
-Small forward:
-Power forward:
-Center:
+Point guard: Cobb-Bell
+Shooting guard: Granger
+Small forward: Parker
+Power forward: Nelson
+Center: Odoi-Ansah
 
 # Soccer: a blank line keeps the name the game uses now (or the one you set in the game's Rosters panel).
 # Fill one in to make it stick for everyone, for example:  Goalkeeper: 1 Your Name (90)
