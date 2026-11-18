@@ -1176,7 +1176,7 @@ function annLie(p,tot,lie,why){const n=(p.name||'').split(' ').pop()||'Blake';
    - an upgrade has `costs` (the price of each level) and `fx` (its effect at level 0, 1, 2...), and `show` turns an effect into words
    - a ball, trail or outfit has one `cost` and a `slot`; you buy it once and then pick it from the shop
    - apparel lines also add the item to the locker (shirt, pants, hat, club finish) */
-const SHOPTABS=[['clubs','Clubs'],['balls','Balls'],['trails','Ball trails'],['apparel','Apparel']];
+const SHOPTABS=[['clubs','Clubs'],['balls','Balls'],['trails','Ball trails'],['apparel','Apparel'],['cart','Golf cart']];
 const shPct=v=>`+${+(v*100).toFixed(1)}%`;
 const SHOPCAT=[
   {tab:'clubs',id:'driver',n:'Carbon driver',d:'More distance off the tee',costs:[80,180,320,500,750],fx:[0,.025,.05,.075,.09,.105],show:v=>`${shPct(v)} driver distance`},
@@ -1209,7 +1209,18 @@ const SHOPCAT=[
   {tab:'apparel',gear:'cap',id:'blackcap',n:'Black cap',cost:90,col:0x1d1d22},
   {tab:'apparel',gear:'cap',id:'greencap',n:'Green cap',cost:90,col:0x2e9c55},
   {tab:'apparel',gear:'club',id:'copper',n:'Copper club finish',cost:160,col:0xc07a45},
-  {tab:'apparel',gear:'club',id:'blue',n:'Blue club finish',cost:160,col:0x3b6fd0}];
+  {tab:'apparel',gear:'club',id:'blue',n:'Blue club finish',cost:160,col:0x3b6fd0},
+  {tab:'cart',id:'cengine',n:'Cart engine',d:'A bigger motor: a higher top speed',costs:[100,220,380,560],fx:[0,.08,.16,.24,.32],show:v=>`+${Math.round(v*100)}% top speed`},
+  {tab:'cart',id:'cboost',n:'Turbo booster',d:'More kick when you hold Shift',costs:[100,220,380],fx:[0,.1,.2,.3],show:v=>`+${Math.round(v*100)}% turbo speed`},
+  {tab:'cart',id:'ctank',n:'Turbo tank',d:'A bigger tank: turbo lasts longer and refills faster',costs:[90,200,340],fx:[0,.25,.45,.6],show:v=>`${Math.round(v*100)}% more turbo`},
+  {tab:'cart',slot:'cpaint',id:'white',n:'Clubhouse white',d:'The classic cart',cost:0,col:0xf2f2ee},
+  {tab:'cart',slot:'cpaint',id:'red',n:'Cardinal red',d:'Paint job',cost:80,col:0xc8202f},
+  {tab:'cart',slot:'cpaint',id:'navy',n:'Midnight navy',d:'Paint job',cost:80,col:0x1f2f5a},
+  {tab:'cart',slot:'cpaint',id:'green',n:'Fairway green',d:'Paint job',cost:80,col:0x2e9c55},
+  {tab:'cart',slot:'cpaint',id:'black',n:'Stealth black',d:'Paint job',cost:120,col:0x1d1d22},
+  {tab:'cart',slot:'cpaint',id:'orange',n:'Sunset orange',d:'Paint job',cost:120,col:0xe8762a},
+  {tab:'cart',slot:'cpaint',id:'pink',n:'Azalea pink',d:'Paint job',cost:120,col:0xe86aa6},
+  {tab:'cart',slot:'cpaint',id:'gold',n:'Champion gold',d:'Paint job for winners',cost:300,col:0xe0a21a}];
 for(const it of SHOPCAT)if(it.gear&&!GEAR[it.gear].some(g=>g[0]===it.id))GEAR[it.gear].push([it.id,it.n.replace(/ (shirt|pants|club finish)$/,''),it.col,'buy:'+it.gear+':'+it.id]);
 let CU=Object.assign({driver:0,woods:0,irons:0,wedges:0,putter:0},store.get('golf-clubs',{}));
 CU.own=CU.own||[];for(const b of CU.balls||[])if(!CU.own.includes('ball:'+b))CU.own.push('ball:'+b);delete CU.balls;
@@ -1242,12 +1253,12 @@ function shopRow(it,c){
   const slot=it.slot||it.gear,has=owns(slot,it.id),on=it.gear?PRO.gear[it.gear]===it.id:(CU[slot]||SHOPCAT.find(x=>x.slot===slot).id)===it.id;
   const sw=it.col!=null?`<i class="swatch" style="background:#${it.col.toString(16).padStart(6,'0')}"></i>`:'';
   const lab=on?(it.gear?'Wearing':'Using'):has?(it.gear?'Wear':'Use'):`Buy · ${it.cost} coins`;
-  return`<div class="sk"><div><b>${sw}${esc(it.n)}${on?' · in the bag':''}</b><small>${esc(it.d||(it.gear==='club'?'A new finish on every club in the bag':`Shows up on ${cfg.names[0]||'Blake Yoakam'} and in the locker`))}</small></div><span></span><button class="btn" type="button" data-own="${slot}:${it.id}"${on||(!has&&c<it.cost)?' disabled':''}>${lab}</button></div>`}
+  return`<div class="sk"><div><b>${sw}${esc(it.n)}${on?(slot==='cpaint'?' · on your cart':' · in the bag'):''}</b><small>${esc(it.d||(it.gear==='club'?'A new finish on every club in the bag':`Shows up on ${cfg.names[0]||'Blake Yoakam'} and in the locker`))}</small></div><span></span><button class="btn" type="button" data-own="${slot}:${it.id}"${on||(!has&&c<it.cost)?' disabled':''}>${lab}</button></div>`}
 function shop(msg){const c=coinsHave(),items=SHOPCAT.filter(x=>x.tab===shopTab),up=SHOPCAT.filter(x=>x.costs),done=up.reduce((a,x)=>a+(CU[x.id]||0),0),all=up.reduce((a,x)=>a+x.costs.length,0);
   showCard(`<h2>Pro shop</h2><p>Spend Overtime Arcade coins on gear for ${esc(cfg.names[0]||'Blake Yoakam')}. You have <b style="color:var(--led)">${c} coins</b>.</p>
   <div class="row shtabs" style="justify-content:flex-start">${SHOPTABS.map(([k,t])=>`<button class="chip" type="button" data-shtab="${k}" aria-pressed="${shopTab===k}">${t}</button>`).join('')}</div>
   ${msg?`<p style="color:var(--led)">${esc(msg)}</p>`:''}
-  ${shopTab==='clubs'?`<p><small>Bag upgrades: ${done} of ${all} levels. Upgrades help only your own golfer, never the CPU players.</small></p>`:''}
+  ${shopTab==='cart'?`<p><small>For 🛺 Golf Cart mode and Cart Rally. Hold Shift for turbo.</small></p>`:''}${shopTab==='clubs'?`<p><small>Bag upgrades: ${done} of ${all} levels. Upgrades help only your own golfer, never the CPU players.</small></p>`:''}
   <div class="skills">${items.map(it=>shopRow(it,c)).join('')}</div>
   <p><small>Win coins in every Overtime Arcade game. Golf pays for finished rounds, wins, birdies, eagles and aces.</small></p><div class="row"><button class="go" type="button" data-a="menu">Back</button></div>`);const top=()=>{$('ovc').scrollTop=0};top();setTimeout(top,40)}
 function shopClick(e){const b=e.target.closest('button');if(!b)return;
@@ -1255,7 +1266,7 @@ function shopClick(e){const b=e.target.closest('button');if(!b)return;
   if(b.dataset.buy){const it=shopItem(b.dataset.buy),l=CU[it.id]||0;if(it&&l<it.costs.length&&spendCoins(it.costs[l])){CU[it.id]=l+1;saveCU();sfx.clap(12);shop(`${it.n} upgraded to level ${l+1}`)}return}
   if(b.dataset.own){const[slot,id]=b.dataset.own.split(':'),it=SHOPCAT.find(x=>(x.slot||x.gear)===slot&&x.id===id);if(!it)return;
     if(!owns(slot,id)){if(!spendCoins(it.cost))return;CU.own.push(slot+':'+id);sfx.clap(8)}
-    if(it.gear){PRO.gear[it.gear]=id;saveP();dress(null)}else CU[slot]=id;saveCU();ballLook();shop(`${it.n} ${it.gear?'is on':'is in the bag'}`)}}
+    if(it.gear){PRO.gear[it.gear]=id;saveP();dress(null)}else CU[slot]=id;saveCU();ballLook();shop(`${it.n} ${it.gear?'is on':slot==='cpaint'?'is on your cart':'is in the bag'}`)}}
 
 /* ---------- stats ---------- */
 let ST=Object.assign({rounds:0,holes:0,drives:0,driveYds:0,longDrive:0,fwHit:0,fwOpp:0,gir:0,girOpp:0,putts:0,puttHoles:0,birdies:0,eagles:0,aces:0,matchW:0,matchL:0,matchH:0,best:[]},store.get('golf-stats',{}));
@@ -1882,7 +1893,7 @@ $('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-a="simback
 
 
 /* ---------- updates: a small version tag, and a notice when the live site has a newer version ---------- */
-const BUILD='68-1794944633';
+const BUILD='69-1795011654';
 {const tag=document.createElement('span');tag.className='buildtag';tag.textContent='Version '+BUILD.split('-')[0];document.querySelector('.top a').after(tag);
   let shown=false;const check=()=>{if(shown||!navigator.onLine)return;fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=t.match(/const BUILD='([^']+)'/);if(m&&m[1]!==BUILD&&m[1]!=='__BUILD__'){shown=true;const b=document.createElement('div');b.className='updbar';b.innerHTML=`<span>A new version of Pin High is ready.</span><button class="go" type="button">Update now</button>`;b.querySelector('button').onclick=()=>{location.reload()};document.body.append(b)}}).catch(()=>{})};
   setTimeout(check,4000);setInterval(check,180000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()})}
@@ -1960,39 +1971,46 @@ const cart=(()=>{const g=new T3.Group(),L=c=>new T3.MeshLambertMaterial({color:c
   const wheel=add(new T3.TorusGeometry(.17,.025,6,16),dark,-.28,1.28,.42);wheel.rotation.x=-1.0;for(const sx of[-.42,-.14]){const a=add(new T3.CylinderGeometry(.05,.05,.5,6),shirt,sx,1.32,.12);a.rotation.x=1.1}
   const glowM=new T3.SpriteMaterial({map:sunSprite.material.map,color:0xfff3c8,transparent:true,opacity:.9,depthWrite:false,blending:T3.AdditiveBlending,fog:false}),lights=[];for(const sx of[-.45,.45]){const sp=new T3.Sprite(glowM);sp.scale.set(1.3,1.3,1);sp.position.set(sx,.62,1.27);g.add(sp);lights.push(sp)}
   const beacon=new T3.Mesh(new T3.CylinderGeometry(.35,.35,26,12,1,true),new T3.MeshBasicMaterial({color:0xffd54a,transparent:true,opacity:.28,depthWrite:false,side:T3.DoubleSide,toneMapped:false}));beacon.visible=false;scene.add(beacon);
-  g.visible=false;scene.add(g);return{g,wheels,body:shirt,cap,lights,beacon,wheel}})();
+  g.visible=false;scene.add(g);return{g,wheels,body:shirt,cap,lights,beacon,wheel,paint:white}})();
+function wlAt(x,z){const H=HOLE;let w=-99;for(const p of H.W)if(ndE(p,x,z)<1.15)w=Math.max(w,p.wl||0);return w}
+function cartBridges(H){if(H._br)return H._br;const R=[];let st=null;for(let d=0;d<=H.gEnd;d+=1){const q=ptAt(H.CL,H.acc,d),w=surfAt(q.x,q.z)==='W';if(w&&st==null)st=d;if(!w&&st!=null){R.push([Math.max(0,st-4),d+4]);st=null}}if(st!=null)R.push([st-4,H.gEnd]);H._br=R;return R}
+function onBridge(x,z){const H=HOLE;if(!H)return false;const R=cartBridges(H);if(!R.length)return false;const n=near(H,x,z);return n.d<3.4&&R.some(([a,b])=>n.s>=a&&n.s<=b)}
+function bridgeMesh(H){if(H._brm)return;H._brm=1;const R=cartBridges(H);if(!R.length)return;const wood=new T3.MeshLambertMaterial({color:0x8a5a33}),rail=new T3.MeshLambertMaterial({color:0x5e3b20});
+  for(const[a,b]of R)for(let d=a;d<b;d+=2){const q=ptAt(H.CL,H.acc,d),q2=ptAt(H.CL,H.acc,Math.min(b,d+2)),y=Math.max(hAt(q.x,q.z),wlAt(q.x,q.z),hAt(q2.x,q2.z),wlAt(q2.x,q2.z))+.35,ang=Math.atan2(q2.x-q.x,q2.z-q.z);
+    const pl=new T3.Mesh(new T3.BoxGeometry(6.8,.22,2.1),wood);pl.position.set((q.x+q2.x)/2,y,(q.z+q2.z)/2);pl.rotation.y=ang;world.add(pl);
+    for(const sd of[-1,1]){const r=new T3.Mesh(new T3.BoxGeometry(.18,.7,2.1),rail);r.position.set((q.x+q2.x)/2+Math.cos(ang)*3.4*sd,y+.45,(q.z+q2.z)/2-Math.sin(ang)*3.4*sd);r.rotation.y=ang;world.add(r)}}}
 let CT=null;const ckeys={up:0,down:0,left:0,right:0,turbo:0};let cartHum=null;
 function cartSound(on,spd,turbo){try{if(!AC||!soundOn){if(cartHum){cartHum.o.stop();cartHum=null}return}if(!on){if(cartHum){cartHum.g.gain.setTargetAtTime(0,AC.currentTime,.05);const h=cartHum;setTimeout(()=>{try{h.o.stop()}catch(e){}},300);cartHum=null}return}
   if(!cartHum){const o=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain();o.type='sawtooth';f.type='lowpass';f.frequency.value=420;g.gain.value=0;o.connect(f);f.connect(g);g.connect(AC.destination);o.start();cartHum={o,g}}
   cartHum.o.frequency.setTargetAtTime(55+Math.abs(spd)*3.5+(turbo?40:0),AC.currentTime,.08);cartHum.g.gain.setTargetAtTime(.012+Math.min(.03,Math.abs(spd)*.0012),AC.currentTime,.1)}catch(e){}}
 function cartHud(show){let el=$('cartHud');if(!el){el=document.createElement('div');el.id='cartHud';el.className='carthud';el.innerHTML=`<div class="ct1"><b>🛺 Drive to your ball</b> <span id="ctDist"></span></div><div class="ctbar"><i id="ctBoost"></i><span>TURBO</span></div><div class="ct2">${TOUCH?'Hold the buttons to drive':'W / ↑ gas · S / ↓ brake · A D / ← → steer · <b>Shift</b> turbo · <b>Enter</b> skip'}</div>
   <div class="ctpad"><button type="button" data-ck="left" aria-label="Steer left">◀</button><button type="button" data-ck="up" aria-label="Gas">GO</button><button type="button" data-ck="down" aria-label="Brake">⏹</button><button type="button" data-ck="right" aria-label="Steer right">▶</button><button type="button" data-ck="turbo" class="tb" aria-label="Turbo">⚡</button></div><button type="button" class="ctskip" data-ck="skip">Skip ⏭</button>`;($('stage')||document.body).appendChild(el);
-  el.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-ck]');if(!b)return;e.preventDefault();if(b.dataset.ck==='skip'){cartPark(true);return}ckeys[b.dataset.ck]=1;b.setPointerCapture&&b.setPointerCapture(e.pointerId)});
+  el.addEventListener('pointerdown',e=>{const b=e.target.closest('[data-ck]');if(!b)return;e.preventDefault();if(b.dataset.ck==='skip'){if(S&&S.mode==='rally')rallyRestart();else cartPark(true);return}ckeys[b.dataset.ck]=1;b.setPointerCapture&&b.setPointerCapture(e.pointerId)});
   const up=e=>{const b=e.target.closest('[data-ck]');if(b&&b.dataset.ck!=='skip')ckeys[b.dataset.ck]=0};el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);el.addEventListener('lostpointercapture',up)}
   el.hidden=!show}
 function cartStart(from){const b=cur().ball;let x=from.x,z=from.z;if(cart.g.visible&&hyp(cart.g.position.x-x,cart.g.position.z-z)<25){x=cart.g.position.x;z=cart.g.position.z}
   // start beside where you were standing, facing the ball
   const yaw=Math.atan2(b.x-x,b.z-z);if(surfAt(x+Math.cos(yaw)*2.2,z-Math.sin(yaw)*2.2)!=='W'){x+=Math.cos(yaw)*2.2;z-=Math.sin(yaw)*2.2}
-  CT={x,z,yaw,v:0,boost:1,t:0,warn:0,tgt:{x:b.x,z:b.z},cam:null};S.phase='cart';golfer.visible=false;cart.g.visible=true;
-  const sh=gearVal('shirt',PRO.gear.shirt);cart.body.color.set(cur().k===0?sh:PCOL[cur().k]).convertSRGBToLinear();cart.cap.color.set(gearVal('cap',PRO.gear.cap)).convertSRGBToLinear();cart.lights.forEach(l=>l.visible=!!(S.night||S.wx==='night'||S.wx==='fog'));
+  bridgeMesh(HOLE);CT={x,z,yaw,v:0,boost:1,t:0,warn:0,tgt:{x:b.x,z:b.z},cam:null};{const t1=document.querySelector('#cartHud .ct1 b'),sk=document.querySelector('#cartHud .ctskip'),t2=document.querySelector('#cartHud .ct2');if(t1)t1.textContent='🛺 Drive to your ball';if(sk)sk.textContent='Skip ⏭';if(t2&&!TOUCH)t2.innerHTML='W / ↑ gas · S / ↓ brake · A D / ← → steer · <b>Shift</b> turbo · <b>Enter</b> skip'}S.phase='cart';golfer.visible=false;cart.g.visible=true;
+  const sh=gearVal('shirt',PRO.gear.shirt),pt=SHOPCAT.find(x=>x.slot==='cpaint'&&x.id===(CU.cpaint||'white'));cart.paint.color.set(cur().k===0&&pt?pt.col:0xf2f2ee).convertSRGBToLinear();cart.body.color.set(cur().k===0?sh:PCOL[cur().k]).convertSRGBToLinear();cart.cap.color.set(gearVal('cap',PRO.gear.cap)).convertSRGBToLinear();cart.lights.forEach(l=>l.visible=!!(S.night||S.wx==='night'||S.wx==='fog'));
   cart.beacon.visible=true;cart.beacon.position.set(b.x,hAt(b.x,b.z)+13,b.z);window.__camHold=true;root.classList.add('carting');for(const k in ckeys)ckeys[k]=0;cartHud(true);cartPlace(0);aimRing.visible=false;aimLine.visible=false}
-function cartPlace(dt){const c=CT,y=hAt(c.x,c.z),fx=Math.sin(c.yaw),fz=Math.cos(c.yaw),pitch=Math.atan2(hAt(c.x+fx,c.z+fz)-hAt(c.x-fx,c.z-fz),2),roll=Math.atan2(hAt(c.x+fz*.6,c.z-fx*.6)-hAt(c.x-fz*.6,c.z+fx*.6),1.2);
+function cartPlace(dt){const c=CT,y=onBridge(c.x,c.z)&&surfAt(c.x,c.z)==='W'?Math.max(hAt(c.x,c.z),wlAt(c.x,c.z))+.46:hAt(c.x,c.z),fx=Math.sin(c.yaw),fz=Math.cos(c.yaw),pitch=Math.atan2(hAt(c.x+fx,c.z+fz)-hAt(c.x-fx,c.z-fz),2),roll=Math.atan2(hAt(c.x+fz*.6,c.z-fx*.6)-hAt(c.x-fz*.6,c.z+fx*.6),1.2);
   cart.g.position.set(c.x,y,c.z);cart.g.rotation.set(0,0,0);cart.g.rotateY(c.yaw);cart.g.rotateX(-pitch);cart.g.rotateZ(roll);for(const w of cart.wheels)w.rotation.x+=c.v*dt/.25;
   // chase camera, a little higher in turbo
   const back=c.v<-.5?-7:9+Math.min(3,Math.abs(c.v)*.08),hgt=3.4+(c.turbo?.8:0),want=new T3.Vector3(c.x-fx*back,y+hgt,c.z-fz*back);want.y=Math.max(want.y,hAt(want.x,want.z)+1.5);
   if(!c.cam||dt===0)c.cam=want.clone();else c.cam.lerp(want,1-Math.exp(-dt*4));cam.position.copy(c.cam);cam.lookAt(c.x+fx*6,y+1.2,c.z+fz*6);const fov=55+(c.turbo?9:0)*Math.min(1,Math.abs(c.v)/35);if(Math.abs(cam.fov-fov)>.2){cam.fov+=(fov-cam.fov)*Math.min(1,dt*5);cam.updateProjectionMatrix()}}
-function cartTick(dt){const c=CT,H=HOLE;if(!c)return;c.t+=dt;if(S.cartMode)S.cartT=(S.cartT||0)+dt;let gp=null;try{gp=[...(navigator.getGamepads?navigator.getGamepads():[])].find(Boolean)}catch(e){}
+function cartTick(dt){const c=CT,H=HOLE;if(!c)return;if(S.mode==='rally'&&RL&&RL.cd>0){RL.cd-=dt;c.v=0;cartPlace(dt);rallyHud();if(RL.cd<=0){note('','GO!',.8);try{sfx.clap(6)}catch(e){}}return}c.t+=dt;if(S.cartMode)S.cartT=(S.cartT||0)+dt;let gp=null;try{gp=[...(navigator.getGamepads?navigator.getGamepads():[])].find(Boolean)}catch(e){}
   const ax=gp?Math.abs(gp.axes[0])>.2?gp.axes[0]:0:0,gas=Math.max(ckeys.up,gp&&(gp.buttons[7]&&gp.buttons[7].value>.2||gp.buttons[0]&&gp.buttons[0].pressed)?1:0),brk=Math.max(ckeys.down,gp&&(gp.buttons[6]&&gp.buttons[6].value>.2)?1:0),steer=clamp((ckeys.right-ckeys.left)+ax,-1,1),wantT=ckeys.turbo||(gp&&(gp.buttons[5]&&gp.buttons[5].pressed||gp.buttons[1]&&gp.buttons[1].pressed));
-  const sf=surfAt(c.x,c.z),lim=sf==='B'?.45:sf==='R'?.8:sf==='G'||sf==='X'?.5:1;c.turbo=!!(wantT&&c.boost>.02&&gas);if(c.turbo)c.boost=Math.max(0,c.boost-dt*.24);else c.boost=Math.min(1,c.boost+dt*.2);
-  const top=(c.turbo?42:24)*lim,acc=c.turbo?30:13;
+  const sf=surfAt(c.x,c.z),lim=sf==='B'?.45:sf==='R'?.8:sf==='G'||sf==='X'?.5:1;c.turbo=!!(wantT&&c.boost>.02&&gas);const me=cur().k===0,eng=me?lvlFx('cengine'):0,bst=me?lvlFx('cboost'):0,tnk=me?lvlFx('ctank'):0;if(c.turbo)c.boost=Math.max(0,c.boost-dt*.24*(1-tnk*.6));else c.boost=Math.min(1,c.boost+dt*.2*(1+tnk));
+  const top=(c.turbo?42*(1+eng*.5+bst):24*(1+eng))*lim,acc=(c.turbo?30:13)*(1+eng*.5+bst*.5);
   if(gas){if(c.v<top)c.v=Math.min(top,c.v+acc*dt);else c.v=Math.max(top,c.v-6*dt)}else if(brk){c.v=c.v>0?Math.max(0,c.v-26*dt):Math.max(-6,c.v-8*dt)}else c.v-=Math.sign(c.v)*Math.min(Math.abs(c.v),5*dt);
   c.yaw-=steer*(1.9-.6*clamp(Math.abs(c.v)/40,0,1))*dt*clamp(Math.abs(c.v)/4,0,1)*Math.sign(c.v||1);
-  const nx=c.x+Math.sin(c.yaw)*c.v*dt,nz=c.z+Math.cos(c.yaw)*c.v*dt,ns=surfAt(nx,nz);let blocked=ns==='W'&&sf!=='W';if(!blocked)for(const t of H.trees){if(hyp(nx-t.x,nz-t.z)<Math.max(.8,(t.r||3)*.22)){blocked=true;break}}
+  const nx=c.x+Math.sin(c.yaw)*c.v*dt,nz=c.z+Math.cos(c.yaw)*c.v*dt,ns=surfAt(nx,nz);let blocked=ns==='W'&&sf!=='W'&&!onBridge(nx,nz);if(!blocked)for(const t of H.trees){if(hyp(nx-t.x,nz-t.z)<Math.max(.8,(t.r||3)*.22)){blocked=true;break}}
   if(Math.abs(nx)>400||nz<-120||nz>H.gEnd+260)blocked=true;
   if(blocked){if(Math.abs(c.v)>3&&c.t-c.warn>1.5){c.warn=c.t;note('',ns==='W'?'Carts don’t float!':'Bonk!',1)}c.v*=-.25}else{c.x=nx;c.z=nz}
   if((sf==='G')&&Math.abs(c.v)>2&&c.t-c.warn>3){c.warn=c.t;note('','Keep the cart off the green!',1.2)}
   cartPlace(dt);cartSound(true,c.v,c.turbo);const d=hyp(c.tgt.x-c.x,c.tgt.z-c.z);$('ctDist').textContent=`${Math.round(d)} yds to go`;$('ctBoost').style.width=Math.round(c.boost*100)+'%';$('cartHud').classList.toggle('on',c.turbo);
-  cart.beacon.material.opacity=.18+.1*Math.sin(c.t*2.2);if(d<8)cartPark(false)}
+  cart.beacon.material.opacity=.18+.1*Math.sin(c.t*2.2);if(S.mode==='rally')rallyTick(dt);else if(d<8)cartPark(false)}
 function cartPark(skip){if(!CT||!S)return;const b=cur().ball,pt=CT.t;if(skip){const yaw=Math.atan2(b.x-CT.x,b.z-CT.z);CT.x=b.x-Math.sin(yaw)*4+Math.cos(yaw)*2.5;CT.z=b.z-Math.cos(yaw)*4-Math.sin(yaw)*2.5;CT.yaw=yaw;CT.v=0;cartPlace(0)}
   CT=null;cartSound(false);cartHud(false);root.classList.remove('carting');cart.beacon.visible=false;window.__camHold=false;camInit=false;cam.fov=55;cam.updateProjectionMatrix();golfer.visible=true;S.phase='aim';setupShot();if(S.cartMode){S.cartN=(S.cartN||0)+1;if(skip)S.cartSkips=(S.cartSkips||0)+1;else{const t=pt;if(S.cartBest==null||t<S.cartBest)S.cartBest=t}}if(!skip)note('',S.cartMode?`Parked in ${pt.toFixed(1)} s. Your shot.`:'Parked. Your shot.',1.2)}
 function cartOff(){root.classList.remove('carting');if(CT){CT=null;cartSound(false);cartHud(false);window.__camHold=false;camInit=false;cam.fov=55;cam.updateProjectionMatrix();golfer.visible=true}cart.g.visible=false;cart.beacon.visible=false}
@@ -2006,12 +2024,50 @@ function cartOff(){root.classList.remove('carting');if(CT){CT=null;cartSound(fal
 $('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-cart]');if(!b)return;cfg.cart=b.dataset.cart;saveCfg();menu()});
 {const CK={KeyW:'up',ArrowUp:'up',KeyS:'down',ArrowDown:'down',KeyA:'left',ArrowLeft:'left',KeyD:'right',ArrowRight:'right',ShiftLeft:'turbo',ShiftRight:'turbo'};
   addEventListener('keydown',e=>{if(!CT||!S||S.phase!=='cart'||!$('ov').hidden)return;if(e.target&&e.target.tagName==='INPUT')return;const k=CK[e.code];
-    if(k){ckeys[k]=1;e.preventDefault();e.stopImmediatePropagation();return}if(e.code==='Enter'||e.code==='Space'){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat)cartPark(true);return}},true);
+    if(k){ckeys[k]=1;e.preventDefault();e.stopImmediatePropagation();return}if(e.code==='Enter'||e.code==='Space'){e.preventDefault();e.stopImmediatePropagation();if(!e.repeat){if(S.mode==='rally')rallyRestart();else cartPark(true)}return}},true);
   addEventListener('keyup',e=>{const k=CK[e.code];if(k)ckeys[k]=0},true);addEventListener('blur',()=>{for(const k in ckeys)ckeys[k]=0})}
 {const st=document.createElement('style');st.textContent=`.carthud{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:6;background:rgba(10,14,18,.82);border:1px solid #39424c;border-radius:12px;padding:8px 14px;color:#eef2f6;font:600 14px var(--body,system-ui);text-align:center;display:grid;gap:6px;min-width:min(92vw,420px);pointer-events:auto}
 .carthud .ct1 b{color:#ffd54a}.carthud .ct2{color:#a9b4bf;font-size:12px;font-weight:500}.carthud .ctbar{position:relative;height:12px;border-radius:6px;background:#222a31;overflow:hidden}.carthud .ctbar i{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#3fd0ff,#7cff6a);border-radius:6px}.carthud .ctbar span{position:relative;font-size:9px;letter-spacing:.12em;color:#0b0f11}
 .carthud.on .ctbar i{background:linear-gradient(90deg,#ffb347,#ff5e3a)}.carthud .ctpad{display:none;gap:6px;justify-content:center}.carthud .ctpad button,.carthud .ctskip{min-height:44px;min-width:52px;border-radius:10px;border:1px solid #4a5560;background:#1b232b;color:#eef2f6;font:700 16px var(--body,system-ui);touch-action:none}
 .carthud .ctpad .tb{background:#3a2a10;border-color:#ffb347}.carthud .ctskip{min-height:34px;font-size:13px;justify-self:center;padding:0 14px}html.touch .carthud .ctpad{display:flex}.carting #meter,.carting #clubbox,.carting #shotbar,.carting .simw,.carting .tc,.carting #caddie{visibility:hidden}html.touch .carthud{bottom:calc(10px + env(safe-area-inset-bottom,0px))}`;document.head.appendChild(st)}
+/* ================= Cart Rally: race the cart through gates out to the green and back, against your best run's ghost ================= */
+let RL=null,rallyNext=0;const rallyBest=()=>store.get('golf-rally',{});
+const ghostCart=(()=>{const g=cart.g.clone(true),m=new T3.MeshBasicMaterial({color:0x9fdcff,transparent:true,opacity:.32,depthWrite:false});g.traverse(o=>{if(o.isMesh){o.material=m;o.castShadow=false}if(o.isSprite)o.visible=false});g.visible=false;scene.add(g);return g})();
+function rallyHole(cid){const C=COURSES[cid],P=C&&C.pars||PARS;let k=P.indexOf(5);return k<0?0:k}
+function rallyGates(H){const bad=(x,z)=>surfAt(x,z)==='W'&&!onBridge(x,z)||surfAt(x,z)==='B'||H.trees.some(t=>hyp(t.x-x,t.z-z)<6),clear=(p,to)=>{for(let i=0;i<10&&bad(p.x,p.z);i++){p.x+=(to.x-p.x)*.3;p.z+=(to.z-p.z)*.3}return p},pts=[],side=(d,o)=>{const q=ptAt(H.CL,H.acc,clamp(d,0,H.gEnd));return clear({x:q.x+q.nx*o,z:q.z+q.nz*o},{x:q.x,z:q.z})};
+  const L=H.gEnd,w=H.fwW||40,BR=cartBridges(H).map(([a,b])=>(a+b)/2),near2=(arr,d)=>BR.some(m=>Math.abs(m-d)<26),out=[];for(let d=80,k=0;d<L-50;d+=Math.max(70,(L-60)/5),k++)if(!near2(0,d))out.push([d,(k%2?1:-1)*w*.28]);for(const m of BR)if(m<L-40)out.push([m,0]);out.sort((a,b)=>a[0]-b[0]);for(const[d,o]of out)pts.push(side(d,o));
+  const G=H.G,c=Math.cos(G.rot),s=Math.sin(G.rot),ring=(t,r)=>{const u=(G.rz+r)*Math.sin(t),v=(G.rx+r)*Math.cos(t);return{x:G.x+u*s+v*c,z:G.z+u*c-v*s}};
+  const back=Math.atan2(-(H.pin.x),-(H.pin.z));for(const t of[back+Math.PI*.55,back+Math.PI,back+Math.PI*1.45]){pts.push(clear(ring(t-back,14),{x:G.x,z:G.z}))}
+  const inn=[];for(let d=L-70,k=0;d>60;d-=Math.max(80,(L-60)/4),k++)if(!near2(0,d))inn.push([d,(k%2?-1:1)*w*.42]);for(const m of BR)if(m<L-40)inn.push([m,0]);inn.sort((a,b)=>b[0]-a[0]);for(const[d,o]of inn)pts.push(side(d,o));pts.push({x:0,z:12});return pts}
+function rallyStart(){const H=HOLE,cid=S.course,best=rallyBest()[cid];const gates=rallyGates(H);let len=hyp(gates[0].x,gates[0].z);for(let i=1;i<gates.length;i++)len+=hyp(gates[i].x-gates[i-1].x,gates[i].z-gates[i-1].z);
+  const grp=new T3.Group(),ringG=new T3.TorusGeometry(5.2,.32,8,28),postG=new T3.CylinderGeometry(.22,.22,9,8),mk=c=>new T3.MeshBasicMaterial({color:c,transparent:true,opacity:.85,toneMapped:false});
+  const gm=gates.map((p,i)=>{const n=gates[i+1]||{x:p.x,z:p.z+1},pv=i?gates[i-1]:{x:0,z:0},a=Math.atan2(n.x-pv.x,n.z-pv.z),m=mk(0x5fb0ff),o=new T3.Group(),y=hAt(p.x,p.z);const r=new T3.Mesh(ringG,m);r.position.y=5.4;o.add(r);for(const sx of[-5.2,5.2]){const po=new T3.Mesh(postG,m);po.position.set(sx,4.5,0);o.add(po)}o.position.set(p.x,y,p.z);o.rotation.y=a;grp.add(o);return{o,m,...p}});
+  world.add(grp);RL={gates:gm,i:0,t:0,cd:3.2,rec:[],recT:0,best,len,cid,done:false};
+  golfer.visible=false;cartStart({x:-3,z:-6});CT.x=0;CT.z=-4;CT.yaw=Math.atan2(gates[0].x,gates[0].z-(-4));CT.tgt={x:gates[0].x,z:gates[0].z};cartPlace(0);
+  ghostCart.visible=!!(best&&best.g&&best.g.length);rallyPaint();const fc=$('flyCard');if(fc)fc.hidden=true;
+  const sk=document.querySelector('#cartHud .ctskip');if(sk)sk.textContent='Restart ↺';const t1=document.querySelector('#cartHud .ct1 b');if(t1)t1.textContent='🏁 Cart Rally';const t2=document.querySelector('#cartHud .ct2');if(t2&&!TOUCH)t2.innerHTML='W / ↑ gas · S / ↓ brake · A D / ← → steer · <b>Shift</b> turbo · <b>Enter</b> restart';$('ctBoost').style.width='100%'}
+function rallyPaint(){for(let i=0;i<RL.gates.length;i++){const g=RL.gates[i];g.o.visible=i>=RL.i&&i<=RL.i+1;g.m.color.set(i===RL.i?0xffd54a:i===RL.i+1?0x9fd0ff:0x4f86c6);g.m.opacity=i===RL.i?.95:i===RL.i+1?.6:.3}
+  const g=RL.gates[RL.i];if(g){cart.beacon.position.set(g.x,hAt(g.x,g.z)+13,g.z);CT.tgt={x:g.x,z:g.z}}}
+const fmtT=t=>`${Math.floor(t/60)}:${(t%60).toFixed(1).padStart(4,'0')}`;
+function rallyMedal(t){const L=RL.len;return t<=L/34?['🥇','Gold']:t<=L/28?['🥈','Silver']:t<=L/22?['🥉','Bronze']:null}
+function rallyHud(){const e=$('ctDist');if(!e||!RL)return;e.textContent=RL.cd>0?`Starts in ${Math.ceil(RL.cd)}`:`Gate ${Math.min(RL.i+1,RL.gates.length)} of ${RL.gates.length} · ${fmtT(RL.t)}${RL.best?` · best ${fmtT(RL.best.t)}`:''}`}
+function rallyTick(dt){if(!RL||RL.done)return;RL.t+=dt;RL.recT+=dt;if(RL.recT>=.1){RL.recT=0;RL.rec.push([+CT.x.toFixed(1),+CT.z.toFixed(1),+CT.yaw.toFixed(2)])}
+  // the ghost of your best run
+  const B=RL.best;if(B&&B.g&&B.g.length){const f=RL.t/.1,i=Math.min(B.g.length-1,Math.floor(f)),j=Math.min(B.g.length-1,i+1),u=f-Math.floor(f),a=B.g[i],b=B.g[j];if(f>=B.g.length)ghostCart.visible=false;else{const x=a[0]+(b[0]-a[0])*u,z=a[1]+(b[1]-a[1])*u;let dy=b[2]-a[2];dy=Math.atan2(Math.sin(dy),Math.cos(dy));ghostCart.position.set(x,hAt(x,z),z);ghostCart.rotation.set(0,a[2]+dy*u,0)}}
+  const g=RL.gates[RL.i];if(g&&hyp(CT.x-g.x,CT.z-g.z)<6.2){RL.i++;try{sfx.clap(3)}catch(e){}if(RL.i>=RL.gates.length)return rallyFinish();rallyPaint()}
+  rallyHud()}
+function rallyFinish(){RL.done=true;const t=RL.t,cid=RL.cid,B=rallyBest(),old=B[cid],rec=!old||t<old.t,med=rallyMedal(t);if(rec){B[cid]={t:+t.toFixed(2),g:RL.rec,at:Date.now()};store.set('golf-rally',B)}
+  const coins=10+(rec?15:0)+(med?{Gold:20,Silver:10,Bronze:5}[med[1]]:0);addCoins(coins);try{sfx.clap(20)}catch(e){}
+  const keep=CT;cartOff();cart.g.visible=true;cart.g.position.copy(cart.g.position);ghostCart.visible=false;S.phase='done';RL.gates.forEach(g=>g.o.visible=false);
+  showCard(`<h2>🏁 Cart Rally</h2><p class="bigt">${fmtT(t)}${med?` · ${med[0]} ${med[1]}`:''}</p><p>${esc(COURSES[cid].name)}, hole ${S.hole+1}: ${RL.gates.length} gates, ${Math.round(RL.len)} yards.${rec?' <b style="color:var(--led)">A new course record!</b>':` Record: ${fmtT(old.t)}.`} +${coins} coins.</p>
+    <p><small>Medals: 🥇 ${fmtT(RL.len/34)} · 🥈 ${fmtT(RL.len/28)} · 🥉 ${fmtT(RL.len/22)}. Upgrade the cart in the Pro shop to go faster.</small></p><div class="row"><button class="go" type="button" data-a="rallyagain">Race again</button><button class="btn" type="button" data-a="menu">Menu</button></div>`)}
+function rallyRestart(){if(!S||S.mode!=='rally')return;cartOff();ghostCart.visible=false;newRound('rally')}
+function rallyOff(){RL=null;ghostCart.visible=false}
+{const _nr=newRound;newRound=function(mode,opts){if(mode==='rally'){opts=Object.assign({},opts,{range:[rallyHole(cfg.course),rallyHole(cfg.course)+1]})}return _nr.call(this,mode,opts)}}
+{const _sh=startHole;startHole=function(){rallyOff();const r=_sh.apply(this,arguments);try{if(S&&S.mode==='rally'){S.players=S.players.slice(0,1);S.turn=0;S.phase='cart';rallyStart()}}catch(e){console.warn(e)}return r}}
+{const _m=menu;menu=function(){rallyOff();const r=_m.apply(this,arguments);try{const md=$('ovc').querySelector('.modes'),b=rallyBest()[cfg.course];
+  if(md){const cm=md.querySelector('[data-a="cartm"]');(cm||md).insertAdjacentHTML(cm?'afterend':'beforeend',`<button class="mode" type="button" data-m="rally"><b>🏁 Cart Rally</b><small>Race the cart through gates out to the green and back, against the ghost of your best run. Shift for turbo. Record at ${esc(COURSES[cfg.course].name)}: ${b?fmtT(b.t):'—'}</small></button>`)}}catch(e){console.warn(e)}return r}}
+$('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-a="rallyagain"]');if(!b)return;e.stopPropagation();hideCard();newRound('rally')},true);
 window.__golf={swingPose,customHole,playReel,cardPicture,get BSPEC(){return BSPEC},set BSPEC(v){BSPEC=v},P3POOL,get aceMode(){return aceMode},lieCond,EVENTS,endHoleT:()=>endHole(),get ST(){return ST},get CU(){return CU},set CU(v){CU=v},RIVALS,caddieTalk,rangeHole,applyWx,WX,say,crowd,get rainOn(){return rain.m.visible},readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 lin(scene);menu();requestAnimationFrame(frame);
