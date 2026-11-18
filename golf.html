@@ -1893,7 +1893,7 @@ $('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-a="simback
 
 
 /* ---------- updates: a small version tag, and a notice when the live site has a newer version ---------- */
-const BUILD='69-1795011654';
+const BUILD='70-1795012669';
 {const tag=document.createElement('span');tag.className='buildtag';tag.textContent='Version '+BUILD.split('-')[0];document.querySelector('.top a').after(tag);
   let shown=false;const check=()=>{if(shown||!navigator.onLine)return;fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=t.match(/const BUILD='([^']+)'/);if(m&&m[1]!==BUILD&&m[1]!=='__BUILD__'){shown=true;const b=document.createElement('div');b.className='updbar';b.innerHTML=`<span>A new version of Pin High is ready.</span><button class="go" type="button">Update now</button>`;b.querySelector('button').onclick=()=>{location.reload()};document.body.append(b)}}).catch(()=>{})};
   setTimeout(check,4000);setInterval(check,180000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()})}
@@ -2068,6 +2068,138 @@ function rallyOff(){RL=null;ghostCart.visible=false}
 {const _m=menu;menu=function(){rallyOff();const r=_m.apply(this,arguments);try{const md=$('ovc').querySelector('.modes'),b=rallyBest()[cfg.course];
   if(md){const cm=md.querySelector('[data-a="cartm"]');(cm||md).insertAdjacentHTML(cm?'afterend':'beforeend',`<button class="mode" type="button" data-m="rally"><b>🏁 Cart Rally</b><small>Race the cart through gates out to the green and back, against the ghost of your best run. Shift for turbo. Record at ${esc(COURSES[cfg.course].name)}: ${b?fmtT(b.t):'—'}</small></button>`)}}catch(e){console.warn(e)}return r}}
 $('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-a="rallyagain"]');if(!b)return;e.stopPropagation();hideCard();newRound('rally')},true);
+/* ================= Mini golf: Pinwheel Park, an original 9-hole putt-putt course with its own little physics ================= */
+const MINI=[
+  {n:'Opening Putt',par:2,col:0x2e9c55,tee:[0,0],cup:[0,9.4],poly:[[-1.1,-1],[1.1,-1],[1.1,10.6],[-1.1,10.6]],f:[{t:'mound',x:-.3,z:5,r:1.3,h:.12}]},
+  {n:'Dogleg Left',par:2,col:0x2f6fd6,tee:[0,0],cup:[-5.7,9],poly:[[-1,-1],[1,-1],[1,10.2],[-7,10.2],[-7,7.8],[-1,7.8]],o:[{t:'post',x:.25,z:9.3,r:.22}]},
+  {n:'The Windmill',par:3,col:0xc8202f,tee:[0,0],cup:[0,12.6],poly:[[-1.2,-1],[1.2,-1],[1.2,14],[-1.2,14]],o:[{t:'windmill',z:6.6,d:1,gap:.38}]},
+  {n:'Up and Over',par:2,col:0x7a4fd0,tee:[0,0],cup:[0,13],poly:[[-1.1,-1],[1.1,-1],[1.1,14.4],[-1.1,14.4]],f:[{t:'ramp',z0:4,z1:6.6,h0:0,h1:.7}]},
+  {n:'Bumper Alley',par:2,col:0xe0a21a,tee:[0,0],cup:[0,12],poly:[[-1.5,-1],[1.5,-1],[1.5,13.4],[-1.5,13.4]],o:[{t:'bumper',x:-.7,z:4,r:.32},{t:'bumper',x:.8,z:6.2,r:.32},{t:'bumper',x:-.45,z:8.4,r:.32},{t:'bumper',x:.6,z:10.2,r:.28}]},
+  {n:'The Slider',par:2,col:0x1f9a9a,tee:[0,0],cup:[0,12.5],poly:[[-1.2,-1],[1.2,-1],[1.2,13.8],[-1.2,13.8]],o:[{t:'slider',z:7,w:.95,d:.5,amp:.78,sp:2.1}]},
+  {n:'The Volcano',par:3,col:0xe8762a,tee:[0,0],cup:[0,9.6],poly:[[-1.2,-1],[1.2,-1],[2.4,4],[2.4,12.2],[1.4,13],[-1.4,13],[-2.4,12.2],[-2.4,4]],f:[{t:'mound',x:0,z:9.6,r:2.5,h:.62}]},
+  {n:'Island Green',par:3,col:0x2e9c55,tee:[0,0],cup:[.5,12],poly:[[-1.2,-1],[1.2,-1],[1.2,14],[-1.2,14]],w:[[-1.2,4,-.33,8],[.33,4,1.2,8]]},
+  {n:'Spinner Finale',par:3,col:0xc8202f,tee:[0,0],cup:[0,14.4],poly:[[-1.3,-1],[1.3,-1],[1.3,15.6],[-1.3,15.6]],o:[{t:'spinner',x:0,z:6.6,L:1.05,w:1.5},{t:'spinner',x:0,z:10.8,L:1.05,w:-1.9}],f:[{t:'mound',x:0,z:14.4,r:1.4,h:-.13}]}];
+const MR=.1,MCUP=.2,MMU=1.5;let M=null;
+function mH(x,z){let h=0;const hl=M&&MINI[M.h];if(!hl)return 0;for(const f of hl.f||[]){if(f.t==='ramp')h+=f.h0+(f.h1-f.h0)*clamp((z-f.z0)/(f.z1-f.z0),0,1);else if(f.t==='mound'){const d=hyp(x-f.x,z-f.z)/f.r;if(d<1)h+=f.h*(1-d*d)*(1-d*d)}}return h}
+function mInside(P,x,z){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])c=!c}return c}
+function miniBuild(){const hl=MINI[M.h],g=new T3.Group(),P=hl.poly;if(M.grp){scene.remove(M.grp);M.grp.traverse(o=>{if(o.geometry)o.geometry.dispose()})}M.grp=g;scene.add(g);M.dyn=[];
+  const L=c=>new T3.MeshLambertMaterial({color:c});const xs=P.map(p=>p[0]),zs=P.map(p=>p[1]),x0=Math.min(...xs)-.2,x1=Math.max(...xs)+.2,z0=Math.min(...zs)-.2,z1=Math.max(...zs)+.2;
+  // the park around it
+  const gr=new T3.Mesh(new T3.PlaneGeometry(160,160),L(0x5f9e45));gr.rotation.x=-Math.PI/2;gr.position.set((x0+x1)/2,-.03,(z0+z1)/2);gr.receiveShadow=true;g.add(gr);
+  const path=new T3.Mesh(new T3.PlaneGeometry(x1-x0+2.4,z1-z0+2.4),L(0xd9cdb0));path.rotation.x=-Math.PI/2;path.position.set((x0+x1)/2,-.02,(z0+z1)/2);g.add(path);
+  // the felt: a grid that follows the slopes, cut to the hole's shape
+  const st=.2,pos=[],idx=[],nx=Math.ceil((x1-x0)/st),nz=Math.ceil((z1-z0)/st);for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++){const x=x0+i*st,z=z0+j*st;pos.push(x,mH(x,z),z)}
+  for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){const a=j*(nx+1)+i,b=a+1,c=a+nx+1,d=c+1,cx=x0+(i+.5)*st,cz=z0+(j+.5)*st,X0=x0+i*st,Z0=z0+j*st;if(mInside(P,cx,cz)||mInside(P,X0,Z0)||mInside(P,X0+st,Z0)||mInside(P,X0,Z0+st)||mInside(P,X0+st,Z0+st))idx.push(a,c,b,b,c,d)}
+  const fg=new T3.BufferGeometry();fg.setAttribute('position',new T3.Float32BufferAttribute(pos,3));fg.setIndex(idx);fg.computeVertexNormals();const felt=new T3.Mesh(fg,L(hl.col));felt.receiveShadow=true;g.add(felt);
+  // water
+  for(const w of hl.w||[]){const m=new T3.Mesh(new T3.BoxGeometry(w[2]-w[0],.05,w[3]-w[1]),new T3.MeshPhongMaterial({color:0x2f8fd8,shininess:80,transparent:true,opacity:.92}));m.position.set((w[0]+w[2])/2,.012,(w[1]+w[3])/2);g.add(m)}
+  if(hl.w){const br=new T3.Mesh(new T3.BoxGeometry(.66,.03,4.2),L(0xa0703f));br.position.set(0,.03,6);g.add(br)}
+  // walls: the inside face sits on the edge
+  let area=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];area+=a[0]*b[1]-b[0]*a[1]}const wm=L(0xf2ead8);M.seg=[];
+  for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length],dx=b[0]-a[0],dz=b[1]-a[1],len=hyp(dx,dz);let ox=dz/len,oz=-dx/len;if(area<0){ox=-ox;oz=-oz}
+    const hy=Math.max(mH(a[0],a[1]),mH(b[0],b[1]),mH((a[0]+b[0])/2,(a[1]+b[1])/2))+.32,w=new T3.Mesh(new T3.BoxGeometry(.2,hy+.05,len+.2),wm);w.position.set((a[0]+b[0])/2+ox*.1,(hy-.05)/2,(a[1]+b[1])/2+oz*.1);w.rotation.y=Math.atan2(dx,dz);w.castShadow=true;g.add(w);M.seg.push([a[0],a[1],b[0],b[1],.72])}
+  // the cup and flag
+  const[cx,cz]=hl.cup,ch=mH(cx,cz);const cup=new T3.Mesh(new T3.CircleGeometry(MCUP,24),new T3.MeshBasicMaterial({color:0x111111}));cup.rotation.x=-Math.PI/2;cup.position.set(cx,ch+.004,cz);g.add(cup);
+  const pole=new T3.Mesh(new T3.CylinderGeometry(.02,.02,1.2,6),L(0xeeeeee));pole.position.set(cx,ch+.6,cz);g.add(pole);const fl=new T3.Mesh(new T3.PlaneGeometry(.42,.28),new T3.MeshLambertMaterial({color:0xffd54a,side:T3.DoubleSide}));fl.position.set(cx+.22,ch+1.04,cz);g.add(fl);
+  const tee=new T3.Mesh(new T3.PlaneGeometry(.7,.5),L(0x1d5c34));tee.rotation.x=-Math.PI/2;tee.position.set(hl.tee[0],mH(hl.tee[0],hl.tee[1])+.006,hl.tee[1]);g.add(tee);
+  // obstacles
+  for(const o of hl.o||[]){
+    if(o.t==='post'||o.t==='bumper'){const m=new T3.Mesh(new T3.CylinderGeometry(o.r,o.r,.3,20),L(o.t==='bumper'?0xff4a4a:0xf2ead8));m.position.set(o.x,mH(o.x,o.z)+.15,o.z);m.castShadow=true;g.add(m);if(o.t==='bumper'){const ring=new T3.Mesh(new T3.TorusGeometry(o.r,.05,6,20),L(0xffd54a));ring.rotation.x=Math.PI/2;ring.position.set(o.x,mH(o.x,o.z)+.3,o.z);g.add(ring)}}
+    if(o.t==='windmill'){const W=1.2,z0=o.z,z1=o.z+o.d,gp=o.gap,house=L(0xf3e3c3),roof=L(0xb5452d);for(const sd of[-1,1]){const bx=new T3.Mesh(new T3.BoxGeometry(W-gp,1.4,o.d),house);bx.position.set(sd*(gp+(W-gp)/2),.7,(z0+z1)/2);bx.castShadow=true;g.add(bx);
+        M.seg.push([sd*gp,z0,sd*W,z0,.6],[sd*gp,z0,sd*gp,z1,.6],[sd*gp,z1,sd*W,z1,.6])}
+      const top=new T3.Mesh(new T3.BoxGeometry(2*gp,.8,o.d),house);top.position.set(0,1.0,(z0+z1)/2);g.add(top);const rf=new T3.Mesh(new T3.ConeGeometry(1.6,1.1,4),roof);rf.position.set(0,1.95,(z0+z1)/2);rf.rotation.y=Math.PI/4;g.add(rf);
+      const hub=new T3.Group();hub.position.set(0,1.45,z0-.08);g.add(hub);for(let k=0;k<4;k++){const bl=new T3.Mesh(new T3.BoxGeometry(.26,1.3,.04),L(k%2?0xffffff:0xc8202f));bl.position.y=.68;const arm=new T3.Group();arm.rotation.z=k*Math.PI/2;arm.add(bl);hub.add(arm)}
+      M.dyn.push({t:'windmill',o,hub})}
+    if(o.t==='slider'){const m=new T3.Mesh(new T3.BoxGeometry(o.w,.32,o.d),L(0x2f6fd6));m.position.set(0,.16,o.z);m.castShadow=true;g.add(m);M.dyn.push({t:'slider',o,m})}
+    if(o.t==='spinner'){const m=new T3.Mesh(new T3.BoxGeometry(o.L*2,.25,.14),L(0xffd54a));m.position.set(o.x,mH(o.x,o.z)+.14,o.z);m.castShadow=true;g.add(m);const c=new T3.Mesh(new T3.CylinderGeometry(.12,.12,.4,10),L(0x333333));c.position.set(o.x,.2,o.z);g.add(c);M.dyn.push({t:'spinner',o,m});M.circ=(M.circ||[])}}
+  // some park scenery
+  const r=rng(M.h*31+7);for(let i=0;i<14;i++){const a=r()*6.283,d=9+r()*16,x=(x0+x1)/2+Math.cos(a)*d,z=(z0+z1)/2+Math.sin(a)*d;if(x>x0-3&&x<x1+3&&z>z0-3&&z<z1+3)continue;const tr=new T3.Mesh(new T3.ConeGeometry(.9+r()*.6,2.6+r()*1.5,7),L([0x2f7d3a,0x3b8f44,0x2a6e33][i%3]));tr.position.set(x,1.4,z);tr.castShadow=true;g.add(tr);const tk=new T3.Mesh(new T3.CylinderGeometry(.12,.15,.6,6),L(0x6b4a2b));tk.position.set(x,.1,z);g.add(tk)}
+  lin(g)}
+function miniSegs(){const out=M.seg.slice(),vel=[];for(const D of M.dyn){const o=D.o,t=M.time;
+    if(D.t==='windmill'){const a=t*1.7;D.hub.rotation.z=-a;let blk=false;for(let k=0;k<4;k++){let b=(-a+k*Math.PI/2)%(2*Math.PI);if(b<0)b+=2*Math.PI;if(Math.abs(b-Math.PI)<.34)blk=true}if(blk)out.push([-o.gap,o.z-.05,o.gap,o.z-.05,.6])}
+    if(D.t==='slider'){const cx=o.amp*Math.sin(t*o.sp),vx=o.amp*o.sp*Math.cos(t*o.sp),hw=o.w/2,hd=o.d/2;D.m.position.x=cx;for(const s of[[cx-hw,o.z-hd,cx+hw,o.z-hd],[cx+hw,o.z-hd,cx+hw,o.z+hd],[cx+hw,o.z+hd,cx-hw,o.z+hd],[cx-hw,o.z+hd,cx-hw,o.z-hd]])out.push([...s,.7,vx,0])}
+    if(D.t==='spinner'){const a=t*o.w;D.m.rotation.y=-a;const ca=Math.cos(a),sa=Math.sin(a);out.push([o.x-ca*o.L,o.z-sa*o.L,o.x+ca*o.L,o.z+sa*o.L,.7,0,0,o.x,o.z,o.w])}}
+  return out}
+function miniStep(dt){const B=M.ball,hl=MINI[M.h];if(!B.moving)return;const e=.02,gx=(mH(B.x+e,B.z)-mH(B.x-e,B.z))/(2*e),gz=(mH(B.x,B.z+e)-mH(B.x,B.z-e))/(2*e);
+  B.vx-=9.8*gx*dt*.9;B.vz-=9.8*gz*dt*.9;const sp=hyp(B.vx,B.vz);if(sp>0){const dec=Math.min(sp,MMU*dt);B.vx-=B.vx/sp*dec;B.vz-=B.vz/sp*dec}
+  const px=B.x,pz=B.z;B.x+=B.vx*dt;B.z+=B.vz*dt;
+  for(const s of M.segs){const[ax,az,bx,bz,res]=s,dx=bx-ax,dz=bz-az,L2=dx*dx+dz*dz,t=clamp(((B.x-ax)*dx+(B.z-az)*dz)/L2,0,1),qx=ax+dx*t,qz=az+dz*t,d=hyp(B.x-qx,B.z-qz);if(d>=MR||d<1e-6)continue;
+    const nx=(B.x-qx)/d,nz=(B.z-qz)/d;let svx=s[5]||0,svz=s[6]||0;if(s[9]){const rx=qx-s[7],rz=qz-s[8];svx=-s[9]*rz;svz=s[9]*rx}
+    const rvx=B.vx-svx,rvz=B.vz-svz,vn=rvx*nx+rvz*nz;if(vn<0){B.vx-=(1+res)*vn*nx;B.vz-=(1+res)*vn*nz;if(-vn>1.2)miniTick(Math.min(1,-vn/6))}B.x=qx+nx*MR;B.z=qz+nz*MR}
+  for(const o of hl.o||[])if(o.t==='post'||o.t==='bumper'){const d=hyp(B.x-o.x,B.z-o.z),rr=o.r+MR;if(d<rr&&d>1e-6){const nx=(B.x-o.x)/d,nz=(B.z-o.z)/d,vn=B.vx*nx+B.vz*nz;if(vn<0){const res=o.t==='bumper'?1.15:.7;B.vx-=(1+res)*vn*nx;B.vz-=(1+res)*vn*nz;if(o.t==='bumper')try{tone(660,.08,.18,'square')}catch(e){}}B.x=o.x+nx*rr;B.z=o.z+nz*rr}}
+  if(!mInside(hl.poly,B.x,B.z)){B.x=px;B.z=pz;B.vx*=-.5;B.vz*=-.5}
+  // water: a penalty and back where you hit it from
+  for(const w of hl.w||[])if(B.x>w[0]&&B.x<w[2]&&B.z>w[1]&&B.z<w[3]){B.moving=false;M.strokes++;try{noise(.3,800,.6,.25,'lowpass')}catch(e){}miniMsg('Splash! +1 stroke',1.6);if(M.strokes>=6){M.strokes=6;setTimeout(()=>{if(M){miniMsg('Six is the max. Picked up.',1.6);miniNextPlayer()}},1000);return}setTimeout(()=>{if(!M)return;B.x=M.last.x;B.z=M.last.z;miniAimReady()},900);return}
+  // the cup
+  const[cx,cz]=hl.cup,cd=hyp(B.x-cx,B.z-cz),s2=hyp(B.vx,B.vz);if(cd<MCUP*.92&&s2<3.2){B.moving=false;B.x=cx;B.z=cz;return miniHoled()}
+  if(cd<MCUP*.6&&s2>=3.2&&!B.lip){B.lip=1;const a=(Math.random()-.5)*.5,c=Math.cos(a),sn=Math.sin(a);const vx=B.vx*c-B.vz*sn,vz=B.vx*sn+B.vz*c;B.vx=vx*.8;B.vz=vz*.8}
+  if(s2<.06&&Math.hypot(gx,gz)*9.8*.9<MMU*.9){B.vx=B.vz=0;B.moving=false;miniStopped()}}
+function miniTick(v){try{tone(300+v*300,.04,.12*v+.04,'triangle')}catch(e){}}
+function miniMsg(t,dur){const e=$('miniMsg');if(!e)return;e.textContent=t;e.hidden=false;clearTimeout(e._t);e._t=setTimeout(()=>{e.hidden=true},(dur||1.4)*1000)}
+function miniHud(){const el=$('miniHud');if(!el||!M)return;const hl=MINI[M.h],p=M.pl[M.turn];el.querySelector('.mh1').innerHTML=`<b>Pinwheel Park</b> · Hole ${M.h+1} “${esc(hl.n)}” · Par ${hl.par}`;
+  el.querySelector('.mh2').innerHTML=`<b style="color:${PCSS[M.turn%4]}">${esc(p.name)}</b> · stroke ${M.strokes+1} · total ${p.tot+(p.card.length>M.h?0:0)}${M.pl.length>1?` · ${M.pl.map((q,i)=>i===M.turn?'':esc(q.name)+' '+q.tot).filter(Boolean).join(' · ')}`:''}`;
+  const pw=M.charge!=null?M.charge:0;el.querySelector('.mbar i').style.width=Math.round(pw*100)+'%'}
+function miniPose(k){const B=M.ball,_h=hAt;hAt=(x,z)=>mH(x,z);try{poseGolfer({x:B.x,z:B.z,y:mH(B.x,B.z)+MR},M.aim,PUTTER,null);if(k)swingPose(k,true)}finally{hAt=_h}
+  try{golfer.userData.mats.shirt.color.set(M.turn===0?gearVal('shirt',PRO.gear.shirt):PCOL[M.turn%4]).convertSRGBToLinear()}catch(e){}}
+function miniAimReady(){const B=M.ball,hl=MINI[M.h];B.moving=false;B.lip=0;M.phase='aim';M.charge=null;M.last={x:B.x,z:B.z};
+  if(M.strokes===0)M.aim=Math.atan2(hl.cup[0]-B.x,hl.cup[1]-B.z);else{M.aim=Math.atan2(hl.cup[0]-B.x,hl.cup[1]-B.z)}miniPose(0);M.camT=0;miniHud()}
+function miniStopped(){if(M.strokes>=6){miniMsg('Six is the max. Picked up.',1.6);M.strokes=6;return setTimeout(()=>miniNextPlayer(),900)}setTimeout(()=>{if(M&&!M.ball.moving)miniAimReady()},450)}
+function miniHoled(){M.phase='holed';M.ballM.visible=false;const hl=MINI[M.h],sc=M.strokes,d=sc-hl.par,p=M.pl[M.turn];
+  const word=sc===1?'HOLE IN ONE!':d<=-2?'Eagle!':d===-1?'Birdie!':d===0?'Par':d===1?'Bogey':d===2?'Double bogey':'+'+d;miniMsg(word,1.8);try{sfx.clap(sc===1?30:d<0?14:6)}catch(e){}if(sc===1){M.aces++;addCoins(5)}
+  p.card[M.h]=Math.min(6,sc);p.tot+=Math.min(6,sc);setTimeout(()=>miniNextPlayer(),1700)}
+function miniNextPlayer(){if(!M)return;const p=M.pl[M.turn];if(p.card[M.h]==null){p.card[M.h]=6;p.tot+=6}
+  if(M.turn<M.pl.length-1){M.turn++;miniStartPlayer();return}miniCard()}
+function miniStartPlayer(){const hl=MINI[M.h],B=M.ball;B.x=hl.tee[0];B.z=hl.tee[1];B.vx=B.vz=0;M.strokes=0;M.ballM.visible=true;miniAimReady();M.camT=0;if(M.pl.length>1)miniMsg(`${M.pl[M.turn].name} is up`,1.2)}
+function miniStartHole(){M.turn=0;miniBuild();miniStartPlayer();M.overT=1.8;miniMsg(`Hole ${M.h+1}: ${MINI[M.h].n} · Par ${MINI[M.h].par}`,2)}
+function miniCardHtml(){const par=MINI.reduce((a,h)=>a+h.par,0);let h=`<table class="sc"><tr><th>Hole</th>${MINI.map((_,i)=>`<th>${i+1}</th>`).join('')}<th>Tot</th></tr><tr><td>Par</td>${MINI.map(x=>`<td>${x.par}</td>`).join('')}<td>${par}</td></tr>`;
+  for(const p of M.pl)h+=`<tr><td>${esc(p.name)}</td>${MINI.map((_,i)=>`<td>${p.card[i]!=null?p.card[i]:''}</td>`).join('')}<td><b>${p.tot}</b></td></tr>`;return h+'</table>'}
+function miniCard(){M.phase='card';$('miniHud').hidden=true;const last=M.h>=MINI.length-1;
+  if(!last){showCard(`<h2>Pinwheel Park · after ${M.h+1}</h2>${miniCardHtml()}<div class="row"><button class="go" type="button" data-mini="next">Next hole</button><button class="btn" type="button" data-mini="quit">Quit</button></div>`);return}
+  const par=MINI.reduce((a,h)=>a+h.par,0),best=store.get('golf-mini-best',null),me=M.pl[0],rec=M.pl.length===1&&(best==null||me.tot<best);if(rec)store.set('golf-mini-best',me.tot);const coins=10+(me.tot<=par?10:0);addCoins(coins);
+  const win=M.pl.slice().sort((a,b)=>a.tot-b.tot);showCard(`<h2>⛳ Pinwheel Park</h2><p class="bigt">${M.pl.length>1?`${esc(win[0].name)} wins with ${win[0].tot}`:`${me.tot} (${tp(me.tot-par)})`}</p>${miniCardHtml()}<p>${rec?'<b style="color:var(--led)">A new course record!</b> ':best!=null&&M.pl.length===1?`Record: ${best}. `:''}${M.aces?`${M.aces} hole${M.aces>1?'s':''} in one! `:''}+${coins} coins.</p><div class="row"><button class="go" type="button" data-mini="again">Play again</button><button class="btn" type="button" data-mini="quit">Menu</button></div>`)}
+function miniPause(){if(!M)return;showCard(`<h2>Paused</h2><p>Pinwheel Park · hole ${M.h+1}</p>${miniCardHtml()}<div class="row"><button class="go" type="button" data-mini="resume">Resume</button><button class="btn" type="button" data-mini="quit">Quit to menu</button></div>`)}
+function miniHide(){hideCard();if(TOUCH)root.classList.add('playing');setTimeout(()=>{try{resize()}catch(e){}},30)}
+function miniStart(){S=null;miniHide();const names=cfg.names.slice(0,4).map((n,k)=>n.trim()||('Golfer '+(k+1)));
+  M={h:0,pl:names.map(n=>({name:n,card:[],tot:0})),turn:0,time:0,ball:{x:0,z:0,vx:0,vz:0,moving:false},aim:0,phase:'aim',strokes:0,aces:0,cam:null,view:0,keys:{l:0,r:0,f:0}};
+  world.visible=false;ballMesh.visible=false;aimRing.visible=false;aimLine.visible=false;window.__camHold=true;try{applyWx({C:{}})}catch(e){}
+  M.ballM=new T3.Mesh(new T3.SphereGeometry(MR,16,12),new T3.MeshPhongMaterial({color:0xffffff,shininess:80}));M.ballM.castShadow=true;scene.add(M.ballM);
+  const lg=new T3.BufferGeometry();lg.setAttribute('position',new T3.BufferAttribute(new Float32Array(6),3));M.line=new T3.Line(lg,new T3.LineDashedMaterial({color:0xffffff,dashSize:.18,gapSize:.12,transparent:true,opacity:.9,toneMapped:false}));M.line.frustumCulled=false;scene.add(M.line);
+  let el=$('miniHud');if(!el){el=document.createElement('div');el.id='miniHud';el.innerHTML=`<div class="mh1"></div><div class="mh2"></div><div class="mbar"><i></i></div><div class="mh3">${TOUCH?'Drag sideways to aim · drag down for power, let go to putt':'A D / ← → aim (Shift: fine) · hold <b>Space</b> for power, let go to putt · <b>V</b> overhead · <b>Esc</b> pause'}</div><div id="miniMsg" class="mmsg" hidden></div><button type="button" class="mpause">${TOUCH?'Pause':'Pause (Esc)'}</button><button type="button" class="mview">Overhead view</button>`;($('stage')||document.body).appendChild(el);el.querySelector('.mpause').addEventListener('click',e=>{e.stopPropagation();miniPause()});el.querySelector('.mview').addEventListener('click',e=>{e.stopPropagation();if(M)M.view=!M.view})}el.hidden=false;
+  root.classList.add('minigolf');miniStartHole();if(!M.raf){const loop=t=>{if(!M){return}M.raf=requestAnimationFrame(loop);const dt=Math.min(.05,(t-(M.lt||t))/1000);M.lt=t;miniFrame(dt)};M.raf=requestAnimationFrame(loop)}}
+function miniOff(){if(!M)return;if(M.raf)cancelAnimationFrame(M.raf);if(M.grp)scene.remove(M.grp);scene.remove(M.ballM);scene.remove(M.line);M=null;world.visible=true;window.__camHold=false;camInit=false;root.classList.remove('minigolf');const el=$('miniHud');if(el)el.hidden=true;golfer.visible=false}
+function miniShoot(pw){if(!M||M.phase!=='aim')return;pw=clamp(pw,.03,1);const v=.8+pw*8.4;M.ball.vx=Math.sin(M.aim)*v;M.ball.vz=Math.cos(M.aim)*v;M.ball.moving=true;M.strokes++;M.phase='roll';M.charge=null;M.swing=.38;try{puttTock(pw)}catch(e){}miniHud()}
+function miniFrame(dt){M.time+=dt;M.segs=miniSegs();const B=M.ball,hl=MINI[M.h];
+  if(M.phase==='aim'){const rate=M.keys.f?.25:1.3;if(M.keys.l||M.keys.r){M.aim+=(M.keys.l-M.keys.r)*rate*dt;miniPose(M.charge?-M.charge*.9:0)}if(M.charge!=null&&!M.drag){M.chT+=dt;const u=(M.chT*.75)%2;M.charge=u<1?u:2-u;miniPose(-M.charge*.9);miniHud()}}
+  if(M.phase==='roll'){if(M.swing>0){M.swing-=dt;const k=clamp(1-M.swing/.38,0,1);swingPose(k*.5,true)}const n=Math.ceil(dt*240);for(let i=0;i<n&&B.moving;i++)miniStep(dt/n)}
+  M.ballM.position.set(B.x,mH(B.x,B.z)+MR,B.z);
+  // the aim line
+  const ln=M.line,a=ln.geometry.attributes.position.array;ln.visible=M.phase==='aim';if(ln.visible){const L=1.2+(M.charge!=null?M.charge:.35)*5;a[0]=B.x;a[1]=mH(B.x,B.z)+.05;a[2]=B.z;const ex=B.x+Math.sin(M.aim)*L,ez=B.z+Math.cos(M.aim)*L;a[3]=ex;a[4]=mH(ex,ez)+.05;a[5]=ez;ln.geometry.attributes.position.needsUpdate=true;ln.computeLineDistances()}
+  // camera: behind the ball when aiming, following it when it rolls, or the whole hole from above
+  let want,look;const xs=hl.poly.map(p=>p[0]),zs=hl.poly.map(p=>p[1]),mx=(Math.min(...xs)+Math.max(...xs))/2,mz=(Math.min(...zs)+Math.max(...zs))/2,span=Math.max(Math.max(...xs)-Math.min(...xs),Math.max(...zs)-Math.min(...zs));
+  if(M.overT>0)M.overT-=dt;if(M.view||M.overT>0){want=new T3.Vector3(mx,span*1.05+4,mz-span*.42);look=new T3.Vector3(mx,0,mz+.5)}
+  else if(M.phase==='aim'){want=new T3.Vector3(B.x-Math.sin(M.aim)*4.2,mH(B.x,B.z)+2.5,B.z-Math.cos(M.aim)*4.2);look=new T3.Vector3(B.x+Math.sin(M.aim)*3,mH(B.x,B.z),B.z+Math.cos(M.aim)*3)}
+  else{const c=M.cam||cam.position,d=hyp(B.x-c.x,B.z-c.z);want=d>5.5?new T3.Vector3(B.x+(c.x-B.x)*5.5/d,mH(B.x,B.z)+2.8,B.z+(c.z-B.z)*5.5/d):c.clone();look=new T3.Vector3(B.x,mH(B.x,B.z),B.z)}
+  if(!M.cam){M.cam=want.clone();M.look=look.clone()}const k=1-Math.exp(-dt*(M.phase==='roll'?3:5));M.cam.lerp(want,k);M.look.lerp(look,k);cam.position.copy(M.cam);cam.lookAt(M.look);
+  if(cam.fov!==55){cam.fov=55;cam.updateProjectionMatrix()}}
+// controls
+addEventListener('keydown',e=>{if(!M||!$('ov').hidden)return;if(e.target&&e.target.tagName==='INPUT')return;const c=e.code;
+  if(c==='KeyA'||c==='ArrowLeft'){M.keys.l=1}else if(c==='KeyD'||c==='ArrowRight'){M.keys.r=1}else if(c==='ShiftLeft'||c==='ShiftRight'){M.keys.f=1}
+  else if(c==='Space'){if(!e.repeat&&M.phase==='aim'&&M.charge==null){M.charge=0;M.chT=0}}
+  else if(c==='KeyV'){M.view=!M.view}else if(c==='Escape'){miniPause()}
+  else return;e.preventDefault();e.stopImmediatePropagation()},true);
+addEventListener('keyup',e=>{if(!M)return;const c=e.code;if(c==='KeyA'||c==='ArrowLeft')M.keys.l=0;else if(c==='KeyD'||c==='ArrowRight')M.keys.r=0;else if(c==='ShiftLeft'||c==='ShiftRight')M.keys.f=0;else if(c==='Space'){if(M.charge!=null)miniShoot(M.charge);e.preventDefault();e.stopImmediatePropagation()}},true);
+{let pd=null;const cv=$('stage')||renderer.domElement;cv.addEventListener('pointerdown',e=>{if(!M||M.phase!=='aim'||!$('ov').hidden||e.target.closest('button'))return;pd={x:e.clientX,y:e.clientY,aim:M.aim};M.charge=0;M.drag=1;e.preventDefault();e.stopImmediatePropagation();try{cv.setPointerCapture(e.pointerId)}catch(_){}},true);
+  cv.addEventListener('pointermove',e=>{if(!M||!pd)return;M.aim=pd.aim-(e.clientX-pd.x)*.006;M.charge=clamp((e.clientY-pd.y)/((cv.getBoundingClientRect().height||innerHeight)*.4),0,1)||0;miniPose(-M.charge*.9);miniHud();e.stopImmediatePropagation()},true);
+  const up=e=>{if(!M||!pd)return;const ch=M.charge;pd=null;M.drag=0;if(ch>.04)miniShoot(ch);else{M.charge=null;miniPose(0)}e.stopImmediatePropagation()};cv.addEventListener('pointerup',up,true);cv.addEventListener('pointercancel',up,true)}
+$('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-mini],[data-a="minig"]');if(!b)return;e.stopPropagation();const k=b.dataset.mini||'start';
+  if(k==='start'){cfg.names=cfg.names.map((n,i)=>n.trim()||('Golfer '+(i+1)));saveCfg();miniStart();return}
+  if(k==='next'&&M){miniHide();$('miniHud').hidden=false;M.h++;miniStartHole();return}if(k==='resume'){miniHide();return}
+  if(k==='again'){miniOff();miniStart();return}if(k==='quit'){miniOff();menu();return}},true);
+{const _m=menu;menu=function(){miniOff();const r=_m.apply(this,arguments);try{const md=$('ovc').querySelector('.modes'),b=store.get('golf-mini-best',null);if(md)md.insertAdjacentHTML('beforeend',`<button class="mode" type="button" data-a="minig"><b>⛳ Mini Golf</b><small>Pinwheel Park: 9 holes of putt-putt with a windmill, a ramp, bumpers, a slider, a volcano, an island green and spinners. 1 to 4 players. Record: ${b==null?'—':b}</small></button>`)}catch(e){console.warn(e)}return r}}
+{const st=document.createElement('style');st.textContent=`#miniHud{pointer-events:none;position:absolute;left:12px;top:12px;z-index:6;background:rgba(10,14,18,.8);border:1px solid #39424c;border-radius:12px;padding:8px 12px;color:#eef2f6;font:600 14px var(--body,system-ui);display:grid;gap:5px;max-width:min(92vw,520px)}
+#miniHud .mh1 b{color:#ffd54a}#miniHud .mh3{color:#a9b4bf;font-size:12px;font-weight:500}#miniHud .mbar{height:12px;border-radius:6px;background:#222a31;overflow:hidden}#miniHud .mbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#7cff6a,#ffd54a,#ff5e3a)}
+#miniHud .mmsg{position:fixed;left:50%;top:32%;transform:translateX(-50%);font:700 clamp(28px,6vw,54px) var(--head,system-ui);color:#ffd54a;text-shadow:0 3px 12px rgba(0,0,0,.6);pointer-events:none;white-space:nowrap}
+.minigolf #stage{touch-action:none}#miniHud .mpause,#miniHud .mview{pointer-events:auto;justify-self:start;display:inline-block;min-height:34px;padding:4px 12px;border-radius:9px;border:1px solid #4a5560;background:#1b232b;color:#eef2f6;font:700 13px var(--body,system-ui);margin-right:6px}#miniHud .mview{position:absolute;right:12px;top:8px}.minigolf .pbar{visibility:hidden}.minigolf .hud,.minigolf #meter,.minigolf #clubbox,.minigolf #shotbar,.minigolf .simw,.minigolf .tc,.minigolf #mini,.minigolf #caddie{visibility:hidden}`;document.head.appendChild(st)}
 window.__golf={swingPose,customHole,playReel,cardPicture,get BSPEC(){return BSPEC},set BSPEC(v){BSPEC=v},P3POOL,get aceMode(){return aceMode},lieCond,EVENTS,endHoleT:()=>endHole(),get ST(){return ST},get CU(){return CU},set CU(v){CU=v},RIVALS,caddieTalk,rangeHole,applyWx,WX,say,crowd,get rainOn(){return rain.m.visible},readPutt,cam,golfer,ballMesh,scene,endRound,careerScreen,puttEff,puttScale,aimTarget,startReplay,get CAR(){return CAR},get shape(){return shape},set shape(v){shape=v},get S(){return S},get HOLE(){return HOLE},swingPress,keys,CLUBS,V0,hAt,surfAt,makeHole,buildHole,newRound,get club(){return club},set club(v){club=v},get aim(){return aim},set aim(v){aim=v},get meter(){return meter},fire,pinDist,stepBall};
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 lin(scene);menu();requestAnimationFrame(frame);
