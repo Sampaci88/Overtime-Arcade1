@@ -433,7 +433,25 @@ function linMat(m){if(!m||m.userData.lin)return;m.userData.lin=1;for(const k of[
 function lin(root){root.traverse(o=>{if(o.material)[].concat(o.material).forEach(linMat);const ca=o.geometry&&o.geometry.attributes&&o.geometry.attributes.color;if(ca&&!o.geometry.userData.lin){o.geometry.userData.lin=1;for(let i=0;i<ca.array.length;i++)ca.array[i]=s2l(ca.array[i]);ca.needsUpdate=true}
   if(o.isInstancedMesh&&o.instanceColor&&!o.userData.linc){o.userData.linc=1;const a=o.instanceColor.array;for(let i=0;i<a.length;i++)a[i]=s2l(a[i]);o.instanceColor.needsUpdate=true}})}
 const scene=new T3.Scene(),cam=new T3.PerspectiveCamera(55,16/9,.1,9000);
-const hemi=new T3.HemisphereLight(0xeaf6ff,0x50703a,.62),sun=new T3.DirectionalLight(0xfff1d6,1.35);hemi.color.convertSRGBToLinear();hemi.groundColor.convertSRGBToLinear();sun.color.convertSRGBToLinear();scene.add(hemi,sun,sun.target);
+/* Realistic look (the default): natural turf colors with mowing stripes and patchy wear, fuller trees, tree lines along every hole, hazier light. Classic keeps the old bright look */
+const REAL=(()=>{try{return(JSON.parse(localStorage.getItem('golf-cfg')||'{}').look||'real')!=='classic'}catch(e){return true}})();
+function vhash(i,j){let h=(i*374761393+j*668265263)|0;h=(h^(h>>>13))*1274126177|0;return((h^(h>>>16))>>>0)/4294967296}
+function vnoise(x,z){const i=Math.floor(x),j=Math.floor(z),fx=x-i,fz=z-j,u=fx*fx*(3-2*fx),v=fz*fz*(3-2*fz),a=vhash(i,j),b=vhash(i+1,j),c=vhash(i,j+1),d=vhash(i+1,j+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v}
+const RH={h:0,s:0,l:0};
+// grade a turf color toward real grass: a little less saturated, a touch darker, with soft patches of wear and a clear mowing pattern
+function gradeTurf(c,s,x,z,inf){if('BWO'.includes(s)&&s!=='O')return c;c.getHSL(RH);if(RH.h>.15&&RH.h<.45){RH.h+=(.255-RH.h)*.35;RH.s*=s==='G'?.78:s==='R'||s==='D'||s==='O'?.68:.76;RH.l*=s==='G'?.95:s==='R'||s==='D'||s==='O'?.78:s==='F'||s==='T'?.98:.88;if(s==='F'||s==='T')RH.h+=(.23-RH.h)*.2}
+  const n=(vnoise(x/26,z/26)-.5)*(s==='G'?.03:.1)+(vnoise(x/7,z/7)-.5)*(s==='G'?.015:.05);RH.l*=1+n;
+  if(s==='F'&&inf&&inf.n)RH.l*=(Math.floor(inf.n.s/11)&1)?1.08:.93;
+  if(s==='G')RH.l*=((Math.floor((x+z)/3.2)+Math.floor((x-z)/3.2))&1)?1.03:.98;
+  c.setHSL(RH.h,RH.s,Math.min(.9,RH.l));return c}
+function gradeTree(c){c.getHSL(RH);const fall=RH.h<.15||RH.h>.9;c.setHSL(RH.h+(RH.h>.15&&RH.h<.45?(.27-RH.h)*.25:0),RH.s*(fall?.55:.74),RH.l*(fall?.72:.82));return c}
+// a leafy canopy: a lumpy ball, darker underneath
+function leafGeo(){const g=new T3.IcosahedronGeometry(1,QUAL==='ultra'?3:QUAL==='high'?2:1),p=g.attributes.position,nm=g.attributes.normal,col=new Float32Array(p.count*3),v=new T3.Vector3(),u=new T3.Vector3();
+  for(let i=0;i<p.count;i++){u.fromBufferAttribute(p,i).normalize();const n=.86+.22*vnoise(u.x*2.6+5,u.z*2.6+u.y*2.1)+.06*vnoise(u.x*7+1,u.y*7+u.z*5);v.copy(u).multiplyScalar(n);v.y*=.9;p.setXYZ(i,v.x,v.y,v.z);
+    // smooth, slightly upward normals read as a soft round crown instead of facets
+    nm.setXYZ(i,u.x,u.y*.85+.15,u.z);const sh=.46+.54*clamp((u.y+.85)/1.7,0,1)+(vnoise(u.x*9,u.z*9+u.y*4)-.5)*.16;col[i*3]=sh*.96;col[i*3+1]=sh;col[i*3+2]=sh*.94}
+  g.setAttribute('color',new T3.BufferAttribute(col,3));return g}
+const hemi=new T3.HemisphereLight(REAL?0xdde9f4:0xeaf6ff,REAL?0x3e5631:0x50703a,REAL?.52:.62),sun=new T3.DirectionalLight(REAL?0xffedd2:0xfff1d6,REAL?1.5:1.35);hemi.color.convertSRGBToLinear();hemi.groundColor.convertSRGBToLinear();sun.color.convertSRGBToLinear();scene.add(hemi,sun,sun.target);
 const SUND=new T3.Vector3(-.45,.78,-.43).normalize();
 if(QUAL!=='low'){sun.castShadow=true;const sm=QUAL==='ultra'?4096:QUAL==='high'?2048:1024,ex=QUAL==='ultra'?42:48;sun.shadow.mapSize.set(sm,sm);const c=sun.shadow.camera;c.left=-ex;c.right=ex;c.top=ex;c.bottom=-ex;c.near=20;c.far=520;sun.shadow.bias=-.0005;sun.shadow.normalBias=.03}
 function sunFollow(x,y,z){sun.position.set(x+SUND.x*220,y+SUND.y*220,z+SUND.z*220);sun.target.position.set(x,y,z);sun.target.updateMatrixWorld()}
@@ -536,7 +554,7 @@ if(BLADES){const g=new T3.BufferGeometry();g.setAttribute('position',new T3.Buff
 function plantGrass(cx,cz){if(!blades||!HOLE)return;const R=QUAL==='ultra'?7.5:QUAL==='high'?6:4,r=rng(Math.floor(cx*31+cz*17+HOLE.i*7)),M=new T3.Matrix4(),q=new T3.Quaternion(),e=new T3.Euler(),s=new T3.Vector3(),p=new T3.Vector3(),c=new T3.Color(),C=HOLE.C;let n=0;
   for(let i=0;i<BLADES*1.4&&n<BLADES;i++){const a=r()*6.283,d=Math.sqrt(r())*R,x=cx+Math.sin(a)*d,z=cz+Math.cos(a)*d,su=surfAt(x,z);if(su==='W'||su==='B'||su==='O'||su==='G')continue;
     const h=su==='R'?.13+r()*.17:su==='D'?.08+r()*.12:su==='X'?.045+r()*.03:.03+r()*.035;e.set((r()-.5)*.6,r()*6.283,(r()-.5)*.6);q.setFromEuler(e);p.set(x,hAt(x,z)-.005,z);s.set(.8+r()*.8,h,1);M.compose(p,q,s);blades.setMatrixAt(n,M);
-    c.set(su==='R'?C.rough[r()<.5?0:1]:su==='D'?0xb69a62:su==='X'?0x67bc52:C.fw[r()<.5?0:1]).offsetHSL((r()-.5)*.03,0,(r()-.25)*.1).convertSRGBToLinear();blades.setColorAt(n,c);n++}
+    c.set(su==='R'?C.rough[r()<.5?0:1]:su==='D'?0xb69a62:su==='X'?0x67bc52:C.fw[r()<.5?0:1]).offsetHSL((r()-.5)*.03,0,(r()-.25)*.1);if(REAL)gradeTurf(c,su==='R'?'R':'F',x,z,null);c.convertSRGBToLinear();blades.setColorAt(n,c);n++}
   blades.count=n;blades.instanceMatrix.needsUpdate=true;blades.instanceColor.needsUpdate=true}
 /* ---------- little bursts: divots, sand, splashes ---------- */
 const PMAX=500,parts=new T3.InstancedMesh(new T3.BoxGeometry(.06,.06,.06),new T3.MeshLambertMaterial(),PMAX);parts.instanceColor=new T3.InstancedBufferAttribute(new Float32Array(PMAX*3),3);parts.count=0;parts.frustumCulled=false;scene.add(parts);const PS=[];
@@ -548,7 +566,7 @@ function partsTick(dt){const M=new T3.Matrix4(),q=new T3.Quaternion(),s=new T3.V
 /* ---------- build a hole ---------- */
 function colorHex(c){return new T3.Color(c)}
 function buildHole(H){prepHole(H);scene.remove(world);world.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material&&o.material.map&&o.material.map!==grassTex)o.material.map.dispose()});world=new T3.Group();scene.add(world);
-  const C=H.C,K=v=>new T3.Color(v);paintSky(C.skyTop,C.sky,C.glow);scene.background=null;scene.fog=new T3.Fog(C.fog,280,QUAL==='low'?1200:1900);scene.fog.color.convertSRGBToLinear();
+  const C=H.C,K=v=>new T3.Color(v),mixc=(a,b,t)=>new T3.Color(a).lerp(new T3.Color(b),t).getHex();if(REAL)paintSky(mixc(C.skyTop,0x5d93cf,.45),mixc(C.sky,0xe4ecf0,.55),C.glow);else paintSky(C.skyTop,C.sky,C.glow);scene.background=null;scene.fog=REAL?new T3.Fog(mixc(C.fog,0xdbe4e8,.5),210,QUAL==='low'?1050:1550):new T3.Fog(C.fog,280,QUAL==='low'?1200:1900);scene.fog.color.convertSRGBToLinear();
   for(const m of clouds){const o=m.userData.o;m.position.set(Math.sin(o.a)*o.d,o.y,H.gEnd/2+Math.cos(o.a)*o.d)}
   let minX=0,maxX=0;for(const p of H.CL){minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x)}minX-=120;maxX+=120;const minZ=-70,maxZ=H.gEnd+80,st=QUAL==='ultra'?1.2:QUAL==='high'?1.6:QUAL==='med'?2.2:3;
   const nx=Math.ceil((maxX-minX)/st)+1,nz=Math.ceil((maxZ-minZ)/st)+1,pos=new Float32Array(nx*nz*3),col=new Float32Array(nx*nz*3),uv=new Float32Array(nx*nz*2),c=new T3.Color();
@@ -558,14 +576,14 @@ function buildHole(H){prepHole(H);scene.remove(world);world.traverse(o=>{if(o.ge
     if(s==='F')c.copy(fw[Math.floor(inf.n.s/11)&1]);else if(s==='G')c.copy(grn[(Math.floor((x+z)/3.2)+Math.floor((x-z)/3.2))&1]);else if(s==='X')c.copy(fringe);else if(s==='B')c.copy(inf.lip?lip:sand);else if(s==='T')c.copy(tee);else if(s==='W')c.copy(bed);else if(OC.length&&OC.some(w=>ndE(w,x,z)<1.07))c.copy(rock[(i+j)%3?0:1]);else if(s==='O')c.copy(ob);
     else{const n=inf.n;if(n&&Math.abs(n.lat-pathSide*pathOff)<1.4&&n.s>30&&n.s<H.gEnd-30)c.copy(path);else if(n&&inf.w&&n.d<inf.w+3.6)c.copy(cut);else if(s==='D')c.copy(des).lerp(rough[1],((i*7+j*13)%5)/14);else c.copy(rough[(i*3+j*5)%7<3?0:1])}
     if(OC.length&&H.sea!=null){const bd=Math.min(i,nx-1-i,j,nz-1-j)*st;if(bd<16){pos[k+1]=lerp(H.sea-3,pos[k+1],ss(3,16,bd));c.copy(rock[(i+j)%3?0:1])}}
-    col[k]=c.r;col[k+1]=c.g;col[k+2]=c.b}
+    if(REAL)gradeTurf(c,s,x,z,inf);col[k]=c.r;col[k+1]=c.g;col[k+2]=c.b}
   const idx=[];for(let j=0;j<nz-1;j++)for(let i=0;i<nx-1;i++){const a=j*nx+i,b=a+1,d=a+nx,e=d+1;idx.push(a,d,b,b,d,e)}
   const g=new T3.BufferGeometry();g.setAttribute('position',new T3.BufferAttribute(pos,3));g.setAttribute('color',new T3.BufferAttribute(col,3));g.setAttribute('uv',new T3.BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
   const terr=new T3.Mesh(g,QUAL==='ultra'||QUAL==='high'?new T3.MeshStandardMaterial({vertexColors:true,map:grassTex,roughness:.93,metalness:0}):new T3.MeshLambertMaterial({vertexColors:true,map:grassTex}));terr.receiveShadow=QUAL!=='low';world.add(terr);terrMesh=terr;
   let lo=1e9;for(let k=1;k<pos.length;k+=3*37)lo=Math.min(lo,pos[k]);
   const sk=new T3.Mesh(new T3.PlaneGeometry(9000,9000),C.ocean?new T3.MeshPhongMaterial({color:C.water,specular:0xffffff,shininess:120,envMap:cubeRT.texture,reflectivity:.5,combine:T3.MixOperation,normalMap:rippleTex,normalScale:new T3.Vector2(.3,.3)}):new T3.MeshLambertMaterial({color:C.desert?0xb9925c:0x3d7a35}));sk.rotation.x=-Math.PI/2;sk.position.set((minX+maxX)/2,C.ocean&&H.sea!=null?H.sea:lo-5,(minZ+maxZ)/2);if(C.ocean){sk.userData.water=1;sk.receiveShadow=QUAL!=='low'}world.add(sk);
   // far hills (or mesas in the canyon) so the world has a horizon
-  {const rr=rng(H.i*31+7),cx=(minX+maxX)/2,cz=(minZ+maxZ)/2,mat=new T3.MeshLambertMaterial({color:C.desert?C.far:0x3f6b3c});
+  {const rr=rng(H.i*31+7),cx=(minX+maxX)/2,cz=(minZ+maxZ)/2,mat=new T3.MeshLambertMaterial({color:C.desert?C.far:REAL?0x50695a:0x3f6b3c});
     for(let k=0;k<(C.desert?16:C.ocean?9:28);k++){const a=k/(C.desert?16:28)*6.283+rr()*.2,d=C.desert?1150+rr()*600:850+rr()*450,w=C.desert?140+rr()*260:220+rr()*300,h=C.desert?60+rr()*150:35+rr()*75;let m;
       if(C.desert){m=new T3.Mesh(new T3.CylinderGeometry(w*.72,w,h,7),mat);m.position.set(cx+Math.sin(a)*d,lo-6+h/2,cz+Math.cos(a)*d)}else{m=new T3.Mesh(new T3.SphereGeometry(1,14,8,0,Math.PI*2,0,Math.PI/2),mat);m.scale.set(w,h,w*.8);m.position.set(cx+Math.sin(a)*d,lo-8,cz+Math.cos(a)*d)}
       m.rotation.y=rr()*6;world.add(m)}}
@@ -580,11 +598,16 @@ function buildHole(H){prepHole(H);scene.remove(world);world.traverse(o=>{if(o.ge
     H.trees.forEach(t=>{const y=hAt(t.x,t.z);t.y=y;const gc=new T3.Color(PAL[Math.floor(tr()*PAL.length)]).offsetHSL(0,0,(tr()-.5)*.08).getHex();put(body,t.x,y+t.h/2,t.z,1,t.h,1,gc);put(top,t.x,y+t.h,t.z,1,1,1,gc);
       for(const s of[-1,1]){const ah=t.h*(.25+tr()*.2),ay=y+t.h*(.35+tr()*.2);put(elb,t.x+s*.5,ay,t.z,1,1,1,gc);put(arm,t.x+s*.62,ay+ah/2,t.z,1,ah,1,gc)}});
     const nr=Math.round(H.L/9),rock=mk(new T3.DodecahedronGeometry(1,0),new T3.MeshLambertMaterial({flatShading:true}),nr);for(let k=0;k<nr;k++){const along=tr()*H.gEnd,qq=ptAt(H.CL,H.acc,along),side=tr()<.5?-1:1,off=H.fwW/2+12+tr()*45,x=qq.x+qq.nx*off*side,z=qq.z+qq.nz*off*side,s=.5+tr()*1.8;put(rock,x,hAt(x,z)+s*.3,z,s*1.3,s,s,new T3.Color(0x9b6a46).offsetHSL(0,0,(tr()-.5)*.15).getHex(),tr()*6)}}
-  else if(n){const trunk=mk(new T3.CylinderGeometry(.16,.28,1,8),new T3.MeshLambertMaterial({color:H.birch?0xe8e4da:C.trunk}),n),cone=mk(new T3.ConeGeometry(1,1,10),new T3.MeshLambertMaterial(),n*3),blob=mk(new T3.IcosahedronGeometry(1,1),new T3.MeshLambertMaterial({flatShading:true}),n*3);
-    H.trees.forEach(t=>{const y=hAt(t.x,t.z);t.y=y;const pine=t.k<C.pine,base=new T3.Color(t.c!=null?(tr(),t.c):PAL[Math.floor(tr()*PAL.length)]).offsetHSL((tr()-.5)*.03,0,(tr()-.5)*.08);
+  else if(n){const trunk=mk(new T3.CylinderGeometry(.16,.28,1,8),new T3.MeshLambertMaterial({color:H.birch?0xe8e4da:REAL?0x4a3828:C.trunk}),n),cone=mk(new T3.ConeGeometry(1,1,REAL?14:10),new T3.MeshLambertMaterial(),n*(REAL?5:3)),blob=mk(REAL?leafGeo():new T3.IcosahedronGeometry(1,1),REAL?new T3.MeshLambertMaterial({vertexColors:true}):new T3.MeshLambertMaterial({flatShading:true}),n*(REAL?6:3));
+    H.trees.forEach(t=>{const y=hAt(t.x,t.z);t.y=y;const pine=t.k<C.pine,base=new T3.Color(t.c!=null?(tr(),t.c):PAL[Math.floor(tr()*PAL.length)]).offsetHSL((tr()-.5)*.03,0,(tr()-.5)*.08);if(REAL)gradeTree(base);
       put(trunk,t.x,y+t.h*(pine?.2:.24),t.z,1,t.h*(pine?.4:.48),1,null);
-      if(pine){[[.3,1,.42],[.5,.78,.36],[.68,.55,.32]].forEach(([fy,fr,fh])=>put(cone,t.x,y+t.h*(fy+fh/2),t.z,t.r*fr,t.h*fh,t.r*fr,base.getHex(),tr()*6))}
-      else{put(blob,t.x,y+t.h*.62,t.z,t.r*1.05,t.r*.92,t.r*1.05,base.getHex(),tr()*6);put(blob,t.x+t.r*.45,y+t.h*.5,t.z+t.r*.2,t.r*.72,t.r*.64,t.r*.72,base.clone().offsetHSL(0,0,.04).getHex(),tr()*6);put(blob,t.x-t.r*.38,y+t.h*.78,t.z-t.r*.22,t.r*.6,t.r*.55,t.r*.6,base.clone().offsetHSL(0,0,.07).getHex(),tr()*6)}})}
+      if(pine){(REAL?[[.2,.9,.3],[.34,.8,.28],[.48,.66,.26],[.61,.5,.24],[.73,.33,.24]]:[[.3,1,.42],[.5,.78,.36],[.68,.55,.32]]).forEach(([fy,fr,fh],ti)=>put(cone,t.x,y+t.h*(fy+fh/2),t.z,t.r*fr*(REAL?.85:1),t.h*fh,t.r*fr*(REAL?.85:1),REAL?base.clone().offsetHSL(0,0,ti*.012-.02).getHex():base.getHex(),tr()*6))}
+      else{put(blob,t.x,y+t.h*.62,t.z,t.r*1.05,t.r*.92,t.r*1.05,base.getHex(),tr()*6);put(blob,t.x+t.r*.45,y+t.h*.5,t.z+t.r*.2,t.r*.72,t.r*.64,t.r*.72,base.clone().offsetHSL(0,0,.04).getHex(),tr()*6);put(blob,t.x-t.r*.38,y+t.h*.78,t.z-t.r*.22,t.r*.6,t.r*.55,t.r*.6,base.clone().offsetHSL(0,0,.07).getHex(),tr()*6);if(REAL){put(blob,t.x-t.r*.5,y+t.h*.56,t.z+t.r*.35,t.r*.7,t.r*.6,t.r*.7,base.clone().offsetHSL(0,0,.02).getHex(),tr()*6);put(blob,t.x+t.r*.2,y+t.h*.72,t.z-t.r*.48,t.r*.66,t.r*.58,t.r*.66,base.clone().offsetHSL(0,0,.05).getHex(),tr()*6);put(blob,t.x+t.r*.1,y+t.h*.86,t.z+t.r*.12,t.r*.55,t.r*.5,t.r*.55,base.clone().offsetHSL(0,0,.09).getHex(),tr()*6)}}})}
+  if(REAL&&QUAL!=='low'&&!C.desert&&(C.trees||0)>.3){const br=rng(H.i*131+17),spots=[],step=QUAL==='med'?12:8,dens=Math.min(1.2,C.trees||1);
+    for(let d=-40;d<H.gEnd+70;d+=step)for(const sd of[-1,1])for(let row=0;row<2;row++){if(br()>.82*dens)continue;const q=ptAt(H.CL,H.acc,clamp(d,0,H.gEnd)),off=H.fwW/2+62+row*26+br()*22,x=q.x+q.nx*off*sd+(d<0?0:0),z=q.z+q.nz*off*sd+(d<0?d:d>H.gEnd?d-H.gEnd:0);const sf=surfAt(x,z);if(sf==='W'||H.W.some(w=>w.ocean&&ndE(w,x,z)<1.25))continue;spots.push([x,z])}
+    if(spots.length){const PAL2=(C.pals&&C.pals[H.pal])||C.tree,bt=mk(new T3.CylinderGeometry(.18,.3,1,6),new T3.MeshLambertMaterial({color:0x463424}),spots.length),bb=mk(leafGeo(),new T3.MeshLambertMaterial({vertexColors:true}),spots.length*3),bc=mk(new T3.ConeGeometry(1,1,10),new T3.MeshLambertMaterial(),spots.length*3);
+      for(const[x,z]of spots){const y=hAt(x,z),h=13+br()*12,r=4+br()*3,pn=br()<(C.pine||.5),col=gradeTree(new T3.Color(PAL2[Math.floor(br()*PAL2.length)]).offsetHSL(0,0,(br()-.5)*.08));put(bt,x,y+h*.2,z,1.2,h*.42,1.2,null);
+        if(pn){for(const[fy,fr,fh]of[[.24,.85,.34],[.44,.66,.3],[.62,.42,.3]])put(bc,x,y+h*(fy+fh/2),z,r*fr,h*fh,r*fr,col.getHex(),br()*6)}else{put(bb,x,y+h*.6,z,r*1.1,r*.95,r*1.1,col.getHex(),br()*6);put(bb,x+r*.5,y+h*.48,z+r*.2,r*.8,r*.7,r*.8,col.clone().offsetHSL(0,0,.03).getHex(),br()*6);put(bb,x-r*.4,y+h*.74,z-r*.2,r*.7,r*.6,r*.7,col.clone().offsetHSL(0,0,.06).getHex(),br()*6)}}}}
   for(const im of world.children)if(im.isInstancedMesh){im.instanceMatrix.needsUpdate=true;if(im.instanceColor)im.instanceColor.needsUpdate=true}
   // tee markers and the hole sign
   for(const s of[-1,1]){const m=new T3.Mesh(new T3.SphereGeometry(.12,12,10),new T3.MeshPhongMaterial({color:0xc8202f,shininess:60}));m.position.set(s*3.5,hAt(s*3.5,1.5)+.1,1.5);m.castShadow=QUAL!=='low';world.add(m)}
@@ -1893,7 +1916,7 @@ $('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-a="simback
 
 
 /* ---------- updates: a small version tag, and a notice when the live site has a newer version ---------- */
-const BUILD='70-1795012669';
+const BUILD='71-1795450699';
 {const tag=document.createElement('span');tag.className='buildtag';tag.textContent='Version '+BUILD.split('-')[0];document.querySelector('.top a').after(tag);
   let shown=false;const check=()=>{if(shown||!navigator.onLine)return;fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=t.match(/const BUILD='([^']+)'/);if(m&&m[1]!==BUILD&&m[1]!=='__BUILD__'){shown=true;const b=document.createElement('div');b.className='updbar';b.innerHTML=`<span>A new version of Pin High is ready.</span><button class="go" type="button">Update now</button>`;b.querySelector('button').onclick=()=>{location.reload()};document.body.append(b)}}).catch(()=>{})};
   setTimeout(check,4000);setInterval(check,180000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()})}
@@ -2065,8 +2088,9 @@ function rallyRestart(){if(!S||S.mode!=='rally')return;cartOff();ghostCart.visib
 function rallyOff(){RL=null;ghostCart.visible=false}
 {const _nr=newRound;newRound=function(mode,opts){if(mode==='rally'){opts=Object.assign({},opts,{range:[rallyHole(cfg.course),rallyHole(cfg.course)+1]})}return _nr.call(this,mode,opts)}}
 {const _sh=startHole;startHole=function(){rallyOff();const r=_sh.apply(this,arguments);try{if(S&&S.mode==='rally'){S.players=S.players.slice(0,1);S.turn=0;S.phase='cart';rallyStart()}}catch(e){console.warn(e)}return r}}
-{const _m=menu;menu=function(){rallyOff();const r=_m.apply(this,arguments);try{const md=$('ovc').querySelector('.modes'),b=rallyBest()[cfg.course];
+{const _m=menu;menu=function(){rallyOff();setTimeout(()=>{try{const gx=$('ovc').querySelector('[data-gfx]');if(gx&&!$('ovc').querySelector('[data-look2]'))gx.closest('.row').insertAdjacentHTML('beforeend',`<span style="color:var(--muted);font-size:14px;margin-left:10px">Look:</span>${[['real','Realistic'],['classic','Classic']].map(([k,t])=>`<button class="chip" type="button" data-look2="${k}" aria-pressed="${(cfg.look||'real')===k}">${t}</button>`).join('')}`)}catch(e){}},0);const r=_m.apply(this,arguments);try{const md=$('ovc').querySelector('.modes'),b=rallyBest()[cfg.course];
   if(md){const cm=md.querySelector('[data-a="cartm"]');(cm||md).insertAdjacentHTML(cm?'afterend':'beforeend',`<button class="mode" type="button" data-m="rally"><b>🏁 Cart Rally</b><small>Race the cart through gates out to the green and back, against the ghost of your best run. Shift for turbo. Record at ${esc(COURSES[cfg.course].name)}: ${b?fmtT(b.t):'—'}</small></button>`)}}catch(e){console.warn(e)}return r}}
+$('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-look2]');if(!b)return;e.stopPropagation();cfg.look=b.dataset.look2;saveCfg();location.reload()},true);
 $('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-a="rallyagain"]');if(!b)return;e.stopPropagation();hideCard();newRound('rally')},true);
 /* ================= Mini golf: Pinwheel Park, an original 9-hole putt-putt course with its own little physics ================= */
 const MINI=[
