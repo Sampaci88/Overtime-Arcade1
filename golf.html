@@ -751,7 +751,7 @@ function setupShot(){const p=cur(),b=p.ball;b.y=hAt(b.x,b.z);b.lie=b.lie||surfAt
   const reach=club===PUTTER?1e9:CLUBS[club][1]*lieF(b.lie,club)*CM();let tx=HOLE.pin.x,tz=HOLE.pin.z;
   if(club!==PUTTER&&d>reach+12){const n=near(HOLE,b.x,b.z),q=ptAt(HOLE.CL,HOLE.acc,Math.min(HOLE.gEnd,n.s+reach));tx=q.x;tz=q.z}
   plantGrass(b.x,b.z);aim=Math.atan2(tx-b.x,tz-b.z);S.read=null;if(club===PUTTER&&HOLE.par!==0){S.read=readPutt(b);if(S.diff==='am'){const pa=Math.atan2(HOLE.pin.x-b.x,HOLE.pin.z-b.z),brk=Math.atan2(Math.sin(S.read.aim-pa),Math.cos(S.read.aim-pa));aim=S.read.aim+brk*(Math.random()-.5)*.8*(1-.1*SK('putt'))+(Math.random()-.5)*.02}}poseGolfer(b,aim,club,p);golfer.visible=true;hud();showOthers()}
-function lieF(lie,cl){const s=SURF[lie]||SURF.R;let pw=lie==='B'&&(cl===11||cl===12)?.82:(s.pw||1);if(pw<1)pw=1-(1-pw)*(1-.14*SK('rec'));return pw}
+function lieF(lie,cl){if(lie==='R')return 1;const s=SURF[lie]||SURF.R;let pw=lie==='B'&&(cl===11||cl===12)?.82:(s.pw||1);if(pw<1)pw=1-(1-pw)*(1-.14*SK('rec'));return pw}
 const CM=k=>(1+.025*SK('pow'))*CBO(k==null?club:k);
 function playsLike(b){return pinDist(b)+(hAt(HOLE.pin.x,HOLE.pin.z)-b.y)*1}
 let lpKey='',lpVal=null;
@@ -785,7 +785,7 @@ const chipLive=()=>chipOn()&&chipK()<1.08;
 function pwCurve(pw){const d=isDrv();return(pw<=1?Math.pow(pw,d?.4:.62):1+(pw-1)*.45)*(d?DRVK:1)}
 function drvCap(v){return isDrv()?Math.min(v,V0[0]*1.55):v}
 function launchBall(pw,e){const chipF=!chipRaw&&chipLive();if(chipF){pw*=chipK();e*=.7}const p=cur(),b=p.ball,SH=SHAPES[shape],shid=SH[0],ST=STYPES[stype];
-  const LC=lieCond(b,aim),[n,carry,ang,sf]=CLUBS[club],lf=lieF(b.lie,club),v0=drvCap(SH[2]*ST[2]*V0[club]*Math.pow(CM(),.77)*Math.sqrt(lf)*pwCurve(pw)*LC.v*BALLV()),bs=sf*(1-spin*.35*(1+.15*SK('spin')))*(b.lie==='R'?.7:b.lie==='B'?.8+.2*SOLE():1)*SH[4]*ST[4]*CSPIN()*LC.s*BALLS();
+  const LC=lieCond(b,aim),[n,carry,ang,sf]=CLUBS[club],lf=lieF(b.lie,club),v0=drvCap(SH[2]*ST[2]*V0[club]*Math.pow(CM(),.77)*Math.sqrt(lf)*pwCurve(pw)*LC.v*BALLV()),bs=sf*(1-spin*.35*(1+.15*SK('spin')))*(b.lie==='R'?1:b.lie==='B'?.8+.2*SOLE():1)*SH[4]*ST[4]*CSPIN()*LC.s*BALLS();
   const bend={draw:.45,fade:-.45,bigdraw:.85,bigfade:-.85}[shid]||0,la=(ang*SH[3]*ST[3]+(b.lie==='B'?4:0)-spin*1.2+LC.la)*Math.PI/180,sp=bs*(bend>0?.9:bend<0?1.1:1);
   const mk=dir=>({x:b.x,y:b.y+.02,z:b.z,vx:Math.sin(dir)*Math.cos(la)*v0,vy:Math.sin(la)*v0,vz:Math.cos(dir)*Math.cos(la)*v0,v0,la,roll:false,sp,spk:bs*(.75+.25*Math.min(1,pw)),side:e*4.5+bend+LC.side,spinAdj:spin,shape:shid,stype:ST[0],aimDir:aim,carry:0,maxY:b.y,trees:0,lastDry:{x:b.x,z:b.z}});
   // a draw starts out to the right and curves back; a fade the other way. Start it off-line so it comes down where you aimed (the dashed line shows the bend)
@@ -961,7 +961,7 @@ function hud(){if(!S||!HOLE)return;const p=cur(),H=HOLE,b=p.ball;
   const w=H.wind,rel=w.a-(viewTop?0:aim);$('hWindA').style.transform=`rotate(${-rel}rad)`;$('hWind').textContent=`${w.s} MPH`;
   const d=pinDist(b),el=hAt(H.pin.x,H.pin.z)-b.y;const rd=S.read,brk=rd?Math.round(Math.abs(rd.off)*rd.d*3*10)/10:0,rdT=club===PUTTER&&rd&&S.diff!=='tour'&&brk>=.3?(S.diff==='am'?` · lined up for ${brk} ft of ${rd.off>0?'right-to-left':'left-to-right'} break`:` · aim ${brk} ft ${rd.off>0?'left':'right'} of the hole`):'';
   $('hPin').textContent=club===PUTTER?`To the hole: ${Math.round(d*3)} ft${Math.abs(puttEff(b)-d)>.25?` · plays like ${Math.round(puttEff(b)*3)} ft (${el>0?'uphill':'downhill'})`:''}${rdT}`:d<30?`To the pin: ${Math.round(d*3)} ft${Math.abs(el)>.15?` · ${el>0?'uphill':'downhill'}`:''}`:`To the pin: ${Math.round(d)} yds${Math.abs(el)>2?` (plays ${Math.round(d+el)})`:''}`;
-  $('hLie').textContent=`Lie: ${SURF[b.lie]?SURF[b.lie].n:'—'}${b.lie==='R'||b.lie==='B'||b.lie==='D'?` (−${Math.round((1-lieF(b.lie,club))*100)}% power)`:''}`;
+  $('hLie').textContent=`Lie: ${SURF[b.lie]?SURF[b.lie].n:'—'}${(b.lie==='B'||b.lie==='D')&&lieF(b.lie,club)<.995?` (−${Math.round((1-lieF(b.lie,club))*100)}% power)`:''}`;
   $('hClub').textContent=CLUBS[club][0]+(TOUCH&&club!==PUTTER&&stype?' · '+stName(stype):'');$('hCarry').textContent=club===PUTTER?`Full meter rolls ${Math.round(puttScale(b)*3)} ft`:chipLive()?`Chip · a full meter reaches the pin (${Math.round(pinDist(b))} yds)`:`Carry ${Math.round(CLUBS[club][1]*SHC[club][shape]*STC[club][stype]*lieF(b.lie,club)*CMD())} yds at full power`;
   $('hSpin').textContent=club===PUTTER?'':`${stName(stype)}${shape?' · '+SHAPES[shape][1]:''} · ${spin<0?'backspin':spin>0?'topspin':'normal spin'}`;
   const sw=DIFF[S.diff].snap+.006*SK('acc');$('mSnap').style.left=`calc(12% - ${sw*80}%)`;$('mSnap').style.width=`${sw*160}%`;$('mSnap').style.display=club===PUTTER?'none':''}
@@ -1208,7 +1208,7 @@ const SHOPCAT=[
   {tab:'clubs',id:'wedges',n:'Spin wedges',d:'Sharper grooves: wedge shots bite, stop faster and spin back sooner',costs:[80,180,320,500,750],fx:[0,.06,.12,.18,.23,.28],show:v=>`${shPct(v)} wedge spin`},
   {tab:'clubs',id:'putter',n:'Milled putter',d:'Steadier putts that hold their line',costs:[80,180,320,500,750],fx:[0,.18,.36,.54,.6,.65],show:v=>`${Math.round(v*100)}% less putting error`},
   {tab:'clubs',id:'sole',n:'Bunker wedge sole',d:'Splash it out: shots from the sand lose less distance and spin',costs:[120,260,420],fx:[0,.3,.55,.75],show:v=>`${Math.round(v*100)}% less sand penalty`},
-  {tab:'clubs',id:'hybrid',n:'Rough-cutter soles',d:'Clubs glide through thick grass: less distance lost from the rough',costs:[120,260,420],fx:[0,.25,.45,.6],show:v=>`${Math.round(v*100)}% less rough penalty`},
+  {tab:'clubs',id:'hybrid',n:'Rough-cutter soles',d:'Clubs glide through sand and waste areas: less distance lost from fairway bunkers (the rough no longer costs distance)',costs:[120,260,420],fx:[0,.25,.45,.6],show:v=>`${Math.round(v*100)}% less sand and waste penalty`},
   {tab:'clubs',id:'glove',n:'Tour glove',d:'A firmer grip: a bigger sweet spot on every full swing',costs:[150,300,500],fx:[0,.002,.004,.006],show:v=>`+${Math.round(v/.032*100)}% sweet spot`},
   {tab:'balls',slot:'ball',id:'tour',n:'Tour ball',d:'Balanced distance and spin',cost:0},
   {tab:'balls',slot:'ball',id:'distance',n:'Distance ball',d:'About 2.5% longer with every club, but wedges spin less',cost:150,v:1.025,s:.85},
@@ -1261,7 +1261,7 @@ function CPUTT(){if(!mine())return 1;return (1-lvlFx('putter'))*(ballIt().pe||1)
 function BALLV(){if(!mine())return 1;return ballIt().v||1}
 function BALLS(){if(!mine())return 1;return cgrp(club)==='wedges'?(ballIt().s||1):1}
 function SOLE(){return mine()?lvlFx('sole'):0}
-{const _lf=lieF;lieF=function(lie,cl){let p=_lf(lie,cl);if(p<1&&mine()){if(lie==='B')p=1-(1-p)*(1-lvlFx('sole'));else if(lie==='R')p=1-(1-p)*(1-lvlFx('hybrid'))}return p}}
+{const _lf=lieF;lieF=function(lie,cl){let p=_lf(lie,cl);if(p<1&&mine()){if(lie==='B')p=1-(1-p)*(1-lvlFx('sole'))*(1-lvlFx('hybrid')*.6);else if(lie==='D')p=1-(1-p)*(1-lvlFx('hybrid'))}return p}}
 // the look of my ball and its tracer
 function ballLook(){try{const me=mine(),b=me?ballIt():null,t=me?SHOPCAT.find(x=>x.slot==='trail'&&x.id===(CU.trail||'white')):null;
   ballMesh.material.color.set(b&&b.col||0xffffff);trail.material.color.set(t&&t.col||0xffffff)}catch(e){}}
@@ -1341,7 +1341,7 @@ function caddieTalk(){const el=$('caddie');if(!el)return;if((cfg.caddie||'on')!=
   else{const d=pinDist(b),pl=playsLike(b),w=H.wind,tail=w.s*Math.cos(w.a-aim),adj=Math.round(pl-tail*.48*Math.min(1.3,pl/150));const lf=lieF(b.lie,0);let best=null;for(let k=b.lie==='T'?0:1;k<13;k++){if(CLUBS[k][1]*lf*CM(k)<=adj+3){best=k;break}best=k}
     const reach=CLUBS[b.lie==='T'?0:1][1]*lf*CM(b.lie==='T'?0:1);t=d>reach+15?`${Math.round(d)} to the pin, out of reach. Find the fairway.`:`${Math.round(d)} yds, plays ${adj}${Math.abs(tail)>4?(tail>0?' downwind':' into the wind'):''}. ${CLUBS[best][0]}${best!==club?' is the play':' is right'}.`;
     const L=aimTarget(),hz=new Set();if(L){for(let r=0;r<=14;r+=7)for(let a=0;a<8;a++){const x=L.x+Math.sin(a*.785)*r,z=L.z+Math.cos(a*.785)*r,s=surfAt(x,z);if(s==='W')hz.add('water');else if(s==='B')hz.add('a bunker');else if(s==='O')hz.add('out of bounds')}}
-    if(hz.size)t+=` Careful: ${[...hz].join(' and ')} near where this lands.`;if(b.lie==='R'||b.lie==='D')t+=' From the rough it will come out short.';if(b.lie==='B')t+=' Out of the sand: take a little extra.'}
+    if(hz.size)t+=` Careful: ${[...hz].join(' and ')} near where this lands.`;if(b.lie==='D')t+=' From the waste area it will come out short.';if(b.lie==='B')t+=' Out of the sand: take a little extra.'}
   el.hidden=false;el.textContent='🧢 Caddie: '+t}
 
 /* ---------- drag to swing ---------- */
@@ -1411,7 +1411,7 @@ function lieCond(b,dir){const o={v:1,s:1,la:0,side:0,tags:[]};if(!b||b.lie==='T'
 function lieAdvice(b){const o=lieCond(b,aim),t=[];for(const g of o.tags){if(g==='Uphill lie')t.push('Uphill lie: it flies higher and shorter, take more club.');else if(g==='Downhill lie')t.push('Downhill lie: it comes out low and runs.');else if(g.startsWith('Sidehill'))t.push(`Sidehill lie: the ball will curve ${o.side>0?'left':'right'}, aim the other way.`);else if(g==='Plugged in the sand')t.push('Plugged! It will come out short with no spin.');else if(g==='Thick rough')t.push('Thick rough: less distance and no spin.')}return t}
 {const _eb=endBall;endBall=function(why){const p=cur(),B=S&&S.ball;const r=_eb.apply(this,arguments);try{if(why==='rest'&&p&&p.ball&&B&&S&&!['ld','ctp','range','pgreen'].includes(S.mode)&&S.shotClub!==PUTTER){
     if(p.ball.lie==='B'&&B.land&&B.land.vy<-14&&surfAt(B.land.x,B.land.z)==='B'&&Math.random()<.35){p.ball.plug=1;setTimeout(()=>note('Plugged lie','A fried egg in the bunker',1.8),1700)}
-    else if(p.ball.lie==='R'&&Math.random()<.35){p.ball.thick=1;setTimeout(()=>note('Thick rough','It will come out slow',1.6),1700)}}}catch(e){}return r}}
+    else if(false){p.ball.thick=1;setTimeout(()=>note('Thick rough','It will come out slow',1.6),1700)}}}catch(e){}return r}}
 {const _ct=caddieTalk;caddieTalk=function(){_ct.apply(this,arguments);try{const el=$('caddie');if(el&&!el.hidden&&S&&club!==PUTTER){const t=lieAdvice(cur().ball);if(t.length)el.textContent+=' '+t.join(' ')}}catch(e){}}}
 
 $('ovc').addEventListener('click',shopClick);
@@ -1916,7 +1916,7 @@ $('ovc').addEventListener('click',e=>{const b=e.target.closest('[data-a="simback
 
 
 /* ---------- updates: a small version tag, and a notice when the live site has a newer version ---------- */
-const BUILD='73-1795456196';
+const BUILD='74-1795457867';
 {const tag=document.createElement('span');tag.className='buildtag';tag.textContent='Version '+BUILD.split('-')[0];document.querySelector('.top a').after(tag);
   let shown=false;const check=()=>{if(shown||!navigator.onLine)return;fetch(location.pathname+'?v='+Date.now(),{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=t.match(/const BUILD='([^']+)'/);if(m&&m[1]!==BUILD&&m[1]!=='__BUILD__'){shown=true;const b=document.createElement('div');b.className='updbar';b.innerHTML=`<span>A new version of Pin High is ready.</span><button class="go" type="button">Update now</button>`;b.querySelector('button').onclick=()=>{location.reload()};document.body.append(b)}}).catch(()=>{})};
   setTimeout(check,4000);setInterval(check,180000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()})}
